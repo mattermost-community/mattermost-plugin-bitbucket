@@ -75,13 +75,19 @@ func (p *Plugin) githubConnect(token oauth2.Token) *github.Client {
 }
 
 func (p *Plugin) OnActivate() error {
+
+	fmt.Println("----- ACTIVATE -----")
 	config := p.getConfiguration()
+	fmt.Printf("----- config = %+v -----\n", config)
+	fmt.Println("----- 2. ACTIVATE -----")
 
 	if err := config.IsValid(); err != nil {
 		return err
 	}
+	fmt.Println("----- 3. ACTIVATE -----")
 	p.API.RegisterCommand(getCommand())
 	user, err := p.API.GetUserByUsername(config.Username)
+	fmt.Printf("----- BotUsername = %+v -----\n", user)
 	if err != nil {
 		mlog.Error(err.Error())
 		return fmt.Errorf("Unable to find user with configured username: %v", config.Username)
@@ -111,8 +117,8 @@ func (p *Plugin) getOAuthConfig() *oauth2.Config {
 	}
 
 	return &oauth2.Config{
-		ClientID:     config.GitHubOAuthClientID,
-		ClientSecret: config.GitHubOAuthClientSecret,
+		ClientID:     config.BitbucketOAuthClientID,
+		ClientSecret: config.BitbucketOAuthClientSecret,
 		Scopes:       []string{repo, "notifications"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  authURL.String(),
@@ -161,6 +167,7 @@ func (p *Plugin) storeGitHubUserInfo(info *GitHubUserInfo) error {
 func (p *Plugin) getGitHubUserInfo(userID string) (*GitHubUserInfo, *APIErrorResponse) {
 	config := p.getConfiguration()
 
+	fmt.Println("----- getGitHubUserInfo -----")
 	var userInfo GitHubUserInfo
 
 	if infoBytes, err := p.API.KVGet(userID + GITHUB_TOKEN_KEY); err != nil || infoBytes == nil {

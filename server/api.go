@@ -36,6 +36,7 @@ func writeAPIError(w http.ResponseWriter, err *APIErrorResponse) {
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
+	fmt.Println("----- ServerHTTP -----")
 	config := p.getConfiguration()
 
 	if err := config.IsValid(); err != nil {
@@ -82,6 +83,7 @@ func (p *Plugin) connectUserToGitHub(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("----- connectUserToGitHub -----")
 	conf := p.getOAuthConfig()
 
 	state := fmt.Sprintf("%v_%v", model.NewId()[0:15], userID)
@@ -184,7 +186,7 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 		map[string]interface{}{
 			"connected":        true,
 			"github_username":  userInfo.GitHubUsername,
-			"github_client_id": config.GitHubOAuthClientID,
+			"github_client_id": config.BitbucketOAuthClientID,
 		},
 		&model.WebsocketBroadcast{UserId: userID},
 	)
@@ -230,7 +232,7 @@ func (p *Plugin) getGitHubUser(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, &APIErrorResponse{ID: "", Message: "Not authorized.", StatusCode: http.StatusUnauthorized})
 		return
 	}
-
+	fmt.Println("----- getGitHubUser -----")
 	req := &GitHubUserRequest{}
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&req); err != nil || req.UserID == "" {
@@ -284,7 +286,7 @@ func (p *Plugin) getConnected(w http.ResponseWriter, r *http.Request) {
 	if info != nil && info.Token != nil {
 		resp.Connected = true
 		resp.GitHubUsername = info.GitHubUsername
-		resp.GitHubClientID = config.GitHubOAuthClientID
+		resp.GitHubClientID = config.BitbucketOAuthClientID
 		resp.Settings = info.Settings
 
 		if info.Settings.DailyReminder && r.URL.Query().Get("reminder") == "true" {
@@ -492,6 +494,7 @@ func (p *Plugin) getYourAssignments(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Plugin) postToDo(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("")
 	userID := r.Header.Get("Mattermost-User-ID")
 	if userID == "" {
 		writeAPIError(w, &APIErrorResponse{ID: "", Message: "Not authorized.", StatusCode: http.StatusUnauthorized})

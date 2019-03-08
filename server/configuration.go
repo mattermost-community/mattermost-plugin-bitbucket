@@ -19,15 +19,15 @@ import (
 // If you add non-reference types to your configuration struct, be sure to rewrite Clone as a deep
 // copy appropriate for your types.
 type configuration struct {
-	GitHubOrg               string
-	Username                string
-	GitHubOAuthClientID     string
-	GitHubOAuthClientSecret string
-	WebhookSecret           string
-	EnablePrivateRepo       bool
-	EncryptionKey           string
-	EnterpriseBaseURL       string
-	EnterpriseUploadURL     string
+	GitHubOrg                  string
+	Username                   string
+	BitbucketOAuthClientID     string
+	BitbucketOAuthClientSecret string
+	WebhookSecret              string
+	EnablePrivateRepo          bool
+	EncryptionKey              string
+	EnterpriseBaseURL          string
+	EnterpriseUploadURL        string
 }
 
 // Clone shallow copies the configuration. Your implementation may require a deep copy if
@@ -39,11 +39,11 @@ func (c *configuration) Clone() *configuration {
 
 // IsValid checks if all needed fields are set.
 func (c *configuration) IsValid() error {
-	if c.GitHubOAuthClientID == "" {
+	if c.BitbucketOAuthClientID == "" {
 		return fmt.Errorf("Must have a github oauth client id")
 	}
 
-	if c.GitHubOAuthClientSecret == "" {
+	if c.BitbucketOAuthClientSecret == "" {
 		return fmt.Errorf("Must have a github oauth client secret")
 	}
 
@@ -62,6 +62,7 @@ func (c *configuration) IsValid() error {
 // concurrently. The active configuration may change underneath the client of this method, but
 // the struct returned by this API call is considered immutable.
 func (p *Plugin) getConfiguration() *configuration {
+	fmt.Println("----- getConfiguration -----")
 	p.configurationLock.RLock()
 	defer p.configurationLock.RUnlock()
 

@@ -36,9 +36,9 @@ const COMMAND_HELP = `* |/github connect| - Connect your Mattermost account to y
 
 func getCommand() *model.Command {
 	return &model.Command{
-		Trigger:          "github",
-		DisplayName:      "Github",
-		Description:      "Integration with Github.",
+		Trigger:          "bitbucket",
+		DisplayName:      "Bitbucket",
+		Description:      "Integration with Bitbucket.",
 		AutoComplete:     true,
 		AutoCompleteDesc: "Available commands: connect, disconnect, todo, me, settings, subscribe, unsubscribe, help",
 		AutoCompleteHint: "[command]",
@@ -56,6 +56,7 @@ func getCommandResponse(responseType, text string) *model.CommandResponse {
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+	fmt.Println("----- ExecuteCommand -----")
 	split := strings.Fields(args.Command)
 	command := split[0]
 	parameters := []string{}
@@ -67,7 +68,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		parameters = split[2:]
 	}
 
-	if command != "/github" {
+	if command != "/bitbucket" {
 		return &model.CommandResponse{}, nil
 	}
 

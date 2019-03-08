@@ -1,6 +1,6 @@
-# Mattermost GitHub Plugin [![Build Status](https://travis-ci.org/mattermost/mattermost-plugin-github.svg?branch=master)](https://travis-ci.org/mattermost/mattermost-plugin-github)
+# Mattermost Bitbucket Plugin [![Build Status](https://travis-ci.org/mattermost/mattermost-plugin-github.svg?branch=master)](https://travis-ci.org/mattermost/mattermost-plugin-github)
 
-A GitHub plugin for Mattermost. The plugin is currently in beta.
+A Bitbucket plugin for Mattermost. The plugin is currently in beta.
 
 ## Features
 
@@ -14,7 +14,67 @@ A GitHub plugin for Mattermost. The plugin is currently in beta.
     * __And more!__ - Run `/github help` to see what else the slash command can do
 * __Supports GitHub Enterprise__ - Works with SaaS and Enterprise versions of GitHub (Enterprise support added in version 0.6.0)
 
-## Installation
+## Installation - Bitbucket
+
+__Requires Mattermost 5.2 or higher. If you're running Mattermost 5.6+, it is strongly recommended to use plugin version 0.7.1+__
+
+__If you're using GitHub Enterprise, replace all GitHub links below with your GitHub Enterprise URL__
+
+1. Install the plugin
+    1. Download the latest version of the plugin from the GitHub releases page
+    2. In Mattermost, go the System Console -> Plugins -> Management
+    3. Upload the plugin
+2. Register a Bitbucket OAuth app
+    1. https://bitbucket.org
+        * avatar bottom left -> OAuth -> Add consumer
+        * Use "Mattermost Bitbucket Plugin - <your company name>" as the name
+        * Use "https://github.com/mattermost/mattermost-plugin-bitbucket" as the URL
+        * Use "https://your-mattermost-url.com/plugins/bitbucket/oauth/complete" as the authorization callback URL, replacing `https://your-mattermost-url.com` with your Mattermost URL
+        * Select permissions for this oath consumer account (Read only, Repositories ??? come back to this. setup for team membership? )
+        * Save and copy the Client ID (Key) and Secret
+    2. In Mattermost, go to System Console -> Plugins -> Bitbucket
+        * Fill in the Client ID and Secret and save the settings
+3. Create a Bitbucket webhook
+    1. In Mattermost, go to the System Console -> Plugins -> Bitbucket and copy / Regenerate the "Webhook Secret"
+    2. Go to the settings page of your Bitbucket organization (TODO: or repository) and click on "Webhooks" in the sidebar
+        * Click "Add webhook"
+        * Use "Mattermost Webhook" as the Title (TODO: think of better naming convention. For testing, I am using repository name : "mattermost-bitbucket-readme Webhook")
+        * Use "https://your-mattermost-url.com/plugins/bitbucket/webhook" as the URL, replacing `https://your-mattermost-url.com` with your Mattermost URL
+        * Change content type to "application/json" (TODO: bitbucket does not have this option. verify their API default is json)
+        * Paste the webhook secret you copied before into the secret field (TODO: bitbucket does not have this option)
+        * Select the events: Issues, Issue comments, Pull requests, Pull request reviews, Pull request review comments, Pushes, Branch or Tag creation and Branch or Tag deletion
+        * (TODO: for now, we'll test push to repository only for jfrerich/mattermost-bitbucket-readme)
+    3. Save the webhook
+    4. __Note for each organization you want to receive notifications for or subscribe to, you must create a webhook__
+4. Configure a bot account
+    1. Create a new Mattermost user, through the regular UI or the CLI with the
+       username "bitbucket" (TODO: I created by signing out of MM and creating
+       user through signup. Enable first with System Console -> Security ->
+       Sign Up. Email/username/password/team =
+       bitbucket@example.com/bitbucket/bitbucket/bitbucket-demo. After
+       creation, log back in as sysadmin)
+    2. Go to the System Console -> Plugins -> Bitbucket and select this user in the User setting
+    3. Save the settings
+5. Generate an at rest encryption key
+    1. Go to the System Console -> Plugins -> GitHub and click "Regenerate" under "At Rest Encryption Key"
+    2. Save the settings
+6. (Optional) Lock the plugin to a GitHub organization
+    * Go to System Console -> Plugins -> GitHub and set the GitHub Organization field to the name of your GitHub organization
+7. (Optional) Enable private repositories
+    * Go to System Console -> Plugins -> GitHub and set Enable Private Repositories to true
+    * Note that if you do this after users have already connected their accounts to GitHub they will need to disconnect and reconnect their accounts to be able to use private repositories
+8. (Enterprise only) Set your Enterprise URLs
+    * Go to System Console -> Plugins -> GitHub and set the Enterprise Base URL and Enterprise Upload URL fields to your GitHub Enterprise URLs, ex: `https://github.example.com`
+    * The Base and Upload URLs are often the same
+9. Enable the plugin (TODO: To enable, I did make deploy and it was enabled) 
+    * Go to System Console -> Plugins -> Management and click "Enable" underneath the GitHub plugin
+
+==> AT THIS POINT <==
+
+10. Test it out
+    * In Mattermost, run the slash command `/github connect`
+
+## Installation - github
 
 __Requires Mattermost 5.2 or higher. If you're running Mattermost 5.6+, it is strongly recommended to use plugin version 0.7.1+__
 
@@ -74,8 +134,8 @@ Use `make deploy` to deploy the plugin to your local server. Before running `mak
 
 ```
 export MM_SERVICESETTINGS_SITEURL=http://localhost:8065
-export MM_ADMIN_USERNAME=admin
-export MM_ADMIN_PASSWORD=password
+export MM_ADMIN_USERNAME=sysadmin
+export MM_ADMIN_PASSWORD=sysadmin
 ```
 
 ## Frequently Asked Questions
