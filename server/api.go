@@ -13,7 +13,7 @@ import (
 	"github.com/mattermost/mattermost-server/mlog"
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/plugin"
-	// "github.com/wbrefvem/go-bitbucket"
+	"github.com/wbrefvem/go-bitbucket"
 
 	"golang.org/x/oauth2"
 )
@@ -93,6 +93,7 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 func (p *Plugin) connectUserToGitHub(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("----- #### BB api.connectUserToGitHub -----")
 	userID := r.Header.Get("Mattermost-User-ID")
+	fmt.Printf("----- #### BB api.ConnectUserToGitHub \n -> userID = %+v\n", userID)
 	if userID == "" {
 		http.Error(w, "Not authorized", http.StatusUnauthorized)
 		return
@@ -118,8 +119,11 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 	fmt.Println("----- #### BB api.completeConnectUserToGitHub -----")
 
 	// config := p.getConfiguration()
+	config_bb := bitbucket.NewConfiguration()
+	//TODO
 
 	ctx := context.Background()
+	fmt.Printf("----- #### BB api.completeConnectUserToGitHub \n -> ctx = %+v\n", ctx)
 	conf := p.getOAuthConfig()
 
 	code := r.URL.Query().Get("code")
@@ -128,7 +132,9 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	fmt.Printf("----- #### BB api.completeConnectUserToGitHub \n -> r.URL.Query() = %+v\n", r.URL.Query())
 	state := r.URL.Query().Get("state")
+	fmt.Printf("----- #### BB api.completeConnectUserToGitHub \n -> state = %+v\n", state)
 
 	if storedState, err := p.API.KVGet(state); err != nil {
 		fmt.Println(err.Error())
@@ -140,11 +146,12 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 	}
 
 	userID := strings.Split(state, "_")[1]
-	fmt.Printf("userID = %+v\n", userID)
+	fmt.Printf("----- #### BB api.completeConnectUserToGitHub \n -> userID = %+v\n", userID)
 
 	p.API.KVDelete(state)
 
 	tok, err := conf.Exchange(ctx, code)
+	fmt.Printf("----- #### GH api.completeConnectUserToGitHub  \n -> tok = %+v\n -- >", tok)
 	if err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -153,85 +160,90 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 
 	githubClient := p.githubConnect(*tok)
 	// gitUser, _, err := githubClient.Users.Get(ctx, "")
-	gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(ctx, "")
-	fmt.Printf("gitUser = %+v\n", gitUser)
+	gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(ctx, "jfrerich")
+	// gitUser, _, err := githubClient.UsersApi.UsersUsernameGet("5a261f58e894cb132188e800", "")
+	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  \n -> gitUser = %+v\n -- >", gitUser)
 	// fmt.Println(githubClient.UsersApi.)
 	if err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	//
-	// 	userInfo := &GitHubUserInfo{
-	// 		UserID:         userID,
-	// 		Token:          tok,
-	// 		GitHubUsername: gitUser.GetLogin(),
-	// 		LastToDoPostAt: model.GetMillis(),
-	// 		Settings: &UserSettings{
-	// 			SidebarButtons: SETTING_BUTTONS_TEAM,
-	// 			DailyReminder:  true,
-	// 			Notifications:  true,
-	// 		},
-	// 		AllowedPrivateRepos: config.EnablePrivateRepo,
-	// 	}
-	//
-	// 	if err := p.storeGitHubUserInfo(userInfo); err != nil {
-	// 		fmt.Println(err.Error())
-	// 		http.Error(w, "Unable to connect user to GitHub", http.StatusInternalServerError)
-	// 		return
-	// 	}
-	//
-	// 	if err := p.storeGitHubToUserIDMapping(gitUser.GetLogin(), userID); err != nil {
-	// 		fmt.Println(err.Error())
-	// 	}
-	//
-	// 	// Post intro post
-	// 	message := fmt.Sprintf("#### Welcome to the Mattermost GitHub Plugin!\n"+
-	// 		"You've connected your Mattermost account to [%s](%s) on GitHub. Read about the features of this plugin below:\n\n"+
-	// 		"##### Daily Reminders\n"+
-	// 		"The first time you log in each day, you will get a post right here letting you know what messages you need to read and what pull requests are awaiting your review.\n"+
-	// 		"Turn off reminders with `/github settings reminders off`.\n\n"+
-	// 		"##### Notifications\n"+
-	// 		"When someone mentions you, requests your review, comments on or modifies one of your pull requests/issues, or assigns you, you'll get a post here about it.\n"+
-	// 		"Turn off notifications with `/github settings notifications off`.\n\n"+
-	// 		"##### Sidebar Buttons\n"+
-	// 		"Check out the buttons in the left-hand sidebar of Mattermost.\n"+
-	// 		"* The first button tells you how many pull requests you have submitted.\n"+
-	// 		"* The second shows the number of PR that are awaiting your review.\n"+
-	// 		"* The third shows the number of PR and issues your are assiged to.\n"+
-	// 		"* The fourth tracks the number of unread messages you have.\n"+
-	// 		"* The fifth will refresh the numbers.\n\n"+
-	// 		"Click on them!\n\n"+
-	// 		"##### Slash Commands\n"+
-	// 		strings.Replace(COMMAND_HELP, "|", "`", -1), gitUser.GetLogin(), gitUser.GetHTMLURL())
-	// 	p.CreateBotDMPost(userID, message, "custom_git_welcome")
-	//
-	// 	p.API.PublishWebSocketEvent(
-	// 		WS_EVENT_CONNECT,
-	// 		map[string]interface{}{
-	// 			"connected":        true,
-	// 			"github_username":  userInfo.GitHubUsername,
-	// 			"github_client_id": config.BitbucketOAuthClientID,
-	// 		},
-	// 		&model.WebsocketBroadcast{UserId: userID},
-	// 	)
-	//
-	// 	html := `
-	// <!DOCTYPE html>
-	// <html>
-	// 	<head>
-	// 		<script>
-	// 			window.close();
-	// 		</script>
-	// 	</head>
-	// 	<body>
-	// 		<p>Completed connecting to GitHub. Please close this window.</p>
-	// 	</body>
-	// </html>
-	// `
-	//
-	// 	w.Header().Set("Content-Type", "text/html")
-	// 	w.Write([]byte(html))
+
+	userInfo := &GitHubUserInfo{
+		UserID: userID,
+		Token:  tok,
+		// GitHubUsername: gitUser.GetLogin(),
+		GitHubUsername: "jfrerich",
+		LastToDoPostAt: model.GetMillis(),
+		Settings: &UserSettings{
+			SidebarButtons: SETTING_BUTTONS_TEAM,
+			DailyReminder:  true,
+			Notifications:  true,
+		},
+		// AllowedPrivateRepos: config.EnablePrivateRepo,
+	}
+
+	if err := p.storeGitHubUserInfo(userInfo); err != nil {
+		fmt.Println(err.Error())
+		http.Error(w, "Unable to connect user to GitHub", http.StatusInternalServerError)
+		return
+	}
+
+	// if err := p.storeGitHubToUserIDMapping(gitUser.GetLogin(), userID); err != nil {
+	if err := p.storeGitHubToUserIDMapping("jfrerich", userID); err != nil {
+		fmt.Println(err.Error())
+	}
+
+	// Post intro post
+	message := fmt.Sprintf("#### Welcome to the Mattermost GitHub Plugin!\n"+
+		"You've connected your Mattermost account to [%s](%s) on GitHub. Read about the features of this plugin below:\n\n"+
+		"##### Daily Reminders\n"+
+		"The first time you log in each day, you will get a post right here letting you know what messages you need to read and what pull requests are awaiting your review.\n"+
+		"Turn off reminders with `/github settings reminders off`.\n\n"+
+		"##### Notifications\n"+
+		"When someone mentions you, requests your review, comments on or modifies one of your pull requests/issues, or assigns you, you'll get a post here about it.\n"+
+		"Turn off notifications with `/github settings notifications off`.\n\n"+
+		"##### Sidebar Buttons\n"+
+		"Check out the buttons in the left-hand sidebar of Mattermost.\n"+
+		"* The first button tells you how many pull requests you have submitted.\n"+
+		"* The second shows the number of PR that are awaiting your review.\n"+
+		"* The third shows the number of PR and issues your are assiged to.\n"+
+		"* The fourth tracks the number of unread messages you have.\n"+
+		"* The fifth will refresh the numbers.\n\n"+
+		"Click on them!\n\n"+
+		"##### Slash Commands\n"+
+		// strings.Replace(COMMAND_HELP, "|", "`", -1), gitUser.GetLogin(), gitUser.GetHTMLURL())
+		strings.Replace(COMMAND_HELP, "|", "`", -1), "jfrerich", "junk")
+	p.CreateBotDMPost(userID, message, "custom_git_welcome")
+
+	fmt.Printf("config_bb = %+v\n", config_bb)
+	p.API.PublishWebSocketEvent(
+		WS_EVENT_CONNECT,
+		map[string]interface{}{
+			"connected":       true,
+			"github_username": userInfo.GitHubUsername,
+			// "github_client_id": config_bb.BitbucketOAuthClientID,
+		},
+		&model.WebsocketBroadcast{UserId: userID},
+	)
+
+	html := `
+	<!DOCTYPE html>
+	<html>
+		<head>
+			<script>
+				window.close();
+			</script>
+		</head>
+		<body>
+			<p>Completed connecting to GitHub. Please close this window.</p>
+		</body>
+	</html>
+	`
+
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(html))
 }
 
 type ConnectedResponse struct {
