@@ -15,6 +15,7 @@ import (
 	"github.com/mattermost/mattermost-server/plugin"
 
 	"github.com/google/go-github/github"
+	"github.com/wbrefvem/go-bitbucket"
 	"golang.org/x/oauth2"
 )
 
@@ -37,7 +38,8 @@ const (
 
 type Plugin struct {
 	plugin.MattermostPlugin
-	githubClient *github.Client
+	// githubClient    *github.Client
+	bitbucketClient *bitbucket.APIClient
 
 	BotUserID string
 
@@ -49,45 +51,58 @@ type Plugin struct {
 	configuration *configuration
 }
 
-func (p *Plugin) githubConnect(token oauth2.Token) *github.Client {
-	config := p.getConfiguration()
+// func (p *Plugin) githubConnect(token oauth2.Token) *github.Client {
+func (p *Plugin) githubConnect(token oauth2.Token) *bitbucket.APIClient {
+
+	fmt.Println("---- #### BB plugin.githubConnect -----")
+
+	// config := p.getConfiguration()
+	config_bb := bitbucket.NewConfiguration()
 
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(&token)
 	tc := oauth2.NewClient(ctx, ts)
+	fmt.Printf("----- 2. BB plugin.githubConnect tc %v-----", tc)
 
-	if len(config.EnterpriseBaseURL) == 0 || len(config.EnterpriseUploadURL) == 0 {
-		return github.NewClient(tc)
-	}
-
-	baseURL, _ := url.Parse(config.EnterpriseBaseURL)
-	baseURL.Path = path.Join(baseURL.Path, "api", "v3")
-
-	uploadURL, _ := url.Parse(config.EnterpriseUploadURL)
-	uploadURL.Path = path.Join(uploadURL.Path, "api", "v3")
-
-	client, err := github.NewEnterpriseClient(baseURL.String(), uploadURL.String(), tc)
-	if err != nil {
-		mlog.Error(err.Error())
-		return github.NewClient(tc)
-	}
-	return client
+	// if len(config.EnterpriseBaseURL) == 0 || len(config.EnterpriseUploadURL) == 0 {
+	// return bitbucket.APIClient(tc)
+	// client := APIClient.New()
+	// client := bitbucket.APIClient.new()
+	return bitbucket.NewAPIClient(config_bb)
+	// return bitbucket.NewAPIClient(*bitbucketClient)
+	// return github.NewClient(tc)
+	// }
+	// fmt.Println("----- 3. BB plugin.githubConnect -----")
+	//
+	// baseURL, _ := url.Parse(config.EnterpriseBaseURL)
+	// baseURL.Path = path.Join(baseURL.Path, "api", "v3")
+	//
+	// uploadURL, _ := url.Parse(config.EnterpriseUploadURL)
+	// uploadURL.Path = path.Join(uploadURL.Path, "api", "v3")
+	//
+	// client, err := github.NewEnterpriseClient(baseURL.String(), uploadURL.String(), tc)
+	//
+	// if err != nil {
+	// 	mlog.Error(err.Error())
+	// 	return github.NewClient(tc)
+	// }
+	// return client
 }
 
 func (p *Plugin) OnActivate() error {
 
-	fmt.Println("----- ACTIVATE -----")
+	fmt.Println("----- #### BB plugin.OnActivate -----")
 	config := p.getConfiguration()
-	fmt.Printf("----- config = %+v -----\n", config)
-	fmt.Println("----- 2. ACTIVATE -----")
+	fmt.Printf("----- BB plugin.OnActivate config = %+v -----\n", config)
+	fmt.Println("----- BB 2. plugin.OnActivate -----")
 
 	if err := config.IsValid(); err != nil {
 		return err
 	}
-	fmt.Println("----- 3. ACTIVATE -----")
+	fmt.Println("----- BB 3. plugin.OnActivate -----")
 	p.API.RegisterCommand(getCommand())
 	user, err := p.API.GetUserByUsername(config.Username)
-	fmt.Printf("----- BotUsername = %+v -----\n", user)
+	fmt.Printf("----- BB plugin.OnActivate BotUsername = %+v -----\n", user)
 	if err != nil {
 		mlog.Error(err.Error())
 		return fmt.Errorf("Unable to find user with configured username: %v", config.Username)
@@ -98,17 +113,39 @@ func (p *Plugin) OnActivate() error {
 }
 
 func (p *Plugin) getOAuthConfig() *oauth2.Config {
+
+	fmt.Println("----- #### BB plugin.getOAuthconfig -----")
+
 	config := p.getConfiguration()
 
-	authURL, _ := url.Parse("https://github.com/")
-	tokenURL, _ := url.Parse("https://github.com/")
+	// authURL, _ := url.Parse("https://github.com/")
+	// tokenURL, _ := url.Parse("https://github.com/")
+
+	// https: //bitbucket.org/site/oauth2/authorize
+
+	authURL, _ := url.Parse("https://bitbucket.org/")
+	tokenURL, _ := url.Parse("https://bitbucket.org/")
+
 	if len(config.EnterpriseBaseURL) > 0 {
 		authURL, _ = url.Parse(config.EnterpriseBaseURL)
 		tokenURL, _ = url.Parse(config.EnterpriseBaseURL)
 	}
 
-	authURL.Path = path.Join(authURL.Path, "login", "oauth", "authorize")
-	tokenURL.Path = path.Join(tokenURL.Path, "login", "oauth", "access_token")
+	// fmt.Println("----- BB plugin.getOAuthconfig authURL -----", authURL)
+	// fmt.Println("----- BB plugin.getOAuthconfig tokenURL -----", tokenURL)
+
+	// authURL.Path = path.Join(authURL.Path, "login", "oauth", "authorize")
+	// tokenURL.Path = path.Join(tokenURL.Path, "login", "oauth", "access_token")
+
+	authURL.Path = path.Join(authURL.Path, "site", "oauth2", "authorize")
+	tokenURL.Path = path.Join(tokenURL.Path, "site", "oauth2", "access_token")
+
+	// fmt.Println("----- BB plugin.getOAuthconfig config.EnterpriseBaseURL -----", config.EnterpriseBaseURL)
+	// fmt.Println("----- BB plugin.getOAuthconfig authURL.Path -----", authURL.Path)
+	// fmt.Println("----- BB plugin.getOAuthconfig tokenURL.Path -----", tokenURL.Path)
+	//
+	fmt.Println("----- BB plugin.getOAuthconfig authURL.string -----", authURL.String())
+	fmt.Println("----- BB plugin.getOAuthconfig tokenURL.string -----", tokenURL.String())
 
 	repo := "public_repo"
 	if config.EnablePrivateRepo {
@@ -116,10 +153,13 @@ func (p *Plugin) getOAuthConfig() *oauth2.Config {
 		repo = "repo"
 	}
 
+	fmt.Println("----- BB plugin.getOAuthconfig repo -----", repo)
+
 	return &oauth2.Config{
 		ClientID:     config.BitbucketOAuthClientID,
 		ClientSecret: config.BitbucketOAuthClientSecret,
-		Scopes:       []string{repo, "notifications"},
+		Scopes:       []string{"repository"},
+		// Scopes:       []string{repo, "notifications"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  authURL.String(),
 			TokenURL: tokenURL.String(),
@@ -167,7 +207,7 @@ func (p *Plugin) storeGitHubUserInfo(info *GitHubUserInfo) error {
 func (p *Plugin) getGitHubUserInfo(userID string) (*GitHubUserInfo, *APIErrorResponse) {
 	config := p.getConfiguration()
 
-	fmt.Println("----- getGitHubUserInfo -----")
+	fmt.Println("----- BB pluign.getGitHubUserInfo -----")
 	var userInfo GitHubUserInfo
 
 	if infoBytes, err := p.API.KVGet(userID + GITHUB_TOKEN_KEY); err != nil || infoBytes == nil {
@@ -248,13 +288,13 @@ func (p *Plugin) CreateBotDMPost(userID, message, postType string) *model.AppErr
 }
 
 func (p *Plugin) PostToDo(info *GitHubUserInfo) {
-	text, err := p.GetToDo(context.Background(), info.GitHubUsername, p.githubConnect(*info.Token))
-	if err != nil {
-		mlog.Error(err.Error())
-		return
-	}
-
-	p.CreateBotDMPost(info.UserID, text, "custom_git_todo")
+	// text, err := p.GetToDo(context.Background(), info.GitHubUsername, p.githubConnect(*info.Token))
+	// if err != nil {
+	// 	mlog.Error(err.Error())
+	// 	return
+	// }
+	//
+	// p.CreateBotDMPost(info.UserID, text, "custom_git_todo")
 }
 
 func (p *Plugin) GetToDo(ctx context.Context, username string, githubClient *github.Client) (string, error) {

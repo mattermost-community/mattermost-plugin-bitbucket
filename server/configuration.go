@@ -62,7 +62,7 @@ func (c *configuration) IsValid() error {
 // concurrently. The active configuration may change underneath the client of this method, but
 // the struct returned by this API call is considered immutable.
 func (p *Plugin) getConfiguration() *configuration {
-	fmt.Println("----- getConfiguration -----")
+	fmt.Println("----- #### BB configuration.getConfiguration -----")
 	p.configurationLock.RLock()
 	defer p.configurationLock.RUnlock()
 
@@ -83,6 +83,7 @@ func (p *Plugin) getConfiguration() *configuration {
 // certainly means that the configuration was modified without being cloned and may result in
 // an unsafe access.
 func (p *Plugin) setConfiguration(configuration *configuration) {
+	fmt.Println("----- #### BB configuration.setConfiguration -----")
 	p.configurationLock.Lock()
 	defer p.configurationLock.Unlock()
 
@@ -102,6 +103,7 @@ func (p *Plugin) setConfiguration(configuration *configuration) {
 
 // OnConfigurationChange is invoked when configuration changes may have been made.
 func (p *Plugin) OnConfigurationChange() error {
+	fmt.Println("----- #### BB configuration.OnConfigurationChange -----")
 	var configuration = new(configuration)
 
 	// Load the public configuration fields from the Mattermost server configuration.

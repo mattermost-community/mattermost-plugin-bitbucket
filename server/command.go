@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/mlog"
+	// "github.com/mattermost/mattermost-server/mlog"
 	"github.com/mattermost/mattermost-server/plugin"
 
-	"github.com/google/go-github/github"
+	// "github.com/google/go-github/github"
 	"github.com/mattermost/mattermost-server/model"
+	"github.com/wbrefvem/go-bitbucket"
 )
 
 const COMMAND_HELP = `* |/github connect| - Connect your Mattermost account to your GitHub account
@@ -56,7 +57,7 @@ func getCommandResponse(responseType, text string) *model.CommandResponse {
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-	fmt.Println("----- ExecuteCommand -----")
+	fmt.Println("----- #### BB command.ExecuteCommand")
 	split := strings.Fields(args.Command)
 	command := split[0]
 	parameters := []string{}
@@ -73,23 +74,29 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	}
 
 	if action == "connect" {
+		fmt.Println("----- BB command.ExecuteCommand action=connect")
 		config := p.API.GetConfig()
+		fmt.Printf("config.ServiceSettings.SiteURL = %+v\n", *config.ServiceSettings.SiteURL)
 		if config.ServiceSettings.SiteURL == nil {
+			fmt.Println("----- BB 1. command.ExecuteCommand action=connect")
 			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error connecting to GitHub."), nil
 		}
-
-		resp := getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("[Click here to link your GitHub account.](%s/plugins/github/oauth/connect)", *config.ServiceSettings.SiteURL))
+		fmt.Println("----- BB 2. command.ExecuteCommand action=connect")
+		resp := getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("[Click here to link your Bitbucket account.](%s/plugins/bitbucket/oauth/connect)", *config.ServiceSettings.SiteURL))
+		fmt.Printf("----- BB command.ExecuteCommand resp = %+v\n", resp)
 		return resp, nil
 	}
 
 	ctx := context.Background()
-	var githubClient *github.Client
+	var githubClient *bitbucket.APIClient
+	fmt.Printf("ctx = %+v\n", ctx)
+	fmt.Printf("githubClient = %+v\n", githubClient)
 
 	info, apiErr := p.getGitHubUserInfo(args.UserId)
 	if apiErr != nil {
 		text := "Unknown error."
 		if apiErr.ID == API_ERROR_ID_NOT_CONNECTED {
-			text = "You must connect your account to GitHub first. Either click on the GitHub logo in the bottom left of the screen or enter `/github connect`."
+			text = "You must connect your account to GitHub first. Either click on the GitHub logo in the bottom left of the screen or enter `/bitbucket connect`."
 		}
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
 	}
@@ -98,76 +105,79 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 
 	switch action {
 	case "subscribe":
-		config := p.getConfiguration()
-		features := "pulls,issues,creates,deletes"
-
-		txt := ""
-		if len(parameters) == 0 {
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Please specify a repository or 'list' command."), nil
-		} else if len(parameters) == 1 && parameters[0] == "list" {
-			subs, err := p.GetSubscriptionsByChannel(args.ChannelId)
-			if err != nil {
-				return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, err.Error()), nil
-			}
-
-			if len(subs) == 0 {
-				txt = "Currently there are no subscriptions in this channel"
-			} else {
-				txt = "### Subscriptions in this channel\n"
-			}
-			for _, sub := range subs {
-				txt += fmt.Sprintf("* `%s` - %s\n", sub.Repository, sub.Features)
-			}
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, txt), nil
-		} else if len(parameters) > 1 {
-			features = strings.Join(parameters[1:], " ")
-		}
-
-		_, owner, repo := parseOwnerAndRepo(parameters[0], config.EnterpriseBaseURL)
-		if repo == "" {
-			if err := p.SubscribeOrg(context.Background(), githubClient, args.UserId, owner, args.ChannelId, features); err != nil {
-				return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, err.Error()), nil
-			}
-
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Successfully subscribed to organization %s.", owner)), nil
-		}
-
-		if err := p.Subscribe(context.Background(), githubClient, args.UserId, owner, repo, args.ChannelId, features); err != nil {
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, err.Error()), nil
-		}
-
-		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Successfully subscribed to %s.", repo)), nil
+		// fmt.Println("----- BB command.ExecuteCommand action=subscribe")
+		// config := p.getConfiguration()
+		// features := "pulls,issues,creates,deletes"
+		//
+		// txt := ""
+		// if len(parameters) == 0 {
+		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Please specify a repository or 'list' command."), nil
+		// } else if len(parameters) == 1 && parameters[0] == "list" {
+		// 	subs, err := p.GetSubscriptionsByChannel(args.ChannelId)
+		// 	if err != nil {
+		// 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, err.Error()), nil
+		// 	}
+		//
+		// 	if len(subs) == 0 {
+		// 		txt = "Currently there are no subscriptions in this channel"
+		// 	} else {
+		// 		txt = "### Subscriptions in this channel\n"
+		// 	}
+		// 	for _, sub := range subs {
+		// 		txt += fmt.Sprintf("* `%s` - %s\n", sub.Repository, sub.Features)
+		// 	}
+		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, txt), nil
+		// } else if len(parameters) > 1 {
+		// 	features = strings.Join(parameters[1:], " ")
+		// }
+		//
+		// _, owner, repo := parseOwnerAndRepo(parameters[0], config.EnterpriseBaseURL)
+		// if repo == "" {
+		// 	if err := p.SubscribeOrg(context.Background(), githubClient, args.UserId, owner, args.ChannelId, features); err != nil {
+		// 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, err.Error()), nil
+		// 	}
+		//
+		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Successfully subscribed to organization %s.", owner)), nil
+		// }
+		//
+		// if err := p.Subscribe(context.Background(), githubClient, args.UserId, owner, repo, args.ChannelId, features); err != nil {
+		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, err.Error()), nil
+		// }
+		//
+		// return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Successfully subscribed to %s.", repo)), nil
 	case "unsubscribe":
-		if len(parameters) == 0 {
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Please specify a repository."), nil
-		}
-
-		repo := parameters[0]
-
-		if err := p.Unsubscribe(args.ChannelId, repo); err != nil {
-			mlog.Error(err.Error())
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error trying to unsubscribe. Please try again."), nil
-		}
-
-		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Succesfully unsubscribed from %s.", repo)), nil
+		// if len(parameters) == 0 {
+		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Please specify a repository."), nil
+		// }
+		//
+		// repo := parameters[0]
+		//
+		// if err := p.Unsubscribe(args.ChannelId, repo); err != nil {
+		// 	mlog.Error(err.Error())
+		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error trying to unsubscribe. Please try again."), nil
+		// }
+		//
+		// return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Succesfully unsubscribed from %s.", repo)), nil
 	case "disconnect":
+		fmt.Println("----- BB command.ExecuteCommand action=disconnect")
 		p.disconnectGitHubAccount(args.UserId)
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Disconnected your GitHub account."), nil
 	case "todo":
-		text, err := p.GetToDo(ctx, info.GitHubUsername, githubClient)
-		if err != nil {
-			mlog.Error(err.Error())
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error getting your to do items."), nil
-		}
-		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
+		// text, err := p.GetToDo(ctx, info.GitHubUsername, githubClient)
+		// if err != nil {
+		// 	mlog.Error(err.Error())
+		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error getting your to do items."), nil
+		// }
+		// return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
 	case "me":
-		gitUser, _, err := githubClient.Users.Get(ctx, "")
-		if err != nil {
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error getting your GitHub profile."), nil
-		}
-
-		text := fmt.Sprintf("You are connected to GitHub as:\n# [![image](%s =40x40)](%s) [%s](%s)", gitUser.GetAvatarURL(), gitUser.GetHTMLURL(), gitUser.GetLogin(), gitUser.GetHTMLURL())
-		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
+		// fmt.Println("----- BB command.ExecuteCommand action=me")
+		// gitUser, _, err := githubClient.Users.Get(ctx, "")
+		// if err != nil {
+		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error getting your GitHub profile."), nil
+		// }
+		//
+		// text := fmt.Sprintf("You are connected to GitHub as:\n# [![image](%s =40x40)](%s) [%s](%s)", gitUser.GetAvatarURL(), gitUser.GetHTMLURL(), gitUser.GetLogin(), gitUser.GetHTMLURL())
+		// return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
 	case "help":
 		text := "###### Mattermost GitHub Plugin - Slash Command Help\n" + strings.Replace(COMMAND_HELP, "|", "`", -1)
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil

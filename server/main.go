@@ -6,6 +6,8 @@ import (
 )
 
 func main() {
+
+	// dont do this!!  it makes plugin not connect
 	// fmt.Println("jason")
 	plugin.ClientMain(&Plugin{})
 }

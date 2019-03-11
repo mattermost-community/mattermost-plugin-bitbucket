@@ -1,7 +1,7 @@
 package main
 
 import (
-	"context"
+	// "context"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/hex"
@@ -13,6 +13,7 @@ import (
 	"github.com/google/go-github/github"
 	"github.com/mattermost/mattermost-server/mlog"
 	"github.com/mattermost/mattermost-server/model"
+	// "github.com/wbrefvem/go-bitbucket"
 )
 
 func verifyWebhookSignature(secret []byte, signature string, body []byte) bool {
@@ -134,34 +135,38 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Plugin) permissionToRepo(userID string, ownerAndRepo string) bool {
-	if userID == "" {
-		return false
-	}
 
-	config := p.getConfiguration()
-	ctx := context.Background()
-	_, owner, repo := parseOwnerAndRepo(ownerAndRepo, config.EnterpriseBaseURL)
+	fmt.Println("---- #### BB webhook.permissionToRepo -----")
+	// if userID == "" {
+	// 	return false
+	// }
+	//
+	// // config := p.getConfiguration()
+	// config := bitbucket.NewConfiguration()
+	// ctx := context.Background()
+	// _, owner, repo := parseOwnerAndRepo(ownerAndRepo, config.EnterpriseBaseURL)
+	//
+	// if owner == "" {
+	// 	return false
+	// }
+	// if err := p.checkOrg(owner); err != nil {
+	// 	return false
+	// }
 
-	if owner == "" {
-		return false
-	}
-	if err := p.checkOrg(owner); err != nil {
-		return false
-	}
-
-	info, apiErr := p.getGitHubUserInfo(userID)
-	if apiErr != nil {
-		return false
-	}
-	var githubClient *github.Client
-	githubClient = p.githubConnect(*info.Token)
-
-	if result, _, err := githubClient.Repositories.Get(ctx, owner, repo); result == nil || err != nil {
-		if err != nil {
-			mlog.Error(err.Error())
-		}
-		return false
-	}
+	// info, apiErr := p.getGitHubUserInfo(userID)
+	// if apiErr != nil {
+	// 	return false
+	// }
+	// // var githubClient *github.Client
+	// var githubClient *bitbucket.APIClient
+	// githubClient = p.githubConnect(*info.Token)
+	//
+	// if result, _, err := githubClient.Repositories.Get(ctx, owner, repo); result == nil || err != nil {
+	// 	if err != nil {
+	// 		mlog.Error(err.Error())
+	// 	}
+	// 	return false
+	// }
 	return true
 }
 

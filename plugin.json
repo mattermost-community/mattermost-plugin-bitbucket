@@ -47,7 +47,7 @@
                 "help_text": "The AES encryption key used to encrypt stored access tokens."
             },
             {
-                "key": "GithubOrg",
+                "key": "ithubOrg",
                 "display_name": "GitHub Organization",
                 "type": "text",
                 "help_text": "(Optional) Set to lock the plugin to a single GitHub organization."

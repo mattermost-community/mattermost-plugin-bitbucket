@@ -265,6 +265,14 @@
   version = "v1.2.2"
 
 [[projects]]
+  branch = "master"
+  digest = "1:8b20cc00aa5b9b38f93172da83c97b4786d99cbd7ff4041c4007a2c82e8dad6d"
+  name = "github.com/wbrefvem/go-bitbucket"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "fc08fd046abbc94823e6d2a79ae248d62112a6fc"
+
+[[projects]]
   digest = "1:22f696cee54865fb8e9ff91df7b633f6b8f22037a8015253c6b6a71ca82219c7"
   name = "go.uber.org/atomic"
   packages = ["."]
@@ -454,6 +462,7 @@
     "github.com/mattermost/mattermost-server/plugin",
     "github.com/pkg/errors",
     "github.com/stretchr/testify/assert",
+    "github.com/wbrefvem/go-bitbucket",
     "golang.org/x/oauth2",
   ]
   solver-name = "gps-cdcl"
