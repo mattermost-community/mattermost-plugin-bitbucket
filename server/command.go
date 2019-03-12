@@ -102,7 +102,8 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
 	}
 
-	githubClient = p.githubConnect(*info.Token)
+	githubClient = p.githubConnect()
+	// gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(ctx, "jfrerich")
 
 	switch action {
 	case "subscribe":

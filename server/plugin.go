@@ -52,17 +52,17 @@ type Plugin struct {
 }
 
 // func (p *Plugin) githubConnect(token oauth2.Token) *github.Client {
-func (p *Plugin) githubConnect(token oauth2.Token) *bitbucket.APIClient {
+func (p *Plugin) githubConnect() *bitbucket.APIClient {
 
 	fmt.Println("---- #### BB plugin.githubConnect -----")
 
 	// config := p.getConfiguration()
 	config_bb := bitbucket.NewConfiguration()
 
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(&token)
-	tc := oauth2.NewClient(ctx, ts)
-	fmt.Printf("----- 2. BB plugin.githubConnect tc %v-----", tc)
+	// ctx := context.Background()
+	// ts := oauth2.StaticTokenSource(&token)
+	// tc := oauth2.NewClient(ctx, ts)
+	// fmt.Printf("----- 2. BB plugin.githubConnect tc %v-----", tc)
 
 	// if len(config.EnterpriseBaseURL) == 0 || len(config.EnterpriseUploadURL) == 0 {
 	// return bitbucket.APIClient(tc)

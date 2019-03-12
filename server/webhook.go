@@ -1,7 +1,7 @@
 package main
 
 import (
-	// "context"
+	"context"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/hex"
@@ -9,6 +9,7 @@ import (
 	"fmt"
 	// "io/ioutil"
 	"net/http"
+	"reflect"
 
 	"strings"
 
@@ -54,225 +55,43 @@ func ConvertPushEventRepositoryToRepository(pushRepo *github.PushEventRepository
 	}
 }
 
-// func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
-// 	fmt.Println("----- #### BB webhook.handleWebhook -----")
-// 	fmt.Printf("----- #### BB webhook.handleWebhook \nr = %+v\n", r)
-// 	config := bitbucket.NewConfiguration()
-// 	client := bitbucket.NewAPIClient(config)
-// 	fmt.Printf("config = %+v\n", config)
-// 	fmt.Printf("client = %+v\n", client)
-//
-// 	ctx := context.Background()
-// 	fmt.Printf("ctx = %+v\n", ctx)
-// 	signature := r.Header.Get("X-Hub-Signature")
-// 	fmt.Printf("signature  = %+v\n", signature)
-//
-// 	body, err := ioutil.ReadAll(r.Body)
-// 	fmt.Printf("body = %+v\n", string(body))
-// 	if err != nil {
-// 		http.Error(w, "Bad request body", http.StatusBadRequest)
-// 		return
-// 	}
-//
-// 	fmt.Println("----- #### BB webhook.handleWebhook -----")
-//
-// 	hook, _ := bb_webhook.New()
-// 	payload, err := hook.Parse(r, bb_webhook.IssueCommentCreatedEvent)
-// 	fmt.Printf("---------payload = %+v\n\n\n", payload)
-//
-// 	switch payload.(type) {
-// 	case bb_webhook.IssueCommentCreatedPayload:
-// 		bbissue := payload.(bb_webhook.IssueCommentCreatedPayload)
-// 		fmt.Printf("\n\n-------- IN HERE release = %+v\n\n", bbissue)
-// 		// postsomething()
-// 	}
-//
-// 	var repo *github.Repository
-// 	var handler func()
-//
-// 	event, err := github.ParseWebHook(github.WebHookType(r), body)
-// 	switch event := event.(type) {
-// 	case *github.IssueCommentEvent:
-// 		repo = event.GetRepo()
-// 		fmt.Println("--- we are also in here")
-// 		handler = func() {
-// 			p.postIssueCommentEvent(event)
-// 		}
-// 	}
-//
-// 	fmt.Println("--- we got here ---")
-// 	fmt.Printf("repo = %+v\n", repo)
-// 	if repo == nil || handler == nil {
-// 		return
-// 	}
-//
-// 	handler()
-// }
-
-// works
-// func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
-// 	fmt.Println("----- #### BB webhook.handleWebhook -----")
-// 	// config := p.getConfiguration()
-// 	fmt.Printf("----- #### BB webhook.handleWebhook \nr = %+v\n", r)
-// 	config := bitbucket.NewConfiguration()
-// 	client := bitbucket.NewAPIClient(config)
-// 	fmt.Printf("config = %+v\n", config)
-// 	fmt.Printf("client = %+v\n", client)
-//
-// 	hook, _ := bb_webhook.New()
-// 	payload, err := hook.Parse(r, bb_webhook.IssueCommentCreatedEvent)
-// 	fmt.Printf("---------payload = %+v\n\n\n", payload)
-//
-// 	switch payload.(type) {
-// 	case bb_webhook.IssueCommentCreatedPayload:
-// 		bb_issue := payload.(bb_webhook.IssueCommentCreatedPayload)
-// 		fmt.Printf("\n\n-------- IN HERE release = %+v\n\n", bb_issue)
-// 		// 	// repo = event.GetRepo()
-// 		// 	fmt.Println("---- WE ARE IN HERE!! -----")
-// 		// 	handler = func() {
-// 		// 		p.printsomething()
-// 		// 		// p.postIssueCommentEvent(bb_webhook.IssueCommentCreatedEvent)
-// 		// 		// p.handleCommentMentionNotification(event)
-// 		// 		// p.handleCommentAuthorNotification(event)
-// 		// 	}
-// 	}
-//
-// 	// switch event := event.(type) {
-//
-// 	// switch payload.(type) {
-// 	// case *bb_webhook.IssueCommentCreatedEvent:
-// 	// 	release := payload.(bb_webhook.IssueCommentCreatedEvent)
-// 	// 	// Do whatever you want from here...
-// 	// 	// 		fmt.Printf("%+v", release)
-// 	// 	// 	}
-// 	// }
-//
-// 	// fmt.Printf("r = %+v\n", r)
-// 	// fmt.Printf("r.Body = %+v\n", r.Body)
-// 	ctx := context.Background()
-// 	fmt.Printf("ctx = %+v\n", ctx)
-// 	// events := webhooksapi.HookEventsGet(ctx)
-// 	// subjecttypes, resps, err := client.WebhooksApi.HookEventsGet(ctx)
-// 	// fmt.Printf("resps = %+v\n", resps)
-// 	// fmt.Printf("subjecttypes = %+v\n", subjecttypes)
-// 	// fmt.Printf("err = %+v\n", err)
-//
-// 	signature := r.Header.Get("X-Hub-Signature")
-// 	fmt.Printf("signature  = %+v\n", signature)
-//
-// 	body, err := ioutil.ReadAll(r.Body)
-// 	fmt.Printf("body = %+v\n", string(body))
-// 	if err != nil {
-// 		http.Error(w, "Bad request body", http.StatusBadRequest)
-// 		return
-// 	}
-//
-// 	//
-// 	data := make(map[string]interface{})
-//
-// 	if err := json.Unmarshal(body, &data); err != nil {
-// 		panic(err)
-// 	}
-//
-// 	// fmt.Printf("data = %+v\n\n", data)
-// 	// fmt.Printf("data comment= %+v\n\n", data["comment"])
-// 	fmt.Printf("data comment type= %+v\n\n", data["comment"].(map[string]interface{})["type"])
-// 	// event_value := data["comment"].(map[string]interface{})["type"]
-//
-// 	// if !verifyWebhookSignature([]byte(config.WebhookSecret), signature, body) {
-// 	// 	http.Error(w, "Not authorized", http.StatusUnauthorized)
-// 	// 	return
-// 	// }
-//
-// 	event, err := github.ParseWebHook(github.WebHookType(r), body)
-// 	// event, err := github.ParseWebHook(github.WebHookType(r), body)
-// 	// fmt.Printf("----- BB WebHookType.handleWebhook\n -> event = %+v\n", event_value)
-// 	if err != nil {
-// 		mlog.Error(err.Error())
-// 		return
-// 	}
-//
-// 	fmt.Println("----- #### BB webhook.handleWebhook -----")
-//
-// 	var repo *github.Repository
-// 	var handler func()
-//
-// 	switch event := event.(type) {
-// 	case *github.PullRequestEvent:
-// 		repo = event.GetRepo()
-// 		handler = func() {
-// 			p.postPullRequestEvent(event)
-// 			p.handlePullRequestNotification(event)
-// 		}
-// 	case *github.IssuesEvent:
-// 		repo = event.GetRepo()
-// 		handler = func() {
-// 			p.postIssueEvent(event)
-// 			p.handleIssueNotification(event)
-// 		}
-// 	case *github.IssueCommentEvent:
-// 		repo = event.GetRepo()
-// 		handler = func() {
-// 			p.postIssueCommentEvent(event)
-// 			p.handleCommentMentionNotification(event)
-// 			p.handleCommentAuthorNotification(event)
-// 		}
-// 	case *github.PullRequestReviewEvent:
-// 		repo = event.GetRepo()
-// 		handler = func() {
-// 			p.postPullRequestReviewEvent(event)
-// 			p.handlePullRequestReviewNotification(event)
-// 		}
-// 	case *github.PullRequestReviewCommentEvent:
-// 		repo = event.GetRepo()
-// 		handler = func() {
-// 			p.postPullRequestReviewCommentEvent(event)
-// 		}
-// 	case *github.PushEvent:
-// 		repo = ConvertPushEventRepositoryToRepository(event.GetRepo())
-// 		handler = func() {
-// 			p.postPushEvent(event)
-// 		}
-// 	case *github.CreateEvent:
-// 		repo = event.GetRepo()
-// 		handler = func() {
-// 			p.postCreateEvent(event)
-// 		}
-// 	case *github.DeleteEvent:
-// 		repo = event.GetRepo()
-// 		handler = func() {
-// 			p.postDeleteEvent(event)
-// 		}
-// 	}
-//
-// 	if repo == nil || handler == nil {
-// 		return
-// 	}
-//
-// 	// if repo.GetPrivate() && !config.EnablePrivateRepo {
-// 	// 	return
-// 	// }
-//
-// 	handler()
-// }
-
 func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("----- #### BB webhook.handleWebhook -----")
 	// config := p.getConfiguration()
 	fmt.Printf("----- #### BB webhook.handleWebhook \nr = %+v\n", r)
 	config := bitbucket.NewConfiguration()
 	client := bitbucket.NewAPIClient(config)
 	fmt.Printf("client = %+v\n", client)
 
+	// ctx := context.Background()
+	// var githubClient *bitbucket.APIClient
+
+	// gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(ctx, "jfrerich")
+	// subtypes, _, err := githubClient.WebhooksApi.HookEventsGet(ctx)
+	// IssueComment RepositoriesUsernameRepoSlugIssuesIssueIdCommentsCommentIdGet(ctx, commentId, username, repoSlug, issueId)
+	// comment, _, err := githubClient.IssueTrackerApi.RepositoriesUsernameRepoSlugIssuesIssueIdCommentsCommentIdGet(ctx, "51109448", "jfrerich", "mattermost-plugin-readme", "1")
+	// fmt.Printf("gitUser = %+v\n", gitUser)
+	// fmt.Printf("subtypes = %+v\n", subtypes)
+	// fmt.Printf("comment = %+v\n", comment)
+
+	event := r.Header.Get("X-Event-Key")
+	bitbucketEvent := bb_webhook.Event(event)
+
+	fmt.Printf("bitbucketEvent = %+v\n", bitbucketEvent)
+
 	hook, _ := bb_webhook.New()
 	payload, err := hook.Parse(r, bb_webhook.IssueCommentCreatedEvent)
 	fmt.Printf("---------payload = %+v\n\n\n", payload)
+	fmt.Println(reflect.TypeOf(payload).String())
+
+	var handler func()
 
 	switch payload.(type) {
 	case bb_webhook.IssueCommentCreatedPayload:
-		bb_issue := payload.(bb_webhook.IssueCommentCreatedPayload)
-		fmt.Printf("\n\n-------- IN HERE release = %+v\n\n", bb_issue)
-		p.something()
+		// bb_issue := payload.(bb_webhook.IssueCommentCreatedPayload)
+		// fmt.Printf("\n\n-------- IN HERE release = %+v\n\n", bb_issue)
+		handler = func() {
+			p.postIssueCommentCreatedEvent(r)
+		}
 	}
 
 	if err != nil {
@@ -280,52 +99,109 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	handler()
 	fmt.Println("----- #### BB webhook.handleWebhook -----")
 
 }
 
-func (p *Plugin) something() {
+func (p *Plugin) postIssueCommentCreatedEvent(r *http.Request) {
 	fmt.Println("_we made it_")
-	// config := p.getConfiguration()
-	// repo := event.GetRepo()
 
-	// subs := p.GetSubscribedChannelsForRepository(repo)
-	// if subs == nil || len(subs) == 0 {
-	// 	return
-	// }
+	ctx := context.Background()
+	var githubClient *bitbucket.APIClient
+	githubClient = p.githubConnect()
 
-	// userID := ""
-	// if user, err := p.API.GetUserByUsername(config.Username); err != nil {
-	// 	mlog.Error(err.Error())
-	// 	return
-	// } else {
-	// 	userID = user.Id
-	// }
+	// IssueComment RepositoriesUsernameRepoSlugIssuesIssueIdCommentsCommentIdGet(ctx, commentId, username, repoSlug, issueId)
+	comment, _, err := githubClient.IssueTrackerApi.RepositoriesUsernameRepoSlugIssuesIssueIdCommentsCommentIdGet(ctx, "51110066", "jfrerich", "mattermost-bitbucket-readme", "1")
+	fmt.Printf("comment = %+v\n", comment)
+	fmt.Printf("comment.User = %+v\n", comment.User)
+	fmt.Printf("comment.Content = %+v\n", comment.Content)
+	fmt.Printf("comment.Content.Raw = %+v\n", comment.Content.Raw)
+	fmt.Printf("err = %+v\n", err)
 
-	// 	newPRMessage := fmt.Sprintf(`
-	// ####
-	// ##### [)
-	// #new-pull-request by []() on []()
-	// `)
+	message := fmt.Sprintf("[\\[%s\\]](%s) New comment by [%s](%s) on [#%v %s]:\n\n%s",
+		"junk1", "junk2", "junk3", "junk4", "junk5", "junk6", "junk7")
+	//  repo.GetFullName(), repo.GetHTMLURL(), event.GetSender().GetLogin(), event.GetSender().GetHTMLURL(), event.GetIssue().GetNumber(), event.GetIssue().GetTitle(), body)
+
+	config := p.getConfiguration()
+	// 	repo := event.GetRepo()
 	//
-	// 	post := &model.Post{
-	// 		UserId: userID,
-	// 		Type:   "custom_git_pr",
-	// 		Props: map[string]interface{}{
-	// 			"from_webhook":      "true",
-	// 			"override_username": GITHUB_USERNAME,
-	// 			"override_icon_url": GITHUB_ICON_URL,
-	// 		},
+	// repo := "mattermost-bitbucket-readme"
+	// subs := p.GetSubscribedChannelsForRepository(repo)
+	//
+	// 	if subs == nil || len(subs) == 0 {
+	// 		return
+	// 	}
+	//
+	userID := ""
+	if user, err := p.API.GetUserByUsername(config.Username); err != nil {
+		mlog.Error(err.Error())
+		return
+	} else {
+		userID = user.Id
+	}
+	//
+	// 	if event.GetAction() != "created" {
+	// 		return
+	// 	}
+	//
+	// 	body := event.GetComment().GetBody()
+	//
+	// 	// Try to parse out email footer junk
+	// 	if strings.Contains(body, "notifications@github.com") {
+	// 		body = strings.Split(body, "\n\nOn")[0]
+	// 	}
+	//
+	// 	message := fmt.Sprintf("[\\[%s\\]](%s) New comment by [%s](%s) on [#%v %s]:\n\n%s",
+	// 		repo.GetFullName(), repo.GetHTMLURL(), event.GetSender().GetLogin(), event.GetSender().GetHTMLURL(), event.GetIssue().GetNumber(), event.GetIssue().GetTitle(), body)
+
+	// message := fmt.Sprintf("[\\[\\]]() New comment by []:\n\n")
+	// fmt.Printf("userID = %+v\n", userID)
+
+	post := &model.Post{
+		UserId: userID,
+		Type:   "custom_git_comment",
+		Props: map[string]interface{}{
+			"from_webhook":      "true",
+			"override_username": GITHUB_USERNAME,
+			"override_icon_url": GITHUB_ICON_URL,
+		},
+	}
+	//
+	// 	labels := make([]string, len(event.GetIssue().Labels))
+	// 	for i, v := range event.GetIssue().Labels {
+	// 		labels[i] = v.GetName()
 	// 	}
 	//
 	// 	for _, sub := range subs {
-	//
-	// 		post.Message = newPRMessage
-	//
-	// 		post.ChannelId = sub.ChannelID
-	// 		if _, err := p.API.CreatePost(post); err != nil {
-	// 			mlog.Error(err.Error())
+	// 		if !sub.IssueComments() {
+	// 			continue
 	// 		}
+	//
+	// 		label := sub.Label()
+	//
+	// 		contained := false
+	// 		for _, v := range labels {
+	// 			if v == label {
+	// 				contained = true
+	// 			}
+	// 		}
+	//
+	// 		if !contained && label != "" {
+	// 			continue
+	// 		}
+	//
+	// 		if event.GetAction() == "created" {
+	post.Message = message
+	// 		}
+	//
+	// post.ChannelId = sub.ChannelID
+	// post.ChannelId = "yo4c9uz7k7ddxqdbom5rxigpsy"
+	post.ChannelId = "kneqppyxxpgz5quwj169xtzmoy"
+	// post.ChannelId = "6eerzh9oc7bi3qkhz93qgwyp4a"
+	if _, err := p.API.CreatePost(post); err != nil {
+		mlog.Error(err.Error())
+	}
 	// 	}
 
 }
@@ -722,81 +598,81 @@ func (p *Plugin) postDeleteEvent(event *github.DeleteEvent) {
 	}
 }
 
-func (p *Plugin) postIssueCommentEvent(event *github.IssueCommentEvent) {
-	config := p.getConfiguration()
-	repo := event.GetRepo()
-
-	subs := p.GetSubscribedChannelsForRepository(repo)
-
-	if subs == nil || len(subs) == 0 {
-		return
-	}
-
-	userID := ""
-	if user, err := p.API.GetUserByUsername(config.Username); err != nil {
-		mlog.Error(err.Error())
-		return
-	} else {
-		userID = user.Id
-	}
-
-	if event.GetAction() != "created" {
-		return
-	}
-
-	body := event.GetComment().GetBody()
-
-	// Try to parse out email footer junk
-	if strings.Contains(body, "notifications@github.com") {
-		body = strings.Split(body, "\n\nOn")[0]
-	}
-
-	message := fmt.Sprintf("[\\[%s\\]](%s) New comment by [%s](%s) on [#%v %s]:\n\n%s",
-		repo.GetFullName(), repo.GetHTMLURL(), event.GetSender().GetLogin(), event.GetSender().GetHTMLURL(), event.GetIssue().GetNumber(), event.GetIssue().GetTitle(), body)
-
-	post := &model.Post{
-		UserId: userID,
-		Type:   "custom_git_comment",
-		Props: map[string]interface{}{
-			"from_webhook":      "true",
-			"override_username": GITHUB_USERNAME,
-			"override_icon_url": GITHUB_ICON_URL,
-		},
-	}
-
-	labels := make([]string, len(event.GetIssue().Labels))
-	for i, v := range event.GetIssue().Labels {
-		labels[i] = v.GetName()
-	}
-
-	for _, sub := range subs {
-		if !sub.IssueComments() {
-			continue
-		}
-
-		label := sub.Label()
-
-		contained := false
-		for _, v := range labels {
-			if v == label {
-				contained = true
-			}
-		}
-
-		if !contained && label != "" {
-			continue
-		}
-
-		if event.GetAction() == "created" {
-			post.Message = message
-		}
-
-		post.ChannelId = sub.ChannelID
-		if _, err := p.API.CreatePost(post); err != nil {
-			mlog.Error(err.Error())
-		}
-	}
-}
+// func (p *Plugin) postIssueCommentEvent(event *github.IssueCommentEvent) {
+// 	config := p.getConfiguration()
+// 	repo := event.GetRepo()
+//
+// 	subs := p.GetSubscribedChannelsForRepository(repo)
+//
+// 	if subs == nil || len(subs) == 0 {
+// 		return
+// 	}
+//
+// 	userID := ""
+// 	if user, err := p.API.GetUserByUsername(config.Username); err != nil {
+// 		mlog.Error(err.Error())
+// 		return
+// 	} else {
+// 		userID = user.Id
+// 	}
+//
+// 	if event.GetAction() != "created" {
+// 		return
+// 	}
+//
+// 	body := event.GetComment().GetBody()
+//
+// 	// Try to parse out email footer junk
+// 	if strings.Contains(body, "notifications@github.com") {
+// 		body = strings.Split(body, "\n\nOn")[0]
+// 	}
+//
+// 	message := fmt.Sprintf("[\\[%s\\]](%s) New comment by [%s](%s) on [#%v %s]:\n\n%s",
+// 		repo.GetFullName(), repo.GetHTMLURL(), event.GetSender().GetLogin(), event.GetSender().GetHTMLURL(), event.GetIssue().GetNumber(), event.GetIssue().GetTitle(), body)
+//
+// 	post := &model.Post{
+// 		UserId: userID,
+// 		Type:   "custom_git_comment",
+// 		Props: map[string]interface{}{
+// 			"from_webhook":      "true",
+// 			"override_username": GITHUB_USERNAME,
+// 			"override_icon_url": GITHUB_ICON_URL,
+// 		},
+// 	}
+//
+// 	labels := make([]string, len(event.GetIssue().Labels))
+// 	for i, v := range event.GetIssue().Labels {
+// 		labels[i] = v.GetName()
+// 	}
+//
+// 	for _, sub := range subs {
+// 		if !sub.IssueComments() {
+// 			continue
+// 		}
+//
+// 		label := sub.Label()
+//
+// 		contained := false
+// 		for _, v := range labels {
+// 			if v == label {
+// 				contained = true
+// 			}
+// 		}
+//
+// 		if !contained && label != "" {
+// 			continue
+// 		}
+//
+// 		if event.GetAction() == "created" {
+// 			post.Message = message
+// 		}
+//
+// 		post.ChannelId = sub.ChannelID
+// 		if _, err := p.API.CreatePost(post); err != nil {
+// 			mlog.Error(err.Error())
+// 		}
+// 	}
+// }
 
 func (p *Plugin) postPullRequestReviewEvent(event *github.PullRequestReviewEvent) {
 	config := p.getConfiguration()

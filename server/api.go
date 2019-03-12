@@ -158,7 +158,7 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	githubClient := p.githubConnect(*tok)
+	githubClient := p.githubConnect()
 	// gitUser, _, err := githubClient.Users.Get(ctx, "")
 	gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(ctx, "jfrerich")
 	username := gitUser.Username
