@@ -78,19 +78,20 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("bitbucketEvent = %+v\n", bitbucketEvent)
 
+	fmt.Printf("---- r type= %+v\n\n", reflect.TypeOf(r).String())
 	hook, _ := bb_webhook.New()
 	payload, err := hook.Parse(r, bb_webhook.IssueCommentCreatedEvent)
-	fmt.Printf("---------payload = %+v\n\n\n", payload)
-	fmt.Println(reflect.TypeOf(payload).String())
+
+	fmt.Printf("---- payload = %+v\n\n\n", payload)
+	fmt.Printf("---- payload Type = %+v\n\n", reflect.TypeOf(payload).String())
 
 	var handler func()
 
 	switch payload.(type) {
 	case bb_webhook.IssueCommentCreatedPayload:
-		// bb_issue := payload.(bb_webhook.IssueCommentCreatedPayload)
-		// fmt.Printf("\n\n-------- IN HERE release = %+v\n\n", bb_issue)
 		handler = func() {
-			p.postIssueCommentCreatedEvent(r)
+			p.postIssueCommentCreatedEvent(payload)
+			return
 		}
 	}
 
@@ -100,28 +101,57 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handler()
-	fmt.Println("----- #### BB webhook.handleWebhook -----")
 
 }
 
-func (p *Plugin) postIssueCommentCreatedEvent(r *http.Request) {
+func (p *Plugin) postIssueCommentCreatedEvent(pl interface{}) {
+	// func (p *Plugin) postIssueCommentCreatedEvent(r string) (interface{}, error) {
 	fmt.Println("_we made it_")
+	r := pl.(bb_webhook.IssueCommentCreatedPayload)
+	fmt.Printf("\nrelease = %+v\n\n", r)
+	fmt.Printf("\nrelease.Actor = %+v\n\n", r.Actor)
+	fmt.Printf("release.Actor.Type = %+v\n", r.Actor.Username)
+	fmt.Printf("release = %+v\n", r)
+
+	message := fmt.Sprintf("[\\[%s\\]](%s) New comment by [%s](%s) on [#%v %s]:\n\n%s",
+		"junk1", "junk2", r.Actor.Username, r.Actor.Username, "junk5", "junk6", "junk7")
+	// "junk1", "junk2", r.Actor.Username, r.Actor.Username, comment.Issue.Id, comment.Issue.Title, comment.Content.Raw)
 
 	ctx := context.Background()
 	var githubClient *bitbucket.APIClient
 	githubClient = p.githubConnect()
 
+	// fmt.Printf("r.Body = %+v\n", r.Body)
+	// bodyBytes, err := ioutil.ReadAll(r.Body)
+	// bodyString := string(bodyBytes)
+	// fmt.Printf("bodyString = %+v\n", bodyString)
+
+	// fmt.Printf("r.Body = %+v\n", r.Body)
+	// fmt.Printf("r.Body.String() = %+v\n", r.Body.String())
+
 	// IssueComment RepositoriesUsernameRepoSlugIssuesIssueIdCommentsCommentIdGet(ctx, commentId, username, repoSlug, issueId)
 	comment, _, err := githubClient.IssueTrackerApi.RepositoriesUsernameRepoSlugIssuesIssueIdCommentsCommentIdGet(ctx, "51110066", "jfrerich", "mattermost-bitbucket-readme", "1")
+	repoInfo, _, err := githubClient.RepositoriesApi.RepositoriesUsernameGet(ctx, "jfrerich", nil)
+	fmt.Printf("repoInfo = %+v\n", repoInfo)
+	fmt.Printf("repoInfo = %+v\n", repoInfo.Values)
 	fmt.Printf("comment = %+v\n", comment)
 	fmt.Printf("comment.User = %+v\n", comment.User)
+	fmt.Printf("comment.Issue.ID = %+v\n", comment.Issue.Id)
+	fmt.Printf("comment.Issue = %+v\n", comment.Issue)
+	fmt.Printf("comment.User = %+v\n", comment.User.Username)
+	fmt.Printf("comment.Links = %+v\n", comment.Links)
 	fmt.Printf("comment.Content = %+v\n", comment.Content)
 	fmt.Printf("comment.Content.Raw = %+v\n", comment.Content.Raw)
 	fmt.Printf("err = %+v\n", err)
-
-	message := fmt.Sprintf("[\\[%s\\]](%s) New comment by [%s](%s) on [#%v %s]:\n\n%s",
-		"junk1", "junk2", "junk3", "junk4", "junk5", "junk6", "junk7")
-	//  repo.GetFullName(), repo.GetHTMLURL(), event.GetSender().GetLogin(), event.GetSender().GetHTMLURL(), event.GetIssue().GetNumber(), event.GetIssue().GetTitle(), body)
+	//
+	// message := fmt.Sprintf("[\\[%s\\]](%s) New comment by [%s](%s) on [#%v %s]:\n\n%s",
+	// 	"junk1", "junk2", comment.User.Username, comment.User.Username, comment.Issue.Id, comment.Issue.Title, comment.Content.Raw)
+	// repo.GetFullName(),
+	// repo.GetHTMLURL(),
+	// event.GetSender().GetLogin(),
+	// event.GetSender().GetHTMLURL(),
+	// event.GetIssue().GetNumber(),
+	// event.GetIssue().GetTitle(), body)
 
 	config := p.getConfiguration()
 	// 	repo := event.GetRepo()
