@@ -5,15 +5,18 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/hex"
+	// "encoding/json"
 	"fmt"
-	"io/ioutil"
+	// "io/ioutil"
 	"net/http"
+
 	"strings"
 
 	"github.com/google/go-github/github"
 	"github.com/mattermost/mattermost-server/mlog"
 	"github.com/mattermost/mattermost-server/model"
-	// "github.com/wbrefvem/go-bitbucket"
+	"github.com/wbrefvem/go-bitbucket"
+	bb_webhook "gopkg.in/go-playground/webhooks.v5/bitbucket"
 )
 
 func verifyWebhookSignature(secret []byte, signature string, body []byte) bool {
@@ -37,6 +40,7 @@ func signBody(secret, body []byte) []byte {
 }
 
 type GitHubEvent struct {
+	// Repo *github.Repository `json:"repository,omitempty"`
 	Repo *github.Repository `json:"repository,omitempty"`
 }
 
@@ -50,88 +54,280 @@ func ConvertPushEventRepositoryToRepository(pushRepo *github.PushEventRepository
 	}
 }
 
+// func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
+// 	fmt.Println("----- #### BB webhook.handleWebhook -----")
+// 	fmt.Printf("----- #### BB webhook.handleWebhook \nr = %+v\n", r)
+// 	config := bitbucket.NewConfiguration()
+// 	client := bitbucket.NewAPIClient(config)
+// 	fmt.Printf("config = %+v\n", config)
+// 	fmt.Printf("client = %+v\n", client)
+//
+// 	ctx := context.Background()
+// 	fmt.Printf("ctx = %+v\n", ctx)
+// 	signature := r.Header.Get("X-Hub-Signature")
+// 	fmt.Printf("signature  = %+v\n", signature)
+//
+// 	body, err := ioutil.ReadAll(r.Body)
+// 	fmt.Printf("body = %+v\n", string(body))
+// 	if err != nil {
+// 		http.Error(w, "Bad request body", http.StatusBadRequest)
+// 		return
+// 	}
+//
+// 	fmt.Println("----- #### BB webhook.handleWebhook -----")
+//
+// 	hook, _ := bb_webhook.New()
+// 	payload, err := hook.Parse(r, bb_webhook.IssueCommentCreatedEvent)
+// 	fmt.Printf("---------payload = %+v\n\n\n", payload)
+//
+// 	switch payload.(type) {
+// 	case bb_webhook.IssueCommentCreatedPayload:
+// 		bbissue := payload.(bb_webhook.IssueCommentCreatedPayload)
+// 		fmt.Printf("\n\n-------- IN HERE release = %+v\n\n", bbissue)
+// 		// postsomething()
+// 	}
+//
+// 	var repo *github.Repository
+// 	var handler func()
+//
+// 	event, err := github.ParseWebHook(github.WebHookType(r), body)
+// 	switch event := event.(type) {
+// 	case *github.IssueCommentEvent:
+// 		repo = event.GetRepo()
+// 		fmt.Println("--- we are also in here")
+// 		handler = func() {
+// 			p.postIssueCommentEvent(event)
+// 		}
+// 	}
+//
+// 	fmt.Println("--- we got here ---")
+// 	fmt.Printf("repo = %+v\n", repo)
+// 	if repo == nil || handler == nil {
+// 		return
+// 	}
+//
+// 	handler()
+// }
+
+// works
+// func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
+// 	fmt.Println("----- #### BB webhook.handleWebhook -----")
+// 	// config := p.getConfiguration()
+// 	fmt.Printf("----- #### BB webhook.handleWebhook \nr = %+v\n", r)
+// 	config := bitbucket.NewConfiguration()
+// 	client := bitbucket.NewAPIClient(config)
+// 	fmt.Printf("config = %+v\n", config)
+// 	fmt.Printf("client = %+v\n", client)
+//
+// 	hook, _ := bb_webhook.New()
+// 	payload, err := hook.Parse(r, bb_webhook.IssueCommentCreatedEvent)
+// 	fmt.Printf("---------payload = %+v\n\n\n", payload)
+//
+// 	switch payload.(type) {
+// 	case bb_webhook.IssueCommentCreatedPayload:
+// 		bb_issue := payload.(bb_webhook.IssueCommentCreatedPayload)
+// 		fmt.Printf("\n\n-------- IN HERE release = %+v\n\n", bb_issue)
+// 		// 	// repo = event.GetRepo()
+// 		// 	fmt.Println("---- WE ARE IN HERE!! -----")
+// 		// 	handler = func() {
+// 		// 		p.printsomething()
+// 		// 		// p.postIssueCommentEvent(bb_webhook.IssueCommentCreatedEvent)
+// 		// 		// p.handleCommentMentionNotification(event)
+// 		// 		// p.handleCommentAuthorNotification(event)
+// 		// 	}
+// 	}
+//
+// 	// switch event := event.(type) {
+//
+// 	// switch payload.(type) {
+// 	// case *bb_webhook.IssueCommentCreatedEvent:
+// 	// 	release := payload.(bb_webhook.IssueCommentCreatedEvent)
+// 	// 	// Do whatever you want from here...
+// 	// 	// 		fmt.Printf("%+v", release)
+// 	// 	// 	}
+// 	// }
+//
+// 	// fmt.Printf("r = %+v\n", r)
+// 	// fmt.Printf("r.Body = %+v\n", r.Body)
+// 	ctx := context.Background()
+// 	fmt.Printf("ctx = %+v\n", ctx)
+// 	// events := webhooksapi.HookEventsGet(ctx)
+// 	// subjecttypes, resps, err := client.WebhooksApi.HookEventsGet(ctx)
+// 	// fmt.Printf("resps = %+v\n", resps)
+// 	// fmt.Printf("subjecttypes = %+v\n", subjecttypes)
+// 	// fmt.Printf("err = %+v\n", err)
+//
+// 	signature := r.Header.Get("X-Hub-Signature")
+// 	fmt.Printf("signature  = %+v\n", signature)
+//
+// 	body, err := ioutil.ReadAll(r.Body)
+// 	fmt.Printf("body = %+v\n", string(body))
+// 	if err != nil {
+// 		http.Error(w, "Bad request body", http.StatusBadRequest)
+// 		return
+// 	}
+//
+// 	//
+// 	data := make(map[string]interface{})
+//
+// 	if err := json.Unmarshal(body, &data); err != nil {
+// 		panic(err)
+// 	}
+//
+// 	// fmt.Printf("data = %+v\n\n", data)
+// 	// fmt.Printf("data comment= %+v\n\n", data["comment"])
+// 	fmt.Printf("data comment type= %+v\n\n", data["comment"].(map[string]interface{})["type"])
+// 	// event_value := data["comment"].(map[string]interface{})["type"]
+//
+// 	// if !verifyWebhookSignature([]byte(config.WebhookSecret), signature, body) {
+// 	// 	http.Error(w, "Not authorized", http.StatusUnauthorized)
+// 	// 	return
+// 	// }
+//
+// 	event, err := github.ParseWebHook(github.WebHookType(r), body)
+// 	// event, err := github.ParseWebHook(github.WebHookType(r), body)
+// 	// fmt.Printf("----- BB WebHookType.handleWebhook\n -> event = %+v\n", event_value)
+// 	if err != nil {
+// 		mlog.Error(err.Error())
+// 		return
+// 	}
+//
+// 	fmt.Println("----- #### BB webhook.handleWebhook -----")
+//
+// 	var repo *github.Repository
+// 	var handler func()
+//
+// 	switch event := event.(type) {
+// 	case *github.PullRequestEvent:
+// 		repo = event.GetRepo()
+// 		handler = func() {
+// 			p.postPullRequestEvent(event)
+// 			p.handlePullRequestNotification(event)
+// 		}
+// 	case *github.IssuesEvent:
+// 		repo = event.GetRepo()
+// 		handler = func() {
+// 			p.postIssueEvent(event)
+// 			p.handleIssueNotification(event)
+// 		}
+// 	case *github.IssueCommentEvent:
+// 		repo = event.GetRepo()
+// 		handler = func() {
+// 			p.postIssueCommentEvent(event)
+// 			p.handleCommentMentionNotification(event)
+// 			p.handleCommentAuthorNotification(event)
+// 		}
+// 	case *github.PullRequestReviewEvent:
+// 		repo = event.GetRepo()
+// 		handler = func() {
+// 			p.postPullRequestReviewEvent(event)
+// 			p.handlePullRequestReviewNotification(event)
+// 		}
+// 	case *github.PullRequestReviewCommentEvent:
+// 		repo = event.GetRepo()
+// 		handler = func() {
+// 			p.postPullRequestReviewCommentEvent(event)
+// 		}
+// 	case *github.PushEvent:
+// 		repo = ConvertPushEventRepositoryToRepository(event.GetRepo())
+// 		handler = func() {
+// 			p.postPushEvent(event)
+// 		}
+// 	case *github.CreateEvent:
+// 		repo = event.GetRepo()
+// 		handler = func() {
+// 			p.postCreateEvent(event)
+// 		}
+// 	case *github.DeleteEvent:
+// 		repo = event.GetRepo()
+// 		handler = func() {
+// 			p.postDeleteEvent(event)
+// 		}
+// 	}
+//
+// 	if repo == nil || handler == nil {
+// 		return
+// 	}
+//
+// 	// if repo.GetPrivate() && !config.EnablePrivateRepo {
+// 	// 	return
+// 	// }
+//
+// 	handler()
+// }
+
 func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
-	config := p.getConfiguration()
+	fmt.Println("----- #### BB webhook.handleWebhook -----")
+	// config := p.getConfiguration()
+	fmt.Printf("----- #### BB webhook.handleWebhook \nr = %+v\n", r)
+	config := bitbucket.NewConfiguration()
+	client := bitbucket.NewAPIClient(config)
+	fmt.Printf("client = %+v\n", client)
 
-	signature := r.Header.Get("X-Hub-Signature")
+	hook, _ := bb_webhook.New()
+	payload, err := hook.Parse(r, bb_webhook.IssueCommentCreatedEvent)
+	fmt.Printf("---------payload = %+v\n\n\n", payload)
 
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Bad request body", http.StatusBadRequest)
-		return
+	switch payload.(type) {
+	case bb_webhook.IssueCommentCreatedPayload:
+		bb_issue := payload.(bb_webhook.IssueCommentCreatedPayload)
+		fmt.Printf("\n\n-------- IN HERE release = %+v\n\n", bb_issue)
+		p.something()
 	}
 
-	if !verifyWebhookSignature([]byte(config.WebhookSecret), signature, body) {
-		http.Error(w, "Not authorized", http.StatusUnauthorized)
-		return
-	}
-
-	event, err := github.ParseWebHook(github.WebHookType(r), body)
 	if err != nil {
 		mlog.Error(err.Error())
 		return
 	}
 
-	var repo *github.Repository
-	var handler func()
+	fmt.Println("----- #### BB webhook.handleWebhook -----")
 
-	switch event := event.(type) {
-	case *github.PullRequestEvent:
-		repo = event.GetRepo()
-		handler = func() {
-			p.postPullRequestEvent(event)
-			p.handlePullRequestNotification(event)
-		}
-	case *github.IssuesEvent:
-		repo = event.GetRepo()
-		handler = func() {
-			p.postIssueEvent(event)
-			p.handleIssueNotification(event)
-		}
-	case *github.IssueCommentEvent:
-		repo = event.GetRepo()
-		handler = func() {
-			p.postIssueCommentEvent(event)
-			p.handleCommentMentionNotification(event)
-			p.handleCommentAuthorNotification(event)
-		}
-	case *github.PullRequestReviewEvent:
-		repo = event.GetRepo()
-		handler = func() {
-			p.postPullRequestReviewEvent(event)
-			p.handlePullRequestReviewNotification(event)
-		}
-	case *github.PullRequestReviewCommentEvent:
-		repo = event.GetRepo()
-		handler = func() {
-			p.postPullRequestReviewCommentEvent(event)
-		}
-	case *github.PushEvent:
-		repo = ConvertPushEventRepositoryToRepository(event.GetRepo())
-		handler = func() {
-			p.postPushEvent(event)
-		}
-	case *github.CreateEvent:
-		repo = event.GetRepo()
-		handler = func() {
-			p.postCreateEvent(event)
-		}
-	case *github.DeleteEvent:
-		repo = event.GetRepo()
-		handler = func() {
-			p.postDeleteEvent(event)
-		}
-	}
+}
 
-	if repo == nil || handler == nil {
-		return
-	}
+func (p *Plugin) something() {
+	fmt.Println("_we made it_")
+	// config := p.getConfiguration()
+	// repo := event.GetRepo()
 
-	if repo.GetPrivate() && !config.EnablePrivateRepo {
-		return
-	}
+	// subs := p.GetSubscribedChannelsForRepository(repo)
+	// if subs == nil || len(subs) == 0 {
+	// 	return
+	// }
 
-	handler()
+	// userID := ""
+	// if user, err := p.API.GetUserByUsername(config.Username); err != nil {
+	// 	mlog.Error(err.Error())
+	// 	return
+	// } else {
+	// 	userID = user.Id
+	// }
+
+	// 	newPRMessage := fmt.Sprintf(`
+	// ####
+	// ##### [)
+	// #new-pull-request by []() on []()
+	// `)
+	//
+	// 	post := &model.Post{
+	// 		UserId: userID,
+	// 		Type:   "custom_git_pr",
+	// 		Props: map[string]interface{}{
+	// 			"from_webhook":      "true",
+	// 			"override_username": GITHUB_USERNAME,
+	// 			"override_icon_url": GITHUB_ICON_URL,
+	// 		},
+	// 	}
+	//
+	// 	for _, sub := range subs {
+	//
+	// 		post.Message = newPRMessage
+	//
+	// 		post.ChannelId = sub.ChannelID
+	// 		if _, err := p.API.CreatePost(post); err != nil {
+	// 			mlog.Error(err.Error())
+	// 		}
+	// 	}
+
 }
 
 func (p *Plugin) permissionToRepo(userID string, ownerAndRepo string) bool {

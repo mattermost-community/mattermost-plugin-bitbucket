@@ -161,6 +161,7 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 	githubClient := p.githubConnect(*tok)
 	// gitUser, _, err := githubClient.Users.Get(ctx, "")
 	gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(ctx, "jfrerich")
+	username := gitUser.Username
 	// gitUser, _, err := githubClient.UsersApi.UsersUsernameGet("5a261f58e894cb132188e800", "")
 	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  \n -> gitUser = %+v\n -- >", gitUser)
 	// fmt.Println(githubClient.UsersApi.)
@@ -174,7 +175,7 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 		UserID: userID,
 		Token:  tok,
 		// GitHubUsername: gitUser.GetLogin(),
-		GitHubUsername: "jfrerich",
+		GitHubUsername: username,
 		LastToDoPostAt: model.GetMillis(),
 		Settings: &UserSettings{
 			SidebarButtons: SETTING_BUTTONS_TEAM,
@@ -196,14 +197,14 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Post intro post
-	message := fmt.Sprintf("#### Welcome to the Mattermost GitHub Plugin!\n"+
-		"You've connected your Mattermost account to [%s](%s) on GitHub. Read about the features of this plugin below:\n\n"+
+	message := fmt.Sprintf("#### Welcome to the Mattermost Bitbucket Plugin!\n"+
+		"You've connected your Mattermost account to [%s](%s) on Bitbucket. Read about the features of this plugin below:\n\n"+
 		"##### Daily Reminders\n"+
 		"The first time you log in each day, you will get a post right here letting you know what messages you need to read and what pull requests are awaiting your review.\n"+
-		"Turn off reminders with `/github settings reminders off`.\n\n"+
+		"Turn off reminders with `/bitbucket settings reminders off`.\n\n"+
 		"##### Notifications\n"+
 		"When someone mentions you, requests your review, comments on or modifies one of your pull requests/issues, or assigns you, you'll get a post here about it.\n"+
-		"Turn off notifications with `/github settings notifications off`.\n\n"+
+		"Turn off notifications with `/bitbucket settings notifications off`.\n\n"+
 		"##### Sidebar Buttons\n"+
 		"Check out the buttons in the left-hand sidebar of Mattermost.\n"+
 		"* The first button tells you how many pull requests you have submitted.\n"+

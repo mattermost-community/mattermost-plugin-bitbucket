@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
+	// "github.com/wbrefvem/go-bitbucket"
 )
 
 // configuration captures the plugin's external configuration as exposed in the Mattermost server
@@ -105,6 +106,7 @@ func (p *Plugin) setConfiguration(configuration *configuration) {
 func (p *Plugin) OnConfigurationChange() error {
 	fmt.Println("----- #### BB configuration.OnConfigurationChange -----")
 	var configuration = new(configuration)
+	// var configuration = bitbucket.NewConfiguration()
 
 	// Load the public configuration fields from the Mattermost server configuration.
 	if err := p.API.LoadPluginConfiguration(configuration); err != nil {
