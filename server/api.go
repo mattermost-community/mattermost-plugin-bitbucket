@@ -13,7 +13,8 @@ import (
 	"github.com/mattermost/mattermost-server/mlog"
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/plugin"
-	"github.com/wbrefvem/go-bitbucket"
+	// "github.com/wbrefvem/go-bitbucket"
+	// "github.com/wbrefvem/go-bitbucket"
 
 	"golang.org/x/oauth2"
 )
@@ -37,7 +38,7 @@ func writeAPIError(w http.ResponseWriter, err *APIErrorResponse) {
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
-	fmt.Println("----- #### BB ServerHTTP -----")
+	// fmt.Println("----- #### BB api.ServerHTTP -----")
 	config := p.getConfiguration()
 
 	if err := config.IsValid(); err != nil {
@@ -49,10 +50,10 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 
 	switch path := r.URL.Path; path {
 	case "/webhook":
-		fmt.Printf("----- BB *** api.ServeHttp *** /webhook -----")
+		fmt.Printf("----- BB api.ServeHttp *** /webhook -----")
 		p.handleWebhook(w, r)
 	case "/oauth/connect":
-		fmt.Printf("----- BB *** api.ServeHttp *** /oauth/connect -----")
+		fmt.Printf("----- BB api.ServeHttp *** /oauth/connect -----")
 		p.connectUserToGitHub(w, r)
 	case "/oauth/complete":
 		fmt.Printf("----- BB *** api.ServeHttp *** /oauth/complete -----")
@@ -91,9 +92,8 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 }
 
 func (p *Plugin) connectUserToGitHub(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("----- #### BB api.connectUserToGitHub -----")
 	userID := r.Header.Get("Mattermost-User-ID")
-	fmt.Printf("----- #### BB api.ConnectUserToGitHub \n -> userID = %+v\n", userID)
+	fmt.Printf("----- #### BB api.ConnectUserToGitHub  -> userID = %+v\n", userID)
 	if userID == "" {
 		http.Error(w, "Not authorized", http.StatusUnauthorized)
 		return
@@ -105,25 +105,22 @@ func (p *Plugin) connectUserToGitHub(w http.ResponseWriter, r *http.Request) {
 
 	p.API.KVSet(state, []byte(state))
 
-	fmt.Println("----- BB api.connectUserToGitHub state -----", state)
+	// fmt.Println("----- BB api.connectUserToGitHub  ->  state = ", state)
 
 	url := conf.AuthCodeURL(state, oauth2.AccessTypeOffline)
 
-	fmt.Println("----- BB api.connectUserToGitHub url -----", url)
+	fmt.Println("----- BB api.connectUserToGitHub  ->  url = ", url)
 
 	http.Redirect(w, r, url, http.StatusFound)
 }
 
 func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Request) {
 
-	fmt.Println("----- #### BB api.completeConnectUserToGitHub -----")
-
-	// config := p.getConfiguration()
-	config_bb := bitbucket.NewConfiguration()
+	config := p.getConfiguration()
 	//TODO
 
 	ctx := context.Background()
-	fmt.Printf("----- #### BB api.completeConnectUserToGitHub \n -> ctx = %+v\n", ctx)
+	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> ctx = %+v\n", ctx)
 	conf := p.getOAuthConfig()
 
 	code := r.URL.Query().Get("code")
@@ -132,9 +129,9 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	fmt.Printf("----- #### BB api.completeConnectUserToGitHub \n -> r.URL.Query() = %+v\n", r.URL.Query())
+	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> r.URL.Query() = %+v\n", r.URL.Query())
 	state := r.URL.Query().Get("state")
-	fmt.Printf("----- #### BB api.completeConnectUserToGitHub \n -> state = %+v\n", state)
+	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> state = %+v\n", state)
 
 	if storedState, err := p.API.KVGet(state); err != nil {
 		fmt.Println(err.Error())
@@ -146,24 +143,26 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 	}
 
 	userID := strings.Split(state, "_")[1]
-	fmt.Printf("----- #### BB api.completeConnectUserToGitHub \n -> userID = %+v\n", userID)
+	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> userID = %+v\n", userID)
 
 	p.API.KVDelete(state)
 
 	tok, err := conf.Exchange(ctx, code)
-	fmt.Printf("----- #### GH api.completeConnectUserToGitHub  \n -> tok = %+v\n -- >", tok)
+	fmt.Printf("----- #### BB api.completeConnectUserToGitHub   -> tok = %+v\n -- >", tok)
 	if err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	githubClient := p.githubConnect()
+	githubClient := p.githubConnect(*tok)
+	fmt.Printf("githubClient = %+v\n", githubClient)
 	// gitUser, _, err := githubClient.Users.Get(ctx, "")
+	fmt.Println("----- #### BB api.completeConnectUserToGitHub --- gitUser jfrerich HARDCODED")
 	gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(ctx, "jfrerich")
-	username := gitUser.Username
+	// gitUser, _, err := githubClient.UsersApi.UserGet(ctx)
 	// gitUser, _, err := githubClient.UsersApi.UsersUsernameGet("5a261f58e894cb132188e800", "")
-	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  \n -> gitUser = %+v\n -- >", gitUser)
+	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> gitUser = %+v\n -- >", gitUser)
 	// fmt.Println(githubClient.UsersApi.)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -175,7 +174,7 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 		UserID: userID,
 		Token:  tok,
 		// GitHubUsername: gitUser.GetLogin(),
-		GitHubUsername: username,
+		GitHubUsername: gitUser.Username,
 		LastToDoPostAt: model.GetMillis(),
 		Settings: &UserSettings{
 			SidebarButtons: SETTING_BUTTONS_TEAM,
@@ -185,14 +184,15 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 		// AllowedPrivateRepos: config.EnablePrivateRepo,
 	}
 
+	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> userInfo = %+v\n", userInfo)
 	if err := p.storeGitHubUserInfo(userInfo); err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, "Unable to connect user to GitHub", http.StatusInternalServerError)
 		return
 	}
 
-	// if err := p.storeGitHubToUserIDMapping(gitUser.GetLogin(), userID); err != nil {
-	if err := p.storeGitHubToUserIDMapping("jfrerich", userID); err != nil {
+	//TODO - need methods for getting Username and Link
+	if err := p.storeGitHubToUserIDMapping(gitUser.Username, userID); err != nil {
 		fmt.Println(err.Error())
 	}
 
@@ -214,17 +214,18 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 		"* The fifth will refresh the numbers.\n\n"+
 		"Click on them!\n\n"+
 		"##### Slash Commands\n"+
-		// strings.Replace(COMMAND_HELP, "|", "`", -1), gitUser.GetLogin(), gitUser.GetHTMLURL())
-		strings.Replace(COMMAND_HELP, "|", "`", -1), "jfrerich", "junk")
+
+		//TODO - need methods for getting Username and Link
+		strings.Replace(COMMAND_HELP, "|", "`", -1), gitUser.Username, gitUser.Links.Html.Href)
+
 	p.CreateBotDMPost(userID, message, "custom_git_welcome")
 
-	fmt.Printf("config_bb = %+v\n", config_bb)
 	p.API.PublishWebSocketEvent(
 		WS_EVENT_CONNECT,
 		map[string]interface{}{
-			"connected":       true,
-			"github_username": userInfo.GitHubUsername,
-			// "github_client_id": config_bb.BitbucketOAuthClientID,
+			"connected":        true,
+			"github_username":  userInfo.GitHubUsername,
+			"github_client_id": config.BitbucketOAuthClientID,
 		},
 		&model.WebsocketBroadcast{UserId: userID},
 	)
@@ -242,7 +243,7 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 		</body>
 	</html>
 	`
-
+	fmt.Println("----- #### BB api.completeConnectUserToGitHub -------  IN HERE --------")
 	w.Header().Set("Content-Type", "text/html")
 	w.Write([]byte(html))
 }

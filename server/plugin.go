@@ -51,23 +51,23 @@ type Plugin struct {
 	configuration *configuration
 }
 
-// func (p *Plugin) githubConnect(token oauth2.Token) *github.Client {
-func (p *Plugin) githubConnect() *bitbucket.APIClient {
+func (p *Plugin) githubConnect(token oauth2.Token) *bitbucket.APIClient {
+	// func (p *Plugin) githubConnect() *bitbucket.APIClient {
 
-	fmt.Println("---- #### BB plugin.githubConnect -----")
-
-	// config := p.getConfiguration()
 	config_bb := bitbucket.NewConfiguration()
+	// config := p.getConfiguration()
 
-	// ctx := context.Background()
-	// ts := oauth2.StaticTokenSource(&token)
-	// tc := oauth2.NewClient(ctx, ts)
-	// fmt.Printf("----- 2. BB plugin.githubConnect tc %v-----", tc)
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(&token)
+	tc := oauth2.NewClient(ctx, ts)
+	fmt.Printf("----- 2. BB plugin.githubConnect  ->  tc = %v", tc)
 
 	// if len(config.EnterpriseBaseURL) == 0 || len(config.EnterpriseUploadURL) == 0 {
 	// return bitbucket.APIClient(tc)
 	// client := APIClient.New()
 	// client := bitbucket.APIClient.new()
+	// config := bitbucket.NewConfiguration()
+	// fmt.Printf("----- 2. BB plugin.githubConnect  ->  config = %v", config)
 	return bitbucket.NewAPIClient(config_bb)
 	// return bitbucket.NewAPIClient(*bitbucketClient)
 	// return github.NewClient(tc)
@@ -91,18 +91,15 @@ func (p *Plugin) githubConnect() *bitbucket.APIClient {
 
 func (p *Plugin) OnActivate() error {
 
-	fmt.Println("----- #### BB plugin.OnActivate -----")
 	config := p.getConfiguration()
-	fmt.Printf("----- BB plugin.OnActivate config = %+v -----\n", config)
-	fmt.Println("----- BB 2. plugin.OnActivate -----")
+	fmt.Printf("----- BB plugin.OnActivate  ->  config = %+v \n", config)
 
 	if err := config.IsValid(); err != nil {
 		return err
 	}
-	fmt.Println("----- BB 3. plugin.OnActivate -----")
 	p.API.RegisterCommand(getCommand())
 	user, err := p.API.GetUserByUsername(config.Username)
-	fmt.Printf("----- BB plugin.OnActivate BotUsername = %+v -----\n", user)
+	fmt.Printf("----- BB plugin.OnActivate  ->  BotUsername = %+v \n", user)
 	if err != nil {
 		mlog.Error(err.Error())
 		return fmt.Errorf("Unable to find user with configured username: %v", config.Username)
@@ -144,8 +141,8 @@ func (p *Plugin) getOAuthConfig() *oauth2.Config {
 	// fmt.Println("----- BB plugin.getOAuthconfig authURL.Path -----", authURL.Path)
 	// fmt.Println("----- BB plugin.getOAuthconfig tokenURL.Path -----", tokenURL.Path)
 	//
-	fmt.Println("----- BB plugin.getOAuthconfig authURL.string -----", authURL.String())
-	fmt.Println("----- BB plugin.getOAuthconfig tokenURL.string -----", tokenURL.String())
+	// fmt.Println("----- BB plugin.getOAuthconfig   ->  authURL.string =", authURL.String())
+	// fmt.Println("----- BB plugin.getOAuthconfig   ->  tokenURL.string", tokenURL.String())
 
 	repo := "public_repo"
 	if config.EnablePrivateRepo {
@@ -153,8 +150,9 @@ func (p *Plugin) getOAuthConfig() *oauth2.Config {
 		repo = "repo"
 	}
 
-	fmt.Println("----- BB plugin.getOAuthconfig repo -----", repo)
+	fmt.Println("----- BB plugin.getOAuthconfig  ->  repo =", repo)
 
+	fmt.Println("TODO -> check Scopes statement -> diffes from GH")
 	return &oauth2.Config{
 		ClientID:     config.BitbucketOAuthClientID,
 		ClientSecret: config.BitbucketOAuthClientSecret,
@@ -207,7 +205,7 @@ func (p *Plugin) storeGitHubUserInfo(info *GitHubUserInfo) error {
 func (p *Plugin) getGitHubUserInfo(userID string) (*GitHubUserInfo, *APIErrorResponse) {
 	config := p.getConfiguration()
 
-	fmt.Println("----- BB pluign.getGitHubUserInfo -----")
+	// fmt.Println("----- BB plugin.getGitHubUserInfo -----")
 	var userInfo GitHubUserInfo
 
 	if infoBytes, err := p.API.KVGet(userID + GITHUB_TOKEN_KEY); err != nil || infoBytes == nil {
@@ -217,6 +215,7 @@ func (p *Plugin) getGitHubUserInfo(userID string) (*GitHubUserInfo, *APIErrorRes
 	}
 
 	unencryptedToken, err := decrypt([]byte(config.EncryptionKey), userInfo.Token.AccessToken)
+	fmt.Printf("----- BB plugin.getGitHubUserInfo  -->  unencryptedToken = %+v\n", unencryptedToken)
 	if err != nil {
 		mlog.Error(err.Error())
 		return nil, &APIErrorResponse{ID: "", Message: "Unable to decrypt access token.", StatusCode: http.StatusInternalServerError}

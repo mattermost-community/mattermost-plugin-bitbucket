@@ -57,8 +57,7 @@ func getCommandResponse(responseType, text string) *model.CommandResponse {
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-	fmt.Println("----- #### BB command.ExecuteCommand")
-	fmt.Printf("----- BB command.ExecuteCommand \n\n --> args=%+v", args)
+	fmt.Printf("----- BB command.ExecuteCommand \n    --> args=%+v", args)
 	split := strings.Fields(args.Command)
 	command := split[0]
 	parameters := []string{}
@@ -77,23 +76,22 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	if action == "connect" {
 		fmt.Println("----- BB command.ExecuteCommand action=connect")
 		config := p.API.GetConfig()
-		fmt.Printf("config.ServiceSettings.SiteURL = %+v\n", *config.ServiceSettings.SiteURL)
+		// fmt.Printf("----- config.ServiceSettings.SiteURL = %+v\n", config.ServiceSettings.SiteURL)
 		if config.ServiceSettings.SiteURL == nil {
-			fmt.Println("----- BB 1. command.ExecuteCommand action=connect")
+			// fmt.Printf("----- ServiceSettings.SiteURL = %+v\n", config.ServiceSettings.SiteURL)
 			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error connecting to GitHub."), nil
 		}
-		fmt.Println("----- BB 2. command.ExecuteCommand action=connect")
 		resp := getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("[Click here to link your Bitbucket account.](%s/plugins/bitbucket/oauth/connect)", *config.ServiceSettings.SiteURL))
 		fmt.Printf("----- BB command.ExecuteCommand resp = %+v\n", resp)
 		return resp, nil
 	}
 
 	ctx := context.Background()
-	fmt.Printf("----- BB command.ExecuteCommand --> ctx = %+v\n", ctx)
+	fmt.Printf("----- BB command.ExecuteCommand --> \nctx = %+v\n", ctx)
 	var githubClient *bitbucket.APIClient
-	fmt.Printf("githubClient = %+v\n", githubClient)
 
 	info, apiErr := p.getGitHubUserInfo(args.UserId)
+	fmt.Printf("----- BB commnad.ExecuteCOmmand --> \ninfo = %+v\n", info)
 	if apiErr != nil {
 		text := "Unknown error."
 		if apiErr.ID == API_ERROR_ID_NOT_CONNECTED {
@@ -102,7 +100,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
 	}
 
-	githubClient = p.githubConnect()
+	githubClient = p.githubConnect(*info.Token)
 	// gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(ctx, "jfrerich")
 
 	switch action {
@@ -181,10 +179,10 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	case "me":
 		fmt.Printf("----- BB command.ExecuteCommand action=me")
 		// gitUser, _, err := githubClient.Users.Get(ctx, "")
-		// gitUser, _, err := githubClient.UsersApi.UxsersUsernameGet(ctx, "jfrerich")
-		// gitUser, _, err := githubClient.UsersApi.UserGet(ctx)
-		// gitUser, _, err := githubClient.UsersApi.UserGet(ctx)
-		gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(ctx, "jfrerich")
+		//
+		// gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(ctx, "jfrerich")
+		gitUser, _, err := githubClient.UsersApi.UserGet(ctx)
+		// fmt.Printf("----- BB command.ExecuteCommand ctx = %+v\n", ctx)
 		fmt.Printf("----- BB command.ExecuteCommand action=me\n\n gitUser -> %+v", gitUser)
 		avatar := gitUser.Links.Avatar.Href
 		html := gitUser.Links.Html.Href
