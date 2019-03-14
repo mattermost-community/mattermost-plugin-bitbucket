@@ -89,6 +89,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	ctx := context.Background()
 	fmt.Printf("----- BB command.ExecuteCommand --> \nctx = %+v\n", ctx)
 	var githubClient *bitbucket.APIClient
+	var auth context.Context
 
 	info, apiErr := p.getGitHubUserInfo(args.UserId)
 	fmt.Printf("----- BB commnad.ExecuteCOmmand --> \ninfo = %+v\n", info)
@@ -100,7 +101,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
 	}
 
-	githubClient = p.githubConnect(*info.Token)
+	githubClient, auth = p.githubConnect(*info.Token)
 	// gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(ctx, "jfrerich")
 
 	switch action {
@@ -109,10 +110,10 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 			/bitbucket subscribe jfrerich/mattermost-bitbucket-readme
 		*/
 		fmt.Println("----- BB command.ExecuteCommand [action=subscribe]")
-		config := bitbucket.NewConfiguration()
+		// config := bitbucket.NewConfiguration()
 		// config := p.getConfiguration()
 		features := "pulls,issues,creates,deletes"
-		fmt.Printf("config = %+v\n", config)
+		// fmt.Printf("config = %+v\n", config)
 		fmt.Printf("features = %+v\n", features)
 
 		txt := ""
@@ -180,7 +181,8 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		fmt.Printf("----- BB command.ExecuteCommand action=me")
 		// gitUser, _, err := githubClient.Users.Get(ctx, "")
 		//
-		gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(ctx, "jfrerich")
+		// gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(auth, "jfrerich")
+		gitUser, _, err := githubClient.UsersApi.UserGet(auth)
 		// gitUser, _, err := githubClient.UsersApi.UserGet(ctx)
 		// fmt.Printf("----- BB command.ExecuteCommand ctx = %+v\n", ctx)
 		fmt.Printf("----- BB command.ExecuteCommand action=me\n\n gitUser -> %+v", gitUser)

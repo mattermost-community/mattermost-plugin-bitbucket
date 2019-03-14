@@ -13,8 +13,7 @@ import (
 	"github.com/mattermost/mattermost-server/mlog"
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/plugin"
-	// "github.com/wbrefvem/go-bitbucket"
-	// "github.com/wbrefvem/go-bitbucket"
+	"github.com/wbrefvem/go-bitbucket"
 
 	"golang.org/x/oauth2"
 )
@@ -157,12 +156,13 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 	}
 
 	// connect to github API with authorization token
-	githubClient := p.githubConnect(*tok)
+	var githubClient *bitbucket.APIClient
+	var auth context.Context
+	fmt.Printf("auth = %+v\n", auth)
+
+	githubClient, auth = p.githubConnect(*tok)
 	fmt.Printf("githubClient = %+v\n", githubClient)
-	// gitUser, _, err := githubClient.Users.Get(ctx, "")
-	fmt.Println("----- #### BB api.completeConnectUserToGitHub --- gitUser jfrerich HARDCODED")
-	gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(ctx, "jfrerich")
-	// gitUser, _, err := githubClient.UsersApi.UsersUsernameGet("5a261f58e894cb132188e800", "")
+	gitUser, _, err := githubClient.UsersApi.UserGet(auth)
 	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> gitUser = %+v\n -- >", gitUser)
 	// fmt.Println(githubClient.UsersApi.)
 	if err != nil {

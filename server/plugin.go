@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"path"
 	"strings"
-	// "swagger"
 	"sync"
 
 	"github.com/mattermost/mattermost-server/mlog"
@@ -52,19 +51,30 @@ type Plugin struct {
 	configuration *configuration
 }
 
-func (p *Plugin) githubConnect(token oauth2.Token) *bitbucket.APIClient {
+// func (p *Plugin) githubConnect(token oauth2.Token) (*bitbucket.APIClient, *context.valueCtx) {
+func (p *Plugin) githubConnect(token oauth2.Token) (*bitbucket.APIClient, context.Context) {
 
 	// plugin configuration
-	config := p.getConfiguration()
-	fmt.Printf("----- BB plugin.githubConnect  ->  config = %v\n", config)
+	// config := p.getConfiguration()
+	// fmt.Println(reflect.TypeOf(config).String())
+	// fmt.Printf("auth = %+v\n", auth)
+
+	// fmt.Printf("----- BB plugin.githubConnect  ->  config = %v\n", config)
 
 	// get Oauth token source and client
-	ctx := context.Background()
+	// ctx := context.Background()
 	ts := oauth2.StaticTokenSource(&token)
-	tc := oauth2.NewClient(ctx, ts)
-	fmt.Printf("----- BB plugin.githubConnect  ->  &token = %v\n", &token)
-	fmt.Printf("----- BB plugin.githubConnect  ->  tc = %v\n", tc)
-	fmt.Printf("----- BB plugin.githubConnect  ->  ts = %v\n", ts)
+	// tc := oauth2.NewClient(ctx, ts)
+	// fmt.Printf("----- BB plugin.githubConnect  ->  &token = %v\n", &token)
+	// fmt.Printf("----- BB plugin.githubConnect  ->  tc = %v\n", tc)
+	// fmt.Printf("----- BB plugin.githubConnect  ->  ts = %v\n", ts)
+
+	// ---- setup Oauth context ----
+	auth := context.WithValue(oauth2.NoContext, bitbucket.ContextOAuth2, ts)
+	// auth := context.WithValue(context.Background(), bitbucket.ContextBasicAuth, bitbucket.BasicAuth{
+	// 	UserName: "jasonfrerich@yahoo.com",
+	// 	Password: "wrongpassword",
+	// })
 
 	// create config for bitbucket API
 	config_bb := bitbucket.NewConfiguration()
@@ -73,32 +83,28 @@ func (p *Plugin) githubConnect(token oauth2.Token) *bitbucket.APIClient {
 	new_client := bitbucket.NewAPIClient(config_bb)
 
 	// prove the bitbucket API client works
-	comment, _, err := new_client.IssueTrackerApi.RepositoriesUsernameRepoSlugIssuesIssueIdCommentsCommentIdGet(ctx, "51110066", "jfrerich", "mattermost-bitbucket-readme", "1")
-	// https: //bitbucket.org/jfrerich/solid/src/master/
-	fmt.Printf("----- 2. BB plugin.githubConnect  ->  comment = %+v\n", comment)
-	fmt.Printf("----- 2. BB plugin.githubConnect  ->  err = %+v\n", err)
+	// comment, _, err := new_client.IssueTrackerApi.RepositoriesUsernameRepoSlugIssuesIssueIdCommentsCommentIdGet(ctx, "51110066", "jfrerich", "mattermost-bitbucket-readme", "1")
+	// fmt.Printf("----- 2. BB plugin.githubConnect  ->  comment = %+v\n", comment)
+	// fmt.Printf("----- 2. BB plugin.githubConnect  ->  err = %+v\n", err)
+	//
+	// // ---- test bitbucket API with Oauth ----
+	// comment_w, _, err_w := new_client.RepositoriesApi.RepositoriesUsernameRepoSlugGet(auth, "jfrerich", "solid")
+	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> comment_w = %+v\n", comment_w)
+	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> err_w = %+v\n", err_w)
+	//
+	// // ---- test bitbucket API without Oauth ----
+	// comment_wo, _, err_wo := new_client.RepositoriesApi.RepositoriesUsernameRepoSlugGet(context.Background(), "jfrerich", "solid")
+	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> comment_wo = %+v\n", comment_wo)
+	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> err_wo = %+v\n", err_wo)
+	// // ---- test bitbucket API with Oauth ----
+	//
+	// gitUser2, _, err2 := new_client.UsersApi.UserGet(auth)
+	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> gitUser2 = %+v\n", gitUser2)
+	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> err2 = %+v\n", err2)
 
-	// ---- setup Oauth context ----
-	auth := context.WithValue(oauth2.NoContext, bitbucket.ContextOAuth2, ts)
-	fmt.Printf("auth = %+v\n", auth)
-
-	// ---- test bitbucket API without Oauth ----
-	comment_w, _, err_w := new_client.RepositoriesApi.RepositoriesUsernameRepoSlugGet(auth, "jfrerich", "solid")
-	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> comment_w = %+v\n", comment_w)
-	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> err_w = %+v\n", err_w)
-
-	// ---- test bitbucket API with Oauth ----
-	comment_wo, _, err_wo := new_client.RepositoriesApi.RepositoriesUsernameRepoSlugGet(auth, "jfrerich", "solid")
-	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> comment_wo = %+v\n", comment_wo)
-	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> err_wo = %+v\n", err_wo)
-	// ---- test bitbucket API with Oauth ----
-
-	gitUser2, _, err2 := new_client.UsersApi.UserGet(auth)
-	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> gitUser2 = %+v\n", gitUser2)
-	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> err2 = %+v\n", err2)
-
-	fmt.Printf("----- 2. BB plugin.githubConnect  ->  config_bb = %v", config_bb)
-	return bitbucket.NewAPIClient(config_bb)
+	// fmt.Printf("----- 2. BB plugin.githubConnect  ->  config_bb = %v", config_bb)
+	// TODO figure out how to add auth to client so dont' have to return it
+	return new_client, auth
 
 }
 
