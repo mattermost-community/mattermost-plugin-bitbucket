@@ -180,8 +180,8 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		fmt.Printf("----- BB command.ExecuteCommand action=me")
 		// gitUser, _, err := githubClient.Users.Get(ctx, "")
 		//
-		// gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(ctx, "jfrerich")
-		gitUser, _, err := githubClient.UsersApi.UserGet(ctx)
+		gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(ctx, "jfrerich")
+		// gitUser, _, err := githubClient.UsersApi.UserGet(ctx)
 		// fmt.Printf("----- BB command.ExecuteCommand ctx = %+v\n", ctx)
 		fmt.Printf("----- BB command.ExecuteCommand action=me\n\n gitUser -> %+v", gitUser)
 		avatar := gitUser.Links.Avatar.Href

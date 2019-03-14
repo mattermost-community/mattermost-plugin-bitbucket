@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	// "swagger"
 	"sync"
 
 	"github.com/mattermost/mattermost-server/mlog"
@@ -52,41 +53,53 @@ type Plugin struct {
 }
 
 func (p *Plugin) githubConnect(token oauth2.Token) *bitbucket.APIClient {
-	// func (p *Plugin) githubConnect() *bitbucket.APIClient {
 
-	config_bb := bitbucket.NewConfiguration()
-	// config := p.getConfiguration()
+	// plugin configuration
+	config := p.getConfiguration()
+	fmt.Printf("----- BB plugin.githubConnect  ->  config = %v\n", config)
 
+	// get Oauth token source and client
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(&token)
 	tc := oauth2.NewClient(ctx, ts)
-	fmt.Printf("----- 2. BB plugin.githubConnect  ->  tc = %v", tc)
+	fmt.Printf("----- BB plugin.githubConnect  ->  &token = %v\n", &token)
+	fmt.Printf("----- BB plugin.githubConnect  ->  tc = %v\n", tc)
+	fmt.Printf("----- BB plugin.githubConnect  ->  ts = %v\n", ts)
 
-	// if len(config.EnterpriseBaseURL) == 0 || len(config.EnterpriseUploadURL) == 0 {
-	// return bitbucket.APIClient(tc)
-	// client := APIClient.New()
-	// client := bitbucket.APIClient.new()
-	// config := bitbucket.NewConfiguration()
-	// fmt.Printf("----- 2. BB plugin.githubConnect  ->  config = %v", config)
+	// create config for bitbucket API
+	config_bb := bitbucket.NewConfiguration()
+
+	// create new bitbucket client API
+	new_client := bitbucket.NewAPIClient(config_bb)
+
+	// prove the bitbucket API client works
+	comment, _, err := new_client.IssueTrackerApi.RepositoriesUsernameRepoSlugIssuesIssueIdCommentsCommentIdGet(ctx, "51110066", "jfrerich", "mattermost-bitbucket-readme", "1")
+	// https: //bitbucket.org/jfrerich/solid/src/master/
+	fmt.Printf("----- 2. BB plugin.githubConnect  ->  comment = %+v\n", comment)
+	fmt.Printf("----- 2. BB plugin.githubConnect  ->  err = %+v\n", err)
+
+	// ---- setup Oauth context ----
+	auth := context.WithValue(oauth2.NoContext, bitbucket.ContextOAuth2, ts)
+	fmt.Printf("auth = %+v\n", auth)
+
+	// ---- test bitbucket API without Oauth ----
+	comment_w, _, err_w := new_client.RepositoriesApi.RepositoriesUsernameRepoSlugGet(auth, "jfrerich", "solid")
+	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> comment_w = %+v\n", comment_w)
+	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> err_w = %+v\n", err_w)
+
+	// ---- test bitbucket API with Oauth ----
+	comment_wo, _, err_wo := new_client.RepositoriesApi.RepositoriesUsernameRepoSlugGet(auth, "jfrerich", "solid")
+	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> comment_wo = %+v\n", comment_wo)
+	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> err_wo = %+v\n", err_wo)
+	// ---- test bitbucket API with Oauth ----
+
+	gitUser2, _, err2 := new_client.UsersApi.UserGet(auth)
+	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> gitUser2 = %+v\n", gitUser2)
+	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> err2 = %+v\n", err2)
+
+	fmt.Printf("----- 2. BB plugin.githubConnect  ->  config_bb = %v", config_bb)
 	return bitbucket.NewAPIClient(config_bb)
-	// return bitbucket.NewAPIClient(*bitbucketClient)
-	// return github.NewClient(tc)
-	// }
-	// fmt.Println("----- 3. BB plugin.githubConnect -----")
-	//
-	// baseURL, _ := url.Parse(config.EnterpriseBaseURL)
-	// baseURL.Path = path.Join(baseURL.Path, "api", "v3")
-	//
-	// uploadURL, _ := url.Parse(config.EnterpriseUploadURL)
-	// uploadURL.Path = path.Join(uploadURL.Path, "api", "v3")
-	//
-	// client, err := github.NewEnterpriseClient(baseURL.String(), uploadURL.String(), tc)
-	//
-	// if err != nil {
-	// 	mlog.Error(err.Error())
-	// 	return github.NewClient(tc)
-	// }
-	// return client
+
 }
 
 func (p *Plugin) OnActivate() error {
@@ -111,14 +124,7 @@ func (p *Plugin) OnActivate() error {
 
 func (p *Plugin) getOAuthConfig() *oauth2.Config {
 
-	fmt.Println("----- #### BB plugin.getOAuthconfig -----")
-
 	config := p.getConfiguration()
-
-	// authURL, _ := url.Parse("https://github.com/")
-	// tokenURL, _ := url.Parse("https://github.com/")
-
-	// https: //bitbucket.org/site/oauth2/authorize
 
 	authURL, _ := url.Parse("https://bitbucket.org/")
 	tokenURL, _ := url.Parse("https://bitbucket.org/")
@@ -128,21 +134,8 @@ func (p *Plugin) getOAuthConfig() *oauth2.Config {
 		tokenURL, _ = url.Parse(config.EnterpriseBaseURL)
 	}
 
-	// fmt.Println("----- BB plugin.getOAuthconfig authURL -----", authURL)
-	// fmt.Println("----- BB plugin.getOAuthconfig tokenURL -----", tokenURL)
-
-	// authURL.Path = path.Join(authURL.Path, "login", "oauth", "authorize")
-	// tokenURL.Path = path.Join(tokenURL.Path, "login", "oauth", "access_token")
-
 	authURL.Path = path.Join(authURL.Path, "site", "oauth2", "authorize")
 	tokenURL.Path = path.Join(tokenURL.Path, "site", "oauth2", "access_token")
-
-	// fmt.Println("----- BB plugin.getOAuthconfig config.EnterpriseBaseURL -----", config.EnterpriseBaseURL)
-	// fmt.Println("----- BB plugin.getOAuthconfig authURL.Path -----", authURL.Path)
-	// fmt.Println("----- BB plugin.getOAuthconfig tokenURL.Path -----", tokenURL.Path)
-	//
-	// fmt.Println("----- BB plugin.getOAuthconfig   ->  authURL.string =", authURL.String())
-	// fmt.Println("----- BB plugin.getOAuthconfig   ->  tokenURL.string", tokenURL.String())
 
 	repo := "public_repo"
 	if config.EnablePrivateRepo {

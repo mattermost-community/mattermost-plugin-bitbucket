@@ -109,6 +109,7 @@ func (p *Plugin) connectUserToGitHub(w http.ResponseWriter, r *http.Request) {
 
 	url := conf.AuthCodeURL(state, oauth2.AccessTypeOffline)
 
+	// direct user to authorization website
 	fmt.Println("----- BB api.connectUserToGitHub  ->  url = ", url)
 
 	http.Redirect(w, r, url, http.StatusFound)
@@ -155,12 +156,12 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// connect to github API with authorization token
 	githubClient := p.githubConnect(*tok)
 	fmt.Printf("githubClient = %+v\n", githubClient)
 	// gitUser, _, err := githubClient.Users.Get(ctx, "")
 	fmt.Println("----- #### BB api.completeConnectUserToGitHub --- gitUser jfrerich HARDCODED")
 	gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(ctx, "jfrerich")
-	// gitUser, _, err := githubClient.UsersApi.UserGet(ctx)
 	// gitUser, _, err := githubClient.UsersApi.UsersUsernameGet("5a261f58e894cb132188e800", "")
 	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> gitUser = %+v\n -- >", gitUser)
 	// fmt.Println(githubClient.UsersApi.)
