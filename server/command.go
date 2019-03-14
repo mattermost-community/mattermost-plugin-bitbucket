@@ -8,7 +8,6 @@ import (
 	// "github.com/mattermost/mattermost-server/mlog"
 	"github.com/mattermost/mattermost-server/plugin"
 
-	// "github.com/google/go-github/github"
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/wbrefvem/go-bitbucket"
 )
@@ -102,18 +101,11 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	}
 
 	githubClient, auth = p.githubConnect(*info.Token)
-	// gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(ctx, "jfrerich")
 
 	switch action {
 	case "subscribe":
-		/*
-			/bitbucket subscribe jfrerich/mattermost-bitbucket-readme
-		*/
 		fmt.Println("----- BB command.ExecuteCommand [action=subscribe]")
-		// config := bitbucket.NewConfiguration()
-		// config := p.getConfiguration()
 		features := "pulls,issues,creates,deletes"
-		// fmt.Printf("config = %+v\n", config)
 		fmt.Printf("features = %+v\n", features)
 
 		txt := ""
@@ -151,7 +143,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, err.Error()), nil
 		// }
 
-		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Successfully subscribed to %s.", "jfrerich repo")), nil
+		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Successfully subscribed to %s.", "repo  TODO")), nil
 		// return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Successfully subscribed to %s.", repo)), nil
 	case "unsubscribe":
 		// if len(parameters) == 0 {
@@ -178,14 +170,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		// }
 		// return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
 	case "me":
-		fmt.Printf("----- BB command.ExecuteCommand action=me")
-		// gitUser, _, err := githubClient.Users.Get(ctx, "")
-		//
-		// gitUser, _, err := githubClient.UsersApi.UsersUsernameGet(auth, "jfrerich")
 		gitUser, _, err := githubClient.UsersApi.UserGet(auth)
-		// gitUser, _, err := githubClient.UsersApi.UserGet(ctx)
-		// fmt.Printf("----- BB command.ExecuteCommand ctx = %+v\n", ctx)
-		fmt.Printf("----- BB command.ExecuteCommand action=me\n\n gitUser -> %+v", gitUser)
 		avatar := gitUser.Links.Avatar.Href
 		html := gitUser.Links.Html.Href
 		username := gitUser.Username
@@ -193,7 +178,6 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error getting your GitHub profile."), nil
 		}
 
-		// text := fmt.Sprintf("You are connected to GitHub as:\n# [![image](%s =40x40)](%s) [%s](%s)", gitUser.AvatarGet(), gitUser.GetHTMLURL(), gitUser.GetLogin(), gitUser.GetHTMLURL())
 		text := fmt.Sprintf("You are connected to Bitbucket as:\n# [![image](%s =40x40)](%s) [%s](%s)", avatar, html, username, html)
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
 	case "help":

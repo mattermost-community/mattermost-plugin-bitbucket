@@ -40,10 +40,6 @@ func (c *configuration) Clone() *configuration {
 
 // IsValid checks if all needed fields are set.
 func (c *configuration) IsValid() error {
-	// fmt.Printf("----- #### BB configuration.IsValid  ->  c.BitbucketOAuthClientID = %+v\n", c.BitbucketOAuthClientID)
-	// fmt.Printf("----- #### BB configuration.IsValid  ->  c.BitbucketOAuthClientSecret = %+v\n", c.BitbucketOAuthClientSecret)
-	// fmt.Printf("----- #### BB configuration.IsValid  ->  c.EncryptionKey = %+v\n", c.EncryptionKey)
-	// fmt.Printf("----- #### BB configuration.IsValid  ->  c.Username = %+v\n", c.Username)
 	if c.BitbucketOAuthClientID == "" {
 		return fmt.Errorf("Must have a github oauth client id")
 	}
@@ -67,16 +63,13 @@ func (c *configuration) IsValid() error {
 // concurrently. The active configuration may change underneath the client of this method, but
 // the struct returned by this API call is considered immutable.
 func (p *Plugin) getConfiguration() *configuration {
-	// fmt.Println("----- #### BB configuration.getConfiguration -----")
 	p.configurationLock.RLock()
 	defer p.configurationLock.RUnlock()
 
 	if p.configuration == nil {
-		fmt.Println("----- #### BB configuration.getConfiguration p.configuration = nil-----")
 		return &configuration{}
 	}
 
-	fmt.Printf("----- #### BB configuration.getConfiguration p.configuration = %v\n", p.configuration)
 	return p.configuration
 }
 
@@ -90,7 +83,6 @@ func (p *Plugin) getConfiguration() *configuration {
 // certainly means that the configuration was modified without being cloned and may result in
 // an unsafe access.
 func (p *Plugin) setConfiguration(configuration *configuration) {
-	fmt.Println("----- #### BB configuration.setConfiguration -----")
 	p.configurationLock.Lock()
 	defer p.configurationLock.Unlock()
 
@@ -110,7 +102,6 @@ func (p *Plugin) setConfiguration(configuration *configuration) {
 
 // OnConfigurationChange is invoked when configuration changes may have been made.
 func (p *Plugin) OnConfigurationChange() error {
-	fmt.Println("----- #### BB configuration.OnConfigurationChange -----")
 	var configuration = new(configuration)
 	// var configuration = bitbucket.NewConfiguration()
 

@@ -54,27 +54,13 @@ type Plugin struct {
 // func (p *Plugin) githubConnect(token oauth2.Token) (*bitbucket.APIClient, *context.valueCtx) {
 func (p *Plugin) githubConnect(token oauth2.Token) (*bitbucket.APIClient, context.Context) {
 
-	// plugin configuration
 	// config := p.getConfiguration()
-	// fmt.Println(reflect.TypeOf(config).String())
-	// fmt.Printf("auth = %+v\n", auth)
-
-	// fmt.Printf("----- BB plugin.githubConnect  ->  config = %v\n", config)
 
 	// get Oauth token source and client
-	// ctx := context.Background()
 	ts := oauth2.StaticTokenSource(&token)
-	// tc := oauth2.NewClient(ctx, ts)
-	// fmt.Printf("----- BB plugin.githubConnect  ->  &token = %v\n", &token)
-	// fmt.Printf("----- BB plugin.githubConnect  ->  tc = %v\n", tc)
-	// fmt.Printf("----- BB plugin.githubConnect  ->  ts = %v\n", ts)
 
-	// ---- setup Oauth context ----
+	// setup Oauth context
 	auth := context.WithValue(oauth2.NoContext, bitbucket.ContextOAuth2, ts)
-	// auth := context.WithValue(context.Background(), bitbucket.ContextBasicAuth, bitbucket.BasicAuth{
-	// 	UserName: "jasonfrerich@yahoo.com",
-	// 	Password: "wrongpassword",
-	// })
 
 	// create config for bitbucket API
 	config_bb := bitbucket.NewConfiguration()
@@ -82,27 +68,6 @@ func (p *Plugin) githubConnect(token oauth2.Token) (*bitbucket.APIClient, contex
 	// create new bitbucket client API
 	new_client := bitbucket.NewAPIClient(config_bb)
 
-	// prove the bitbucket API client works
-	// comment, _, err := new_client.IssueTrackerApi.RepositoriesUsernameRepoSlugIssuesIssueIdCommentsCommentIdGet(ctx, "51110066", "jfrerich", "mattermost-bitbucket-readme", "1")
-	// fmt.Printf("----- 2. BB plugin.githubConnect  ->  comment = %+v\n", comment)
-	// fmt.Printf("----- 2. BB plugin.githubConnect  ->  err = %+v\n", err)
-	//
-	// // ---- test bitbucket API with Oauth ----
-	// comment_w, _, err_w := new_client.RepositoriesApi.RepositoriesUsernameRepoSlugGet(auth, "jfrerich", "solid")
-	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> comment_w = %+v\n", comment_w)
-	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> err_w = %+v\n", err_w)
-	//
-	// // ---- test bitbucket API without Oauth ----
-	// comment_wo, _, err_wo := new_client.RepositoriesApi.RepositoriesUsernameRepoSlugGet(context.Background(), "jfrerich", "solid")
-	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> comment_wo = %+v\n", comment_wo)
-	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> err_wo = %+v\n", err_wo)
-	// // ---- test bitbucket API with Oauth ----
-	//
-	// gitUser2, _, err2 := new_client.UsersApi.UserGet(auth)
-	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> gitUser2 = %+v\n", gitUser2)
-	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> err2 = %+v\n", err2)
-
-	// fmt.Printf("----- 2. BB plugin.githubConnect  ->  config_bb = %v", config_bb)
 	// TODO figure out how to add auth to client so dont' have to return it
 	return new_client, auth
 
@@ -111,14 +76,12 @@ func (p *Plugin) githubConnect(token oauth2.Token) (*bitbucket.APIClient, contex
 func (p *Plugin) OnActivate() error {
 
 	config := p.getConfiguration()
-	fmt.Printf("----- BB plugin.OnActivate  ->  config = %+v \n", config)
 
 	if err := config.IsValid(); err != nil {
 		return err
 	}
 	p.API.RegisterCommand(getCommand())
 	user, err := p.API.GetUserByUsername(config.Username)
-	fmt.Printf("----- BB plugin.OnActivate  ->  BotUsername = %+v \n", user)
 	if err != nil {
 		mlog.Error(err.Error())
 		return fmt.Errorf("Unable to find user with configured username: %v", config.Username)
@@ -148,10 +111,9 @@ func (p *Plugin) getOAuthConfig() *oauth2.Config {
 		// means that asks scope for privaterepositories
 		repo = "repo"
 	}
+	fmt.Printf("TODO : determine proper repo scrope for bitbucket %v", repo)
 
-	fmt.Println("----- BB plugin.getOAuthconfig  ->  repo =", repo)
-
-	fmt.Println("TODO -> check Scopes statement -> diffes from GH")
+	fmt.Println("TODO -> check Scopes statement -> differs from GH")
 	return &oauth2.Config{
 		ClientID:     config.BitbucketOAuthClientID,
 		ClientSecret: config.BitbucketOAuthClientSecret,
@@ -204,7 +166,6 @@ func (p *Plugin) storeGitHubUserInfo(info *GitHubUserInfo) error {
 func (p *Plugin) getGitHubUserInfo(userID string) (*GitHubUserInfo, *APIErrorResponse) {
 	config := p.getConfiguration()
 
-	// fmt.Println("----- BB plugin.getGitHubUserInfo -----")
 	var userInfo GitHubUserInfo
 
 	if infoBytes, err := p.API.KVGet(userID + GITHUB_TOKEN_KEY); err != nil || infoBytes == nil {
@@ -214,7 +175,6 @@ func (p *Plugin) getGitHubUserInfo(userID string) (*GitHubUserInfo, *APIErrorRes
 	}
 
 	unencryptedToken, err := decrypt([]byte(config.EncryptionKey), userInfo.Token.AccessToken)
-	fmt.Printf("----- BB plugin.getGitHubUserInfo  -->  unencryptedToken = %+v\n", unencryptedToken)
 	if err != nil {
 		mlog.Error(err.Error())
 		return nil, &APIErrorResponse{ID: "", Message: "Unable to decrypt access token.", StatusCode: http.StatusInternalServerError}

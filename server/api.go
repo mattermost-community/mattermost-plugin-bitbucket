@@ -37,7 +37,6 @@ func writeAPIError(w http.ResponseWriter, err *APIErrorResponse) {
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
-	// fmt.Println("----- #### BB api.ServerHTTP -----")
 	config := p.getConfiguration()
 
 	if err := config.IsValid(); err != nil {
@@ -92,7 +91,6 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 
 func (p *Plugin) connectUserToGitHub(w http.ResponseWriter, r *http.Request) {
 	userID := r.Header.Get("Mattermost-User-ID")
-	fmt.Printf("----- #### BB api.ConnectUserToGitHub  -> userID = %+v\n", userID)
 	if userID == "" {
 		http.Error(w, "Not authorized", http.StatusUnauthorized)
 		return
@@ -104,12 +102,7 @@ func (p *Plugin) connectUserToGitHub(w http.ResponseWriter, r *http.Request) {
 
 	p.API.KVSet(state, []byte(state))
 
-	// fmt.Println("----- BB api.connectUserToGitHub  ->  state = ", state)
-
 	url := conf.AuthCodeURL(state, oauth2.AccessTypeOffline)
-
-	// direct user to authorization website
-	fmt.Println("----- BB api.connectUserToGitHub  ->  url = ", url)
 
 	http.Redirect(w, r, url, http.StatusFound)
 }
@@ -120,7 +113,6 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 	//TODO
 
 	ctx := context.Background()
-	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> ctx = %+v\n", ctx)
 	conf := p.getOAuthConfig()
 
 	code := r.URL.Query().Get("code")
@@ -129,9 +121,7 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> r.URL.Query() = %+v\n", r.URL.Query())
 	state := r.URL.Query().Get("state")
-	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> state = %+v\n", state)
 
 	if storedState, err := p.API.KVGet(state); err != nil {
 		fmt.Println(err.Error())
@@ -143,12 +133,10 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 	}
 
 	userID := strings.Split(state, "_")[1]
-	// fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> userID = %+v\n", userID)
 
 	p.API.KVDelete(state)
 
 	tok, err := conf.Exchange(ctx, code)
-	fmt.Printf("----- #### BB api.completeConnectUserToGitHub   -> tok = %+v\n -- >", tok)
 	if err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -163,7 +151,6 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 	githubClient, auth = p.githubConnect(*tok)
 	fmt.Printf("githubClient = %+v\n", githubClient)
 	gitUser, _, err := githubClient.UsersApi.UserGet(auth)
-	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> gitUser = %+v\n -- >", gitUser)
 	// fmt.Println(githubClient.UsersApi.)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -185,7 +172,6 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 		// AllowedPrivateRepos: config.EnablePrivateRepo,
 	}
 
-	fmt.Printf("----- #### BB api.completeConnectUserToGitHub  -> userInfo = %+v\n", userInfo)
 	if err := p.storeGitHubUserInfo(userInfo); err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, "Unable to connect user to GitHub", http.StatusInternalServerError)
@@ -244,7 +230,6 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 		</body>
 	</html>
 	`
-	fmt.Println("----- #### BB api.completeConnectUserToGitHub -------  IN HERE --------")
 	w.Header().Set("Content-Type", "text/html")
 	w.Write([]byte(html))
 }
@@ -272,7 +257,6 @@ func (p *Plugin) getGitHubUser(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, &APIErrorResponse{ID: "", Message: "Not authorized.", StatusCode: http.StatusUnauthorized})
 		return
 	}
-	fmt.Println("----- BB api.getGitHubUser -----")
 	req := &GitHubUserRequest{}
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&req); err != nil || req.UserID == "" {

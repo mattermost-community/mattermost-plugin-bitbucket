@@ -92,8 +92,6 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		bb_webhook.IssueUpdatedEvent,
 		bb_webhook.IssueCommentCreatedEvent)
 
-	fmt.Println("---------------jason in here")
-
 	var handler func()
 
 	switch payload.(type) {
