@@ -143,7 +143,7 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	// connect to github API with authorization token
+	// connect to bitbucket API with authorization token
 	var bitbucketClient *bitbucket.APIClient
 	var auth context.Context
 	fmt.Printf("auth = %+v\n", auth)
@@ -161,9 +161,9 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 	userInfo := &BitbucketUserInfo{
 		UserID: userID,
 		Token:  tok,
-		// GitHubUsername: gitUser.GetLogin(),
-		GitHubUsername: gitUser.Username,
-		LastToDoPostAt: model.GetMillis(),
+		// BitbucketUsername: gitUser.GetLogin(),
+		BitbucketUsername: gitUser.Username,
+		LastToDoPostAt:    model.GetMillis(),
 		Settings: &UserSettings{
 			SidebarButtons: SETTING_BUTTONS_TEAM,
 			DailyReminder:  true,
@@ -211,7 +211,7 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 		WS_EVENT_CONNECT,
 		map[string]interface{}{
 			"connected":        true,
-			"github_username":  userInfo.GitHubUsername,
+			"github_username":  userInfo.BitbucketUsername,
 			"github_client_id": config.BitbucketOAuthClientID,
 		},
 		&model.WebsocketBroadcast{UserId: userID},
@@ -236,8 +236,8 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 
 type ConnectedResponse struct {
 	Connected         bool          `json:"connected"`
-	GitHubUsername    string        `json:"github_username"`
-	GitHubClientID    string        `json:"github_client_id"`
+	BitbucketUsername string        `json:"github_username"`
+	BitbucketClientID string        `json:"github_client_id"`
 	EnterpriseBaseURL string        `json:"enterprise_base_url,omitempty"`
 	Organization      string        `json:"organization"`
 	Settings          *UserSettings `json:"settings"`
@@ -282,7 +282,7 @@ func (p *Plugin) getBitbucketUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := &BitbucketUserResponse{Username: userInfo.GitHubUsername}
+	resp := &BitbucketUserResponse{Username: userInfo.BitbucketUsername}
 	b, jsonErr := json.Marshal(resp)
 	if jsonErr != nil {
 		mlog.Error("Error encoding JSON response: " + jsonErr.Error())
@@ -303,14 +303,14 @@ func (p *Plugin) getConnected(w http.ResponseWriter, r *http.Request) {
 	resp := &ConnectedResponse{
 		Connected:         false,
 		EnterpriseBaseURL: config.EnterpriseBaseURL,
-		Organization:      config.GitHubOrg,
+		Organization:      config.BitbucketOrg,
 	}
 
 	info, _ := p.getBitbucketUserInfo(userID)
 	if info != nil && info.Token != nil {
 		resp.Connected = true
-		resp.GitHubUsername = info.GitHubUsername
-		resp.GitHubClientID = config.BitbucketOAuthClientID
+		resp.BitbucketUsername = info.BitbucketUsername
+		resp.BitbucketClientID = config.BitbucketOAuthClientID
 		resp.Settings = info.Settings
 
 		if info.Settings.DailyReminder && r.URL.Query().Get("reminder") == "true" {
@@ -372,10 +372,11 @@ func (p *Plugin) getMentions(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// } else {
 	// 	bitbucketClient = p.bitbucketConnect(*info.Token)
-	// 	username = info.GitHubUsername
+	// 	username = info.BitbucketUsername
 	// }
 	//
-	// result, _, err := bitbucketClient.Search.Issues(ctx, getMentionSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
+	// result, _, err := bitbucketClient.Search.Issues(ctx,
+	// getMentionSearchQuery(username, config.BitbucketOrg), &github.SearchOptions{})
 	// if err != nil {
 	// 	mlog.Error(err.Error())
 	// }
@@ -443,10 +444,11 @@ func (p *Plugin) getReviews(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// } else {
 	// 	bitbucketClient = p.bitbucketConnect(*info.Token)
-	// 	username = info.GitHubUsername
+	// 	username = info.BitbucketUsername
 	// }
 	//
-	// result, _, err := bitbucketClient.Search.Issues(ctx, getReviewSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
+	// result, _, err := bitbucketClient.Search.Issues(ctx,
+	// getReviewSearchQuery(username, config.BitbucketOrg), &github.SearchOptions{})
 	// if err != nil {
 	// 	mlog.Error(err.Error())
 	// }
@@ -474,10 +476,11 @@ func (p *Plugin) getYourPrs(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// } else {
 	// 	bitbucketClient = p.bitbucketConnect(*info.Token)
-	// 	username = info.GitHubUsername
+	// 	username = info.BitbucketUsername
 	// }
 	//
-	// result, _, err := bitbucketClient.Search.Issues(ctx, getYourPrsSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
+	// result, _, err := bitbucketClient.Search.Issues(ctx,
+	// getYourPrsSearchQuery(username, config.BitbucketOrg), &github.SearchOptions{})
 	// if err != nil {
 	// 	mlog.Error(err.Error())
 	// }
@@ -505,10 +508,11 @@ func (p *Plugin) getYourAssignments(w http.ResponseWriter, r *http.Request) {
 	// 		return
 	// 	} else {
 	// 		bitbucketClient = p.bitbucketConnect(*info.Token)
-	// 		username = info.GitHubUsername
+	// 		username = info.BitbucketUsername
 	// 	}
 	//
-	// 	result, _, err := bitbucketClient.Search.Issues(ctx, getYourAssigneeSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
+	// 	result, _, err := bitbucketClient.Search.Issues(ctx,
+	// 	getYourAssigneeSearchQuery(username, config.BitbucketOrg), &github.SearchOptions{})
 	// 	if err != nil {
 	// 		mlog.Error(err.Error())
 	// 	}
@@ -533,7 +537,7 @@ func (p *Plugin) getYourAssignments(w http.ResponseWriter, r *http.Request) {
 	// 		return
 	// 	} else {
 	// 		bitbucketClient = p.bitbucketConnect(*info.Token)
-	// 		username = info.GitHubUsername
+	// 		username = info.BitbucketUsername
 	// 	}
 	//
 	// 	text, err := p.GetToDo(context.Background(), username, bitbucketClient)

@@ -22,7 +22,7 @@ import (
 const (
 	BITBUCKET_TOKEN_KEY        = "_githubtoken"
 	BITBUCKET_STATE_KEY        = "_githubstate"
-	BITBUCKET_USERNAME_KEY     = "_githubusername"
+	BITBUCKET_USERNAME_KEY     = "_bitbucketusername"
 	BITBUCKET_PRIVATE_REPO_KEY = "_githubprivate"
 	WS_EVENT_CONNECT           = "connect"
 	WS_EVENT_DISCONNECT        = "disconnect"
@@ -129,7 +129,7 @@ func (p *Plugin) getOAuthConfig() *oauth2.Config {
 type BitbucketUserInfo struct {
 	UserID              string
 	Token               *oauth2.Token
-	GitHubUsername      string
+	BitbucketUsername   string
 	LastToDoPostAt      int64
 	Settings            *UserSettings
 	AllowedPrivateRepos bool
@@ -185,15 +185,15 @@ func (p *Plugin) getBitbucketUserInfo(userID string) (*BitbucketUserInfo, *APIEr
 	return &userInfo, nil
 }
 
-func (p *Plugin) storeBitbucketToUserIDMapping(githubUsername, userID string) error {
-	if err := p.API.KVSet(githubUsername+BITBUCKET_USERNAME_KEY, []byte(userID)); err != nil {
-		return fmt.Errorf("Encountered error saving github username mapping")
+func (p *Plugin) storeBitbucketToUserIDMapping(bitbucketUsername, userID string) error {
+	if err := p.API.KVSet(bitbucketUsername+BITBUCKET_USERNAME_KEY, []byte(userID)); err != nil {
+		return fmt.Errorf("Encountered error saving bitbucket username mapping")
 	}
 	return nil
 }
 
-func (p *Plugin) getBitbucketToUserIDMapping(githubUsername string) string {
-	userID, _ := p.API.KVGet(githubUsername + BITBUCKET_USERNAME_KEY)
+func (p *Plugin) getBitbucketToUserIDMapping(bitbucketUsername string) string {
+	userID, _ := p.API.KVGet(bitbucketUsername + BITBUCKET_USERNAME_KEY)
 	return string(userID)
 }
 
@@ -204,7 +204,7 @@ func (p *Plugin) disconnectBitbucketAccount(userID string) {
 	}
 
 	p.API.KVDelete(userID + BITBUCKET_TOKEN_KEY)
-	p.API.KVDelete(userInfo.GitHubUsername + BITBUCKET_USERNAME_KEY)
+	p.API.KVDelete(userInfo.BitbucketUsername + BITBUCKET_USERNAME_KEY)
 
 	if user, err := p.API.GetUser(userID); err == nil && user.Props != nil && len(user.Props["git_user"]) > 0 {
 		delete(user.Props, "git_user")
@@ -246,7 +246,7 @@ func (p *Plugin) CreateBotDMPost(userID, message, postType string) *model.AppErr
 }
 
 func (p *Plugin) PostToDo(info *BitbucketUserInfo) {
-	// text, err := p.GetToDo(context.Background(), info.GitHubUsername,
+	// text, err := p.GetToDo(context.Background(), info.BitbucketUsername,
 	// p.bitbucketConnect(*info.Token))
 	// if err != nil {
 	// 	mlog.Error(err.Error())
@@ -259,7 +259,7 @@ func (p *Plugin) PostToDo(info *BitbucketUserInfo) {
 func (p *Plugin) GetToDo(ctx context.Context, username string, bitbucketClient *github.Client) (string, error) {
 	config := p.getConfiguration()
 
-	issueResults, _, err := bitbucketClient.Search.Issues(ctx, getReviewSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
+	issueResults, _, err := bitbucketClient.Search.Issues(ctx, getReviewSearchQuery(username, config.BitbucketOrg), &github.SearchOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -269,12 +269,12 @@ func (p *Plugin) GetToDo(ctx context.Context, username string, bitbucketClient *
 		return "", err
 	}
 
-	yourPrs, _, err := bitbucketClient.Search.Issues(ctx, getYourPrsSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
+	yourPrs, _, err := bitbucketClient.Search.Issues(ctx, getYourPrsSearchQuery(username, config.BitbucketOrg), &github.SearchOptions{})
 	if err != nil {
 		return "", err
 	}
 
-	yourAssignments, _, err := bitbucketClient.Search.Issues(ctx, getYourAssigneeSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
+	yourAssignments, _, err := bitbucketClient.Search.Issues(ctx, getYourAssigneeSearchQuery(username, config.BitbucketOrg), &github.SearchOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -358,7 +358,7 @@ func (p *Plugin) GetToDo(ctx context.Context, username string, bitbucketClient *
 func (p *Plugin) checkOrg(org string) error {
 	config := p.getConfiguration()
 
-	configOrg := strings.TrimSpace(config.GitHubOrg)
+	configOrg := strings.TrimSpace(config.BitbucketOrg)
 	if configOrg != "" && configOrg != org {
 		return fmt.Errorf("Only repositories in the %v organization are supported", configOrg)
 	}

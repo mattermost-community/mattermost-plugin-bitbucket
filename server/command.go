@@ -163,7 +163,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		p.disconnectBitbucketAccount(args.UserId)
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Disconnected your Bitbucket account."), nil
 	case "todo":
-		// text, err := p.GetToDo(ctx, info.GitHubUsername, bitbucketClient)
+		// text, err := p.GetToDo(ctx, info.BitbucketUsername, bitbucketClient)
 		// if err != nil {
 		// 	mlog.Error(err.Error())
 		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error getting your to do items."), nil
@@ -206,9 +206,9 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 
 		if setting == SETTING_NOTIFICATIONS {
 			if value {
-				p.storeBitbucketToUserIDMapping(info.GitHubUsername, info.UserID)
+				p.storeBitbucketToUserIDMapping(info.BitbucketUsername, info.UserID)
 			} else {
-				p.API.KVDelete(info.GitHubUsername + BITBUCKET_USERNAME_KEY)
+				p.API.KVDelete(info.BitbucketUsername + BITBUCKET_USERNAME_KEY)
 			}
 
 			info.Settings.Notifications = value
