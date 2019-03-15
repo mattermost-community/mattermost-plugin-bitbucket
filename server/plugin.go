@@ -20,10 +20,10 @@ import (
 )
 
 const (
-	BITBUCKET_TOKEN_KEY        = "_githubtoken"
-	BITBUCKET_STATE_KEY        = "_githubstate"
+	BITBUCKET_TOKEN_KEY        = "_bitbuckettoken"
+	BITBUCKET_STATE_KEY        = "_bitbucketstate"
 	BITBUCKET_USERNAME_KEY     = "_bitbucketusername"
-	BITBUCKET_PRIVATE_REPO_KEY = "_githubprivate"
+	BITBUCKET_PRIVATE_REPO_KEY = "_bitbucketprivate"
 	WS_EVENT_CONNECT           = "connect"
 	WS_EVENT_DISCONNECT        = "disconnect"
 	WS_EVENT_REFRESH           = "refresh"

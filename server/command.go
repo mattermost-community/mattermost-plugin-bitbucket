@@ -56,7 +56,7 @@ func getCommandResponse(responseType, text string) *model.CommandResponse {
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-	fmt.Printf("----- BB command.ExecuteCommand \n    --> args=%+v", args)
+	// fmt.Printf("----- BB command.ExecuteCommand \n    --> args=%+v", args)
 	split := strings.Fields(args.Command)
 	command := split[0]
 	parameters := []string{}

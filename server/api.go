@@ -21,7 +21,7 @@ import (
 const (
 	API_ERROR_ID_NOT_CONNECTED = "not_connected"
 	BITBUCKET_ICON_URL         = "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
-	BITBUCKET_USERNAME         = "GitHub Plugin"
+	BITBUCKET_USERNAME         = "Bitbucket Plugin"
 )
 
 type APIErrorResponse struct {
@@ -48,16 +48,16 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 
 	switch path := r.URL.Path; path {
 	case "/webhook":
-		fmt.Printf("----- BB api.ServeHttp *** /webhook -----")
+		fmt.Println("----- BB api.ServeHttp *** /webhook -----")
 		p.handleWebhook(w, r)
 	case "/oauth/connect":
-		fmt.Printf("----- BB api.ServeHttp *** /oauth/connect -----")
+		fmt.Println("----- BB api.ServeHttp *** /oauth/connect -----")
 		p.connectUserToBitbucket(w, r)
 	case "/oauth/complete":
-		fmt.Printf("----- BB *** api.ServeHttp *** /oauth/complete -----")
+		fmt.Println("----- BB *** api.ServeHttp *** /oauth/complete -----")
 		p.completeConnectUserToBitbucket(w, r)
 	case "/api/v1/connected":
-		fmt.Printf("----- BB *** api.ServeHttp *** /apt/v1/connected -----")
+		fmt.Println("----- BB *** api.ServeHttp *** /apt/v1/connected -----")
 		p.getConnected(w, r)
 	// case "/api/v1/todo":
 	// 	fmt.Println("----- BB api.ServeHttp *** /apt/v1/todo -----")
@@ -90,20 +90,32 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 }
 
 func (p *Plugin) connectUserToBitbucket(w http.ResponseWriter, r *http.Request) {
+
+	// get MM userId from request
 	userID := r.Header.Get("Mattermost-User-ID")
+	fmt.Printf("---- connectUser  ->  userID = %+v\n", userID)
 	if userID == "" {
 		http.Error(w, "Not authorized", http.StatusUnauthorized)
 		return
 	}
 
+	// get ClienID, ClientSecret, AuthURL and TokenURL endpoints
 	conf := p.getOAuthConfig()
 
+	// create state for KV store
 	state := fmt.Sprintf("%v_%v", model.NewId()[0:15], userID)
 
+	// save state in KV store
 	p.API.KVSet(state, []byte(state))
 
+	// get Auth Code and Link including ClientSecret and state
 	url := conf.AuthCodeURL(state, oauth2.AccessTypeOffline)
 
+	fmt.Printf("---- connectUser  ->  conf = %+v\n", conf)
+	fmt.Printf("---- connectUser  ->  state = %+v\n", state)
+	fmt.Printf("---- connectUser  ->  url	 = %+v\n", url)
+
+	// redirect to Authorization Code Link
 	http.Redirect(w, r, url, http.StatusFound)
 }
 
@@ -113,16 +125,27 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 	//TODO
 
 	ctx := context.Background()
+
+	// get ClienID, ClientSecret, AuthURL and TokenURL endpoints
 	conf := p.getOAuthConfig()
 
+	fmt.Printf("---- completeConnectUser  ->  r.URL.Query() = %+v\n", r.URL.Query())
+	fmt.Printf("---- completeConnectUser  ->  conf = %+v\n", conf)
+
+	// get Authorization Code from url
 	code := r.URL.Query().Get("code")
+	fmt.Printf("---- completeConnectUser  ->  code = %+v\n", code)
+
 	if len(code) == 0 {
 		http.Error(w, "missing authorization code", http.StatusBadRequest)
 		return
 	}
 
+	// get state from url
 	state := r.URL.Query().Get("state")
+	fmt.Printf("---- completeConnectUser  ->  state = %+v\n", state)
 
+	// check stored state value is equal to return value from bitbucket callback
 	if storedState, err := p.API.KVGet(state); err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, "missing stored state", http.StatusBadRequest)
@@ -132,26 +155,32 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// get userID from state
 	userID := strings.Split(state, "_")[1]
+	fmt.Printf("---- completeConnectUser  ->  userID = %+v\n", userID)
 
 	p.API.KVDelete(state)
 
+	// converts auth code into a token.
 	tok, err := conf.Exchange(ctx, code)
 	if err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	fmt.Printf("---- completeConnectUser  ->  tok = %+v\n", tok)
 
-	// connect to bitbucket API with authorization token
 	var bitbucketClient *bitbucket.APIClient
 	var auth context.Context
-	fmt.Printf("auth = %+v\n", auth)
 
+	// connect to bitbucket API with authorization token
 	bitbucketClient, auth = p.bitbucketConnect(*tok)
-	fmt.Printf("bitbucketClient = %+v\n", bitbucketClient)
-	gitUser, _, err := bitbucketClient.UsersApi.UserGet(auth)
-	// fmt.Println(bitbucketClient.UsersApi.)
+	fmt.Printf("---- completeConnectUser  ->  auth = %+v\n", auth)
+
+	// get bitbucket user from Authorized bitbucket API request
+	bitbucketUser, _, err := bitbucketClient.UsersApi.UserGet(auth)
+	fmt.Printf("---- completeConnectUser  ->  bitbucketUser = %+v\n", bitbucketUser)
+
 	if err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -161,8 +190,8 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 	userInfo := &BitbucketUserInfo{
 		UserID: userID,
 		Token:  tok,
-		// BitbucketUsername: gitUser.GetLogin(),
-		BitbucketUsername: gitUser.Username,
+		// BitbucketUsername: bitbucketUser.GetLogin(),
+		BitbucketUsername: bitbucketUser.Username,
 		LastToDoPostAt:    model.GetMillis(),
 		Settings: &UserSettings{
 			SidebarButtons: SETTING_BUTTONS_TEAM,
@@ -172,6 +201,9 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 		// AllowedPrivateRepos: config.EnablePrivateRepo,
 	}
 
+	fmt.Printf("---- completeConnectUser  ->  userInfo = %+v\n", userInfo)
+
+	// Store User Info to Db
 	if err := p.storeBitbucketUserInfo(userInfo); err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, "Unable to connect user to Bitbucket", http.StatusInternalServerError)
@@ -179,7 +211,7 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 	}
 
 	//TODO - need methods for getting Username and Link
-	if err := p.storeBitbucketToUserIDMapping(gitUser.Username, userID); err != nil {
+	if err := p.storeBitbucketToUserIDMapping(bitbucketUser.Username, userID); err != nil {
 		fmt.Println(err.Error())
 	}
 
@@ -203,16 +235,16 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 		"##### Slash Commands\n"+
 
 		//TODO - need methods for getting Username and Link
-		strings.Replace(COMMAND_HELP, "|", "`", -1), gitUser.Username, gitUser.Links.Html.Href)
+		strings.Replace(COMMAND_HELP, "|", "`", -1), bitbucketUser.Username, bitbucketUser.Links.Html.Href)
 
 	p.CreateBotDMPost(userID, message, "custom_git_welcome")
 
 	p.API.PublishWebSocketEvent(
 		WS_EVENT_CONNECT,
 		map[string]interface{}{
-			"connected":        true,
-			"github_username":  userInfo.BitbucketUsername,
-			"github_client_id": config.BitbucketOAuthClientID,
+			"connected":           true,
+			"bitbucket_username":  userInfo.BitbucketUsername,
+			"bitbucket_client_id": config.BitbucketOAuthClientID,
 		},
 		&model.WebsocketBroadcast{UserId: userID},
 	)
@@ -236,8 +268,8 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 
 type ConnectedResponse struct {
 	Connected         bool          `json:"connected"`
-	BitbucketUsername string        `json:"github_username"`
-	BitbucketClientID string        `json:"github_client_id"`
+	BitbucketUsername string        `json:"bitbucket_username"`
+	BitbucketClientID string        `json:"bitbucket_client_id"`
 	EnterpriseBaseURL string        `json:"enterprise_base_url,omitempty"`
 	Organization      string        `json:"organization"`
 	Settings          *UserSettings `json:"settings"`

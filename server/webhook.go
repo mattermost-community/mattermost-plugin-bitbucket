@@ -40,7 +40,7 @@ func signBody(secret, body []byte) []byte {
 	return []byte(computed.Sum(nil))
 }
 
-type GitHubEvent struct {
+type BitbucketEvent struct {
 	// Repo *github.Repository `json:"repository,omitempty"`
 	Repo *github.Repository `json:"repository,omitempty"`
 }

@@ -34,7 +34,7 @@ func TestParseBitbucketUsernameFromText(t *testing.T) {
 	}
 }
 
-func TestFixGithubNotificationSubjectURL(t *testing.T) {
+func TestFixBitbucketNotificationSubjectURL(t *testing.T) {
 	tcs := []struct {
 		Text     string
 		Expected string
