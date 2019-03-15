@@ -30,7 +30,7 @@ func TestParseGitHubUsernameFromText(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		assert.Equal(t, tc.Expected, parseGitHubUsernamesFromText(tc.Text))
+		assert.Equal(t, tc.Expected, parseBitbucketUsernamesFromText(tc.Text))
 	}
 }
 
@@ -46,7 +46,7 @@ func TestFixGithubNotificationSubjectURL(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		assert.Equal(t, tc.Expected, fixGithubNotificationSubjectURL(tc.Text))
+		assert.Equal(t, tc.Expected, fixBitbucketNotificationSubjectURL(tc.Text))
 	}
 }
 

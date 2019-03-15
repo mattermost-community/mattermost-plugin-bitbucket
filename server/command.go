@@ -49,8 +49,8 @@ func getCommandResponse(responseType, text string) *model.CommandResponse {
 	return &model.CommandResponse{
 		ResponseType: responseType,
 		Text:         text,
-		Username:     GITHUB_USERNAME,
-		IconURL:      GITHUB_ICON_URL,
+		Username:     BITBUCKET_USERNAME,
+		IconURL:      BITBUCKET_ICON_URL,
 		Type:         model.POST_DEFAULT,
 	}
 }
@@ -78,7 +78,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		// fmt.Printf("----- config.ServiceSettings.SiteURL = %+v\n", config.ServiceSettings.SiteURL)
 		if config.ServiceSettings.SiteURL == nil {
 			// fmt.Printf("----- ServiceSettings.SiteURL = %+v\n", config.ServiceSettings.SiteURL)
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error connecting to GitHub."), nil
+			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error connecting to Bitbucket."), nil
 		}
 		resp := getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("[Click here to link your Bitbucket account.](%s/plugins/bitbucket/oauth/connect)", *config.ServiceSettings.SiteURL))
 		fmt.Printf("----- BB command.ExecuteCommand resp = %+v\n", resp)
@@ -87,20 +87,20 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 
 	ctx := context.Background()
 	fmt.Printf("----- BB command.ExecuteCommand --> \nctx = %+v\n", ctx)
-	var githubClient *bitbucket.APIClient
+	var bitbucketClient *bitbucket.APIClient
 	var auth context.Context
 
-	info, apiErr := p.getGitHubUserInfo(args.UserId)
+	info, apiErr := p.getBitbucketUserInfo(args.UserId)
 	fmt.Printf("----- BB commnad.ExecuteCOmmand --> \ninfo = %+v\n", info)
 	if apiErr != nil {
 		text := "Unknown error."
 		if apiErr.ID == API_ERROR_ID_NOT_CONNECTED {
-			text = "You must connect your account to GitHub first. Either click on the GitHub logo in the bottom left of the screen or enter `/bitbucket connect`."
+			text = "You must connect your account to Bitbucket first. Either click on the Bitbucket logo in the bottom left of the screen or enter `/bitbucket connect`."
 		}
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
 	}
 
-	githubClient, auth = p.githubConnect(*info.Token)
+	bitbucketClient, auth = p.bitbucketConnect(*info.Token)
 
 	switch action {
 	case "subscribe":
@@ -132,14 +132,14 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 
 		// _, owner, repo := parseOwnerAndRepo(parameters[0], config.EnterpriseBaseURL)
 		// if repo == "" {
-		// 	if err := p.SubscribeOrg(context.Background(), githubClient, args.UserId, owner, args.ChannelId, features); err != nil {
+		// 	if err := p.SubscribeOrg(context.Background(), bitbucketClient, args.UserId, owner, args.ChannelId, features); err != nil {
 		// 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, err.Error()), nil
 		// 	}
 		//
 		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Successfully subscribed to organization %s.", owner)), nil
 		// }
 		//
-		// if err := p.Subscribe(context.Background(), githubClient, args.UserId, owner, repo, args.ChannelId, features); err != nil {
+		// if err := p.Subscribe(context.Background(), bitbucketClient, args.UserId, owner, repo, args.ChannelId, features); err != nil {
 		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, err.Error()), nil
 		// }
 
@@ -160,22 +160,22 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		// return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Succesfully unsubscribed from %s.", repo)), nil
 	case "disconnect":
 		fmt.Println("----- BB command.ExecuteCommand action=disconnect")
-		p.disconnectGitHubAccount(args.UserId)
+		p.disconnectBitbucketAccount(args.UserId)
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Disconnected your Bitbucket account."), nil
 	case "todo":
-		// text, err := p.GetToDo(ctx, info.GitHubUsername, githubClient)
+		// text, err := p.GetToDo(ctx, info.GitHubUsername, bitbucketClient)
 		// if err != nil {
 		// 	mlog.Error(err.Error())
 		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error getting your to do items."), nil
 		// }
 		// return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
 	case "me":
-		gitUser, _, err := githubClient.UsersApi.UserGet(auth)
+		gitUser, _, err := bitbucketClient.UsersApi.UserGet(auth)
 		avatar := gitUser.Links.Avatar.Href
 		html := gitUser.Links.Html.Href
 		username := gitUser.Username
 		if err != nil {
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error getting your GitHub profile."), nil
+			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error getting your Bitbucket profile."), nil
 		}
 
 		text := fmt.Sprintf("You are connected to Bitbucket as:\n# [![image](%s =40x40)](%s) [%s](%s)", avatar, html, username, html)
@@ -188,7 +188,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
 	case "settings":
 		if len(parameters) < 2 {
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Please specify both a setting and value. Use `/github help` for more usage information."), nil
+			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Please specify both a setting and value. Use `/bitbucket help` for more usage information."), nil
 		}
 
 		setting := parameters[0]
@@ -206,9 +206,9 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 
 		if setting == SETTING_NOTIFICATIONS {
 			if value {
-				p.storeGitHubToUserIDMapping(info.GitHubUsername, info.UserID)
+				p.storeBitbucketToUserIDMapping(info.GitHubUsername, info.UserID)
 			} else {
-				p.API.KVDelete(info.GitHubUsername + GITHUB_USERNAME_KEY)
+				p.API.KVDelete(info.GitHubUsername + BITBUCKET_USERNAME_KEY)
 			}
 
 			info.Settings.Notifications = value
@@ -216,7 +216,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 			info.Settings.DailyReminder = value
 		}
 
-		p.storeGitHubUserInfo(info)
+		p.storeBitbucketUserInfo(info)
 
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Settings updated."), nil
 	}

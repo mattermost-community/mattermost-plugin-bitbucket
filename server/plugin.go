@@ -20,25 +20,25 @@ import (
 )
 
 const (
-	GITHUB_TOKEN_KEY        = "_githubtoken"
-	GITHUB_STATE_KEY        = "_githubstate"
-	GITHUB_USERNAME_KEY     = "_githubusername"
-	GITHUB_PRIVATE_REPO_KEY = "_githubprivate"
-	WS_EVENT_CONNECT        = "connect"
-	WS_EVENT_DISCONNECT     = "disconnect"
-	WS_EVENT_REFRESH        = "refresh"
-	SETTING_BUTTONS_TEAM    = "team"
-	SETTING_BUTTONS_CHANNEL = "channel"
-	SETTING_BUTTONS_OFF     = "off"
-	SETTING_NOTIFICATIONS   = "notifications"
-	SETTING_REMINDERS       = "reminders"
-	SETTING_ON              = "on"
-	SETTING_OFF             = "off"
+	BITBUCKET_TOKEN_KEY        = "_githubtoken"
+	BITBUCKET_STATE_KEY        = "_githubstate"
+	BITBUCKET_USERNAME_KEY     = "_githubusername"
+	BITBUCKET_PRIVATE_REPO_KEY = "_githubprivate"
+	WS_EVENT_CONNECT           = "connect"
+	WS_EVENT_DISCONNECT        = "disconnect"
+	WS_EVENT_REFRESH           = "refresh"
+	SETTING_BUTTONS_TEAM       = "team"
+	SETTING_BUTTONS_CHANNEL    = "channel"
+	SETTING_BUTTONS_OFF        = "off"
+	SETTING_NOTIFICATIONS      = "notifications"
+	SETTING_REMINDERS          = "reminders"
+	SETTING_ON                 = "on"
+	SETTING_OFF                = "off"
 )
 
 type Plugin struct {
 	plugin.MattermostPlugin
-	// githubClient    *github.Client
+	// bitbucketClient    *github.Client
 	bitbucketClient *bitbucket.APIClient
 
 	BotUserID string
@@ -51,8 +51,8 @@ type Plugin struct {
 	configuration *configuration
 }
 
-// func (p *Plugin) githubConnect(token oauth2.Token) (*bitbucket.APIClient, *context.valueCtx) {
-func (p *Plugin) githubConnect(token oauth2.Token) (*bitbucket.APIClient, context.Context) {
+// func (p *Plugin) bitbucketConnect(token oauth2.Token) (*bitbucket.APIClient, *context.valueCtx) {
+func (p *Plugin) bitbucketConnect(token oauth2.Token) (*bitbucket.APIClient, context.Context) {
 
 	// config := p.getConfiguration()
 
@@ -126,7 +126,7 @@ func (p *Plugin) getOAuthConfig() *oauth2.Config {
 	}
 }
 
-type GitHubUserInfo struct {
+type BitbucketUserInfo struct {
 	UserID              string
 	Token               *oauth2.Token
 	GitHubUsername      string
@@ -141,7 +141,7 @@ type UserSettings struct {
 	Notifications  bool   `json:"notifications"`
 }
 
-func (p *Plugin) storeGitHubUserInfo(info *GitHubUserInfo) error {
+func (p *Plugin) storeBitbucketUserInfo(info *BitbucketUserInfo) error {
 	config := p.getConfiguration()
 
 	encryptedToken, err := encrypt([]byte(config.EncryptionKey), info.Token.AccessToken)
@@ -156,20 +156,20 @@ func (p *Plugin) storeGitHubUserInfo(info *GitHubUserInfo) error {
 		return err
 	}
 
-	if err := p.API.KVSet(info.UserID+GITHUB_TOKEN_KEY, jsonInfo); err != nil {
+	if err := p.API.KVSet(info.UserID+BITBUCKET_TOKEN_KEY, jsonInfo); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (p *Plugin) getGitHubUserInfo(userID string) (*GitHubUserInfo, *APIErrorResponse) {
+func (p *Plugin) getBitbucketUserInfo(userID string) (*BitbucketUserInfo, *APIErrorResponse) {
 	config := p.getConfiguration()
 
-	var userInfo GitHubUserInfo
+	var userInfo BitbucketUserInfo
 
-	if infoBytes, err := p.API.KVGet(userID + GITHUB_TOKEN_KEY); err != nil || infoBytes == nil {
-		return nil, &APIErrorResponse{ID: API_ERROR_ID_NOT_CONNECTED, Message: "Must connect user account to GitHub first.", StatusCode: http.StatusBadRequest}
+	if infoBytes, err := p.API.KVGet(userID + BITBUCKET_TOKEN_KEY); err != nil || infoBytes == nil {
+		return nil, &APIErrorResponse{ID: API_ERROR_ID_NOT_CONNECTED, Message: "Must connect user account to Bitbucket first.", StatusCode: http.StatusBadRequest}
 	} else if err := json.Unmarshal(infoBytes, &userInfo); err != nil {
 		return nil, &APIErrorResponse{ID: "", Message: "Unable to parse token.", StatusCode: http.StatusInternalServerError}
 	}
@@ -185,26 +185,26 @@ func (p *Plugin) getGitHubUserInfo(userID string) (*GitHubUserInfo, *APIErrorRes
 	return &userInfo, nil
 }
 
-func (p *Plugin) storeGitHubToUserIDMapping(githubUsername, userID string) error {
-	if err := p.API.KVSet(githubUsername+GITHUB_USERNAME_KEY, []byte(userID)); err != nil {
+func (p *Plugin) storeBitbucketToUserIDMapping(githubUsername, userID string) error {
+	if err := p.API.KVSet(githubUsername+BITBUCKET_USERNAME_KEY, []byte(userID)); err != nil {
 		return fmt.Errorf("Encountered error saving github username mapping")
 	}
 	return nil
 }
 
-func (p *Plugin) getGitHubToUserIDMapping(githubUsername string) string {
-	userID, _ := p.API.KVGet(githubUsername + GITHUB_USERNAME_KEY)
+func (p *Plugin) getBitbucketToUserIDMapping(githubUsername string) string {
+	userID, _ := p.API.KVGet(githubUsername + BITBUCKET_USERNAME_KEY)
 	return string(userID)
 }
 
-func (p *Plugin) disconnectGitHubAccount(userID string) {
-	userInfo, _ := p.getGitHubUserInfo(userID)
+func (p *Plugin) disconnectBitbucketAccount(userID string) {
+	userInfo, _ := p.getBitbucketUserInfo(userID)
 	if userInfo == nil {
 		return
 	}
 
-	p.API.KVDelete(userID + GITHUB_TOKEN_KEY)
-	p.API.KVDelete(userInfo.GitHubUsername + GITHUB_USERNAME_KEY)
+	p.API.KVDelete(userID + BITBUCKET_TOKEN_KEY)
+	p.API.KVDelete(userInfo.GitHubUsername + BITBUCKET_USERNAME_KEY)
 
 	if user, err := p.API.GetUser(userID); err == nil && user.Props != nil && len(user.Props["git_user"]) > 0 {
 		delete(user.Props, "git_user")
@@ -232,8 +232,8 @@ func (p *Plugin) CreateBotDMPost(userID, message, postType string) *model.AppErr
 		Type:      postType,
 		Props: map[string]interface{}{
 			"from_webhook":      "true",
-			"override_username": GITHUB_USERNAME,
-			"override_icon_url": GITHUB_ICON_URL,
+			"override_username": BITBUCKET_USERNAME,
+			"override_icon_url": BITBUCKET_ICON_URL,
 		},
 	}
 
@@ -245,8 +245,9 @@ func (p *Plugin) CreateBotDMPost(userID, message, postType string) *model.AppErr
 	return nil
 }
 
-func (p *Plugin) PostToDo(info *GitHubUserInfo) {
-	// text, err := p.GetToDo(context.Background(), info.GitHubUsername, p.githubConnect(*info.Token))
+func (p *Plugin) PostToDo(info *BitbucketUserInfo) {
+	// text, err := p.GetToDo(context.Background(), info.GitHubUsername,
+	// p.bitbucketConnect(*info.Token))
 	// if err != nil {
 	// 	mlog.Error(err.Error())
 	// 	return
@@ -255,25 +256,25 @@ func (p *Plugin) PostToDo(info *GitHubUserInfo) {
 	// p.CreateBotDMPost(info.UserID, text, "custom_git_todo")
 }
 
-func (p *Plugin) GetToDo(ctx context.Context, username string, githubClient *github.Client) (string, error) {
+func (p *Plugin) GetToDo(ctx context.Context, username string, bitbucketClient *github.Client) (string, error) {
 	config := p.getConfiguration()
 
-	issueResults, _, err := githubClient.Search.Issues(ctx, getReviewSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
+	issueResults, _, err := bitbucketClient.Search.Issues(ctx, getReviewSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
 	if err != nil {
 		return "", err
 	}
 
-	notifications, _, err := githubClient.Activity.ListNotifications(ctx, &github.NotificationListOptions{})
+	notifications, _, err := bitbucketClient.Activity.ListNotifications(ctx, &github.NotificationListOptions{})
 	if err != nil {
 		return "", err
 	}
 
-	yourPrs, _, err := githubClient.Search.Issues(ctx, getYourPrsSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
+	yourPrs, _, err := bitbucketClient.Search.Issues(ctx, getYourPrsSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
 	if err != nil {
 		return "", err
 	}
 
-	yourAssignments, _, err := githubClient.Search.Issues(ctx, getYourAssigneeSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
+	yourAssignments, _, err := bitbucketClient.Search.Issues(ctx, getYourAssigneeSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -298,10 +299,10 @@ func (p *Plugin) GetToDo(ctx context.Context, username string, githubClient *git
 
 		switch n.GetSubject().GetType() {
 		case "RepositoryVulnerabilityAlert":
-			message := fmt.Sprintf("[Vulnerability Alert for %v](%v)", n.GetRepository().GetFullName(), fixGithubNotificationSubjectURL(n.GetSubject().GetURL()))
+			message := fmt.Sprintf("[Vulnerability Alert for %v](%v)", n.GetRepository().GetFullName(), fixBitbucketNotificationSubjectURL(n.GetSubject().GetURL()))
 			notificationContent += fmt.Sprintf("* %v\n", message)
 		default:
-			url := fixGithubNotificationSubjectURL(n.GetSubject().GetURL())
+			url := fixBitbucketNotificationSubjectURL(n.GetSubject().GetURL())
 			notificationContent += fmt.Sprintf("* %v\n", url)
 		}
 

@@ -193,8 +193,8 @@ func (p *Plugin) postIssueUpdatedEvent(pl interface{}) {
 		Type:   "custom_git_issue",
 		Props: map[string]interface{}{
 			"from_webhook":      "true",
-			"override_username": GITHUB_USERNAME,
-			"override_icon_url": GITHUB_ICON_URL,
+			"override_username": BITBUCKET_USERNAME,
+			"override_icon_url": BITBUCKET_ICON_URL,
 		},
 	}
 	//
@@ -308,8 +308,8 @@ func (p *Plugin) postIssueCreatedEvent(pl interface{}) {
 		Type:   "custom_git_issue",
 		Props: map[string]interface{}{
 			"from_webhook":      "true",
-			"override_username": GITHUB_USERNAME,
-			"override_icon_url": GITHUB_ICON_URL,
+			"override_username": BITBUCKET_USERNAME,
+			"override_icon_url": BITBUCKET_ICON_URL,
 		},
 	}
 	//
@@ -406,8 +406,8 @@ func (p *Plugin) postIssueCommentCreatedEvent(pl interface{}) {
 		Type:   "custom_git_comment",
 		Props: map[string]interface{}{
 			"from_webhook":      "true",
-			"override_username": GITHUB_USERNAME,
-			"override_icon_url": GITHUB_ICON_URL,
+			"override_username": BITBUCKET_USERNAME,
+			"override_icon_url": BITBUCKET_ICON_URL,
 		},
 	}
 	//
@@ -468,15 +468,15 @@ func (p *Plugin) permissionToRepo(userID string, ownerAndRepo string) bool {
 	// 	return false
 	// }
 
-	// info, apiErr := p.getGitHubUserInfo(userID)
+	// info, apiErr := p.getBitbucketUserInfo(userID)
 	// if apiErr != nil {
 	// 	return false
 	// }
-	// // var githubClient *github.Client
-	// var githubClient *bitbucket.APIClient
-	// githubClient = p.githubConnect(*info.Token)
+	// // var bitbucketClient *github.Client
+	// var bitbucketClient *bitbucket.APIClient
+	// bitbucketClient = p.bitbucketConnect(*info.Token)
 	//
-	// if result, _, err := githubClient.Repositories.Get(ctx, owner, repo); result == nil || err != nil {
+	// if result, _, err := bitbucketClient.Repositories.Get(ctx, owner, repo); result == nil || err != nil {
 	// 	if err != nil {
 	// 		mlog.Error(err.Error())
 	// 	}
@@ -536,8 +536,8 @@ func (p *Plugin) postPullRequestEvent(event *github.PullRequestEvent) {
 		Type:   "custom_git_pr",
 		Props: map[string]interface{}{
 			"from_webhook":      "true",
-			"override_username": GITHUB_USERNAME,
-			"override_icon_url": GITHUB_ICON_URL,
+			"override_username": BITBUCKET_USERNAME,
+			"override_icon_url": BITBUCKET_ICON_URL,
 		},
 	}
 
@@ -628,8 +628,8 @@ func (p *Plugin) postIssueEvent(event *github.IssuesEvent) {
 		Type:   "custom_git_issue",
 		Props: map[string]interface{}{
 			"from_webhook":      "true",
-			"override_username": GITHUB_USERNAME,
-			"override_icon_url": GITHUB_ICON_URL,
+			"override_username": BITBUCKET_USERNAME,
+			"override_icon_url": BITBUCKET_ICON_URL,
 		},
 	}
 
@@ -719,8 +719,8 @@ func (p *Plugin) postPushEvent(event *github.PushEvent) {
 		Type:   "custom_git_push",
 		Props: map[string]interface{}{
 			"from_webhook":      "true",
-			"override_username": GITHUB_USERNAME,
-			"override_icon_url": GITHUB_ICON_URL,
+			"override_username": BITBUCKET_USERNAME,
+			"override_icon_url": BITBUCKET_ICON_URL,
 		},
 		Message: newPushMessage,
 	}
@@ -771,8 +771,8 @@ func (p *Plugin) postCreateEvent(event *github.CreateEvent) {
 		Type:   "custom_git_create",
 		Props: map[string]interface{}{
 			"from_webhook":      "true",
-			"override_username": GITHUB_USERNAME,
-			"override_icon_url": GITHUB_ICON_URL,
+			"override_username": BITBUCKET_USERNAME,
+			"override_icon_url": BITBUCKET_ICON_URL,
 		},
 		Message: newCreateMessage,
 	}
@@ -823,8 +823,8 @@ func (p *Plugin) postDeleteEvent(event *github.DeleteEvent) {
 		Type:   "custom_git_delete",
 		Props: map[string]interface{}{
 			"from_webhook":      "true",
-			"override_username": GITHUB_USERNAME,
-			"override_icon_url": GITHUB_ICON_URL,
+			"override_username": BITBUCKET_USERNAME,
+			"override_icon_url": BITBUCKET_ICON_URL,
 		},
 		Message: newDeleteMessage,
 	}
@@ -884,8 +884,8 @@ func (p *Plugin) postPullRequestReviewEvent(event *github.PullRequestReviewEvent
 		Message: newReviewMessage,
 		Props: map[string]interface{}{
 			"from_webhook":      "true",
-			"override_username": GITHUB_USERNAME,
-			"override_icon_url": GITHUB_ICON_URL,
+			"override_username": BITBUCKET_USERNAME,
+			"override_icon_url": BITBUCKET_ICON_URL,
 		},
 	}
 
@@ -945,8 +945,8 @@ func (p *Plugin) postPullRequestReviewCommentEvent(event *github.PullRequestRevi
 		Message: newReviewMessage,
 		Props: map[string]interface{}{
 			"from_webhook":      "true",
-			"override_username": GITHUB_USERNAME,
-			"override_icon_url": GITHUB_ICON_URL,
+			"override_username": BITBUCKET_USERNAME,
+			"override_icon_url": BITBUCKET_ICON_URL,
 		},
 	}
 
@@ -988,7 +988,7 @@ func (p *Plugin) handleCommentMentionNotification(event *github.IssueCommentEven
 		body = strings.Split(body, "\n\nOn")[0]
 	}
 
-	mentionedUsernames := parseGitHubUsernamesFromText(body)
+	mentionedUsernames := parseBitbucketUsernamesFromText(body)
 
 	message := fmt.Sprintf("[%s](%s) mentioned you on [%s#%v](%s):\n>%s", event.GetSender().GetLogin(), event.GetSender().GetHTMLURL(), event.GetRepo().GetFullName(), event.GetIssue().GetNumber(), event.GetComment().GetHTMLURL(), body)
 
@@ -998,8 +998,8 @@ func (p *Plugin) handleCommentMentionNotification(event *github.IssueCommentEven
 		Type:    "custom_git_mention",
 		Props: map[string]interface{}{
 			"from_webhook":      "true",
-			"override_username": GITHUB_USERNAME,
-			"override_icon_url": GITHUB_ICON_URL,
+			"override_username": BITBUCKET_USERNAME,
+			"override_icon_url": BITBUCKET_ICON_URL,
 		},
 	}
 
@@ -1014,7 +1014,7 @@ func (p *Plugin) handleCommentMentionNotification(event *github.IssueCommentEven
 			continue
 		}
 
-		userID := p.getGitHubToUserIDMapping(username)
+		userID := p.getBitbucketToUserIDMapping(username)
 		if userID == "" {
 			continue
 		}
@@ -1044,7 +1044,7 @@ func (p *Plugin) handleCommentAuthorNotification(event *github.IssueCommentEvent
 		return
 	}
 
-	authorUserID := p.getGitHubToUserIDMapping(author)
+	authorUserID := p.getBitbucketToUserIDMapping(author)
 	if authorUserID == "" {
 		return
 	}
@@ -1090,7 +1090,7 @@ func (p *Plugin) handlePullRequestNotification(event *github.PullRequestEvent) {
 		if requestedReviewer == sender {
 			return
 		}
-		requestedUserID = p.getGitHubToUserIDMapping(requestedReviewer)
+		requestedUserID = p.getBitbucketToUserIDMapping(requestedReviewer)
 		message = "[%s](%s) requested your review on [%s#%v](%s)"
 		if isPrivate && !p.permissionToRepo(requestedUserID, repoName) {
 			requestedUserID = ""
@@ -1104,7 +1104,7 @@ func (p *Plugin) handlePullRequestNotification(event *github.PullRequestEvent) {
 		} else {
 			message = "[%s](%s) closed your pull request [%s#%v](%s)"
 		}
-		authorUserID = p.getGitHubToUserIDMapping(author)
+		authorUserID = p.getBitbucketToUserIDMapping(author)
 		if isPrivate && !p.permissionToRepo(authorUserID, repoName) {
 			authorUserID = ""
 		}
@@ -1113,7 +1113,7 @@ func (p *Plugin) handlePullRequestNotification(event *github.PullRequestEvent) {
 			return
 		}
 		message = "[%s](%s) reopened your pull request [%s#%v](%s)"
-		authorUserID = p.getGitHubToUserIDMapping(author)
+		authorUserID = p.getBitbucketToUserIDMapping(author)
 		if isPrivate && !p.permissionToRepo(authorUserID, repoName) {
 			authorUserID = ""
 		}
@@ -1123,7 +1123,7 @@ func (p *Plugin) handlePullRequestNotification(event *github.PullRequestEvent) {
 			return
 		}
 		message = "[%s](%s) assigned you to pull request [%s#%v](%s)"
-		assigneeUserID = p.getGitHubToUserIDMapping(assignee)
+		assigneeUserID = p.getBitbucketToUserIDMapping(assignee)
 		if isPrivate && !p.permissionToRepo(assigneeUserID, repoName) {
 			assigneeUserID = ""
 		}
@@ -1157,13 +1157,13 @@ func (p *Plugin) handleIssueNotification(event *github.IssuesEvent) {
 	switch event.GetAction() {
 	case "closed":
 		message = "[%s](%s) closed your issue [%s#%v](%s)"
-		authorUserID = p.getGitHubToUserIDMapping(author)
+		authorUserID = p.getBitbucketToUserIDMapping(author)
 		if isPrivate && !p.permissionToRepo(authorUserID, repoName) {
 			authorUserID = ""
 		}
 	case "reopened":
 		message = "[%s](%s) reopened your issue [%s#%v](%s)"
-		authorUserID = p.getGitHubToUserIDMapping(author)
+		authorUserID = p.getBitbucketToUserIDMapping(author)
 		if isPrivate && !p.permissionToRepo(authorUserID, repoName) {
 			authorUserID = ""
 		}
@@ -1173,7 +1173,7 @@ func (p *Plugin) handleIssueNotification(event *github.IssuesEvent) {
 			return
 		}
 		message = "[%s](%s) assigned you to issue [%s#%v](%s)"
-		assigneeUserID = p.getGitHubToUserIDMapping(assignee)
+		assigneeUserID = p.getBitbucketToUserIDMapping(assignee)
 		if isPrivate && !p.permissionToRepo(assigneeUserID, repoName) {
 			assigneeUserID = ""
 		}
@@ -1208,7 +1208,7 @@ func (p *Plugin) handlePullRequestReviewNotification(event *github.PullRequestRe
 		return
 	}
 
-	authorUserID := p.getGitHubToUserIDMapping(author)
+	authorUserID := p.getBitbucketToUserIDMapping(author)
 	if authorUserID == "" {
 		return
 	}

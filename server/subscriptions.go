@@ -68,7 +68,7 @@ func (s *Subscription) Label() string {
 	return labelSplit[1]
 }
 
-func (p *Plugin) Subscribe(ctx context.Context, githubClient *github.Client, userId, owner, repo, channelID, features string) error {
+func (p *Plugin) Subscribe(ctx context.Context, bitbucketClient *github.Client, userId, owner, repo, channelID, features string) error {
 	if owner == "" {
 		return fmt.Errorf("Invalid repository")
 	}
@@ -77,7 +77,7 @@ func (p *Plugin) Subscribe(ctx context.Context, githubClient *github.Client, use
 		return err
 	}
 
-	if result, _, err := githubClient.Repositories.Get(ctx, owner, repo); result == nil || err != nil {
+	if result, _, err := bitbucketClient.Repositories.Get(ctx, owner, repo); result == nil || err != nil {
 		if err != nil {
 			mlog.Error(err.Error())
 		}
@@ -98,7 +98,7 @@ func (p *Plugin) Subscribe(ctx context.Context, githubClient *github.Client, use
 	return nil
 }
 
-func (p *Plugin) SubscribeOrg(ctx context.Context, githubClient *github.Client, userId, org, channelID, features string) error {
+func (p *Plugin) SubscribeOrg(ctx context.Context, bitbucketClient *github.Client, userId, org, channelID, features string) error {
 	if org == "" {
 		return fmt.Errorf("Invalid organization")
 	}
@@ -109,7 +109,7 @@ func (p *Plugin) SubscribeOrg(ctx context.Context, githubClient *github.Client, 
 	listOrgOptions := github.RepositoryListByOrgOptions{
 		Type: "all",
 	}
-	repos, _, err := githubClient.Repositories.ListByOrg(ctx, org, &listOrgOptions)
+	repos, _, err := bitbucketClient.Repositories.ListByOrg(ctx, org, &listOrgOptions)
 	if repos == nil || err != nil {
 		if err != nil {
 			mlog.Error(err.Error())

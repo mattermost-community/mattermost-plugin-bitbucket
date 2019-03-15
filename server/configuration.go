@@ -41,11 +41,11 @@ func (c *configuration) Clone() *configuration {
 // IsValid checks if all needed fields are set.
 func (c *configuration) IsValid() error {
 	if c.BitbucketOAuthClientID == "" {
-		return fmt.Errorf("Must have a github oauth client id")
+		return fmt.Errorf("Must have a bitbucket oauth client id")
 	}
 
 	if c.BitbucketOAuthClientSecret == "" {
-		return fmt.Errorf("Must have a github oauth client secret")
+		return fmt.Errorf("Must have a bitbucket oauth client secret")
 	}
 
 	if c.EncryptionKey == "" {

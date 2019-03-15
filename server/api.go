@@ -20,8 +20,8 @@ import (
 
 const (
 	API_ERROR_ID_NOT_CONNECTED = "not_connected"
-	GITHUB_ICON_URL            = "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
-	GITHUB_USERNAME            = "GitHub Plugin"
+	BITBUCKET_ICON_URL         = "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+	BITBUCKET_USERNAME         = "GitHub Plugin"
 )
 
 type APIErrorResponse struct {
@@ -52,10 +52,10 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 		p.handleWebhook(w, r)
 	case "/oauth/connect":
 		fmt.Printf("----- BB api.ServeHttp *** /oauth/connect -----")
-		p.connectUserToGitHub(w, r)
+		p.connectUserToBitbucket(w, r)
 	case "/oauth/complete":
 		fmt.Printf("----- BB *** api.ServeHttp *** /oauth/complete -----")
-		p.completeConnectUserToGitHub(w, r)
+		p.completeConnectUserToBitbucket(w, r)
 	case "/api/v1/connected":
 		fmt.Printf("----- BB *** api.ServeHttp *** /apt/v1/connected -----")
 		p.getConnected(w, r)
@@ -82,14 +82,14 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 	// 	p.updateSettings(w, r)
 	case "/api/v1/user":
 		fmt.Println("----- BB api.ServeHttp *** /apt/v1/user -----")
-		p.getGitHubUser(w, r)
+		p.getBitbucketUser(w, r)
 	default:
 		fmt.Println("----- BB api.ServeHttp *** default -----")
 		http.NotFound(w, r)
 	}
 }
 
-func (p *Plugin) connectUserToGitHub(w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) connectUserToBitbucket(w http.ResponseWriter, r *http.Request) {
 	userID := r.Header.Get("Mattermost-User-ID")
 	if userID == "" {
 		http.Error(w, "Not authorized", http.StatusUnauthorized)
@@ -107,7 +107,7 @@ func (p *Plugin) connectUserToGitHub(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, http.StatusFound)
 }
 
-func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.Request) {
 
 	config := p.getConfiguration()
 	//TODO
@@ -144,21 +144,21 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 	}
 
 	// connect to github API with authorization token
-	var githubClient *bitbucket.APIClient
+	var bitbucketClient *bitbucket.APIClient
 	var auth context.Context
 	fmt.Printf("auth = %+v\n", auth)
 
-	githubClient, auth = p.githubConnect(*tok)
-	fmt.Printf("githubClient = %+v\n", githubClient)
-	gitUser, _, err := githubClient.UsersApi.UserGet(auth)
-	// fmt.Println(githubClient.UsersApi.)
+	bitbucketClient, auth = p.bitbucketConnect(*tok)
+	fmt.Printf("bitbucketClient = %+v\n", bitbucketClient)
+	gitUser, _, err := bitbucketClient.UsersApi.UserGet(auth)
+	// fmt.Println(bitbucketClient.UsersApi.)
 	if err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	userInfo := &GitHubUserInfo{
+	userInfo := &BitbucketUserInfo{
 		UserID: userID,
 		Token:  tok,
 		// GitHubUsername: gitUser.GetLogin(),
@@ -172,14 +172,14 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 		// AllowedPrivateRepos: config.EnablePrivateRepo,
 	}
 
-	if err := p.storeGitHubUserInfo(userInfo); err != nil {
+	if err := p.storeBitbucketUserInfo(userInfo); err != nil {
 		fmt.Println(err.Error())
-		http.Error(w, "Unable to connect user to GitHub", http.StatusInternalServerError)
+		http.Error(w, "Unable to connect user to Bitbucket", http.StatusInternalServerError)
 		return
 	}
 
 	//TODO - need methods for getting Username and Link
-	if err := p.storeGitHubToUserIDMapping(gitUser.Username, userID); err != nil {
+	if err := p.storeBitbucketToUserIDMapping(gitUser.Username, userID); err != nil {
 		fmt.Println(err.Error())
 	}
 
@@ -226,7 +226,7 @@ func (p *Plugin) completeConnectUserToGitHub(w http.ResponseWriter, r *http.Requ
 			</script>
 		</head>
 		<body>
-			<p>Completed connecting to GitHub. Please close this window.</p>
+			<p>Completed connecting to Bitbucket. Please close this window.</p>
 		</body>
 	</html>
 	`
@@ -243,21 +243,21 @@ type ConnectedResponse struct {
 	Settings          *UserSettings `json:"settings"`
 }
 
-type GitHubUserRequest struct {
+type BitbucketUserRequest struct {
 	UserID string `json:"user_id"`
 }
 
-type GitHubUserResponse struct {
+type BitbucketUserResponse struct {
 	Username string `json:"username"`
 }
 
-func (p *Plugin) getGitHubUser(w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) getBitbucketUser(w http.ResponseWriter, r *http.Request) {
 	requestorID := r.Header.Get("Mattermost-User-ID")
 	if requestorID == "" {
 		writeAPIError(w, &APIErrorResponse{ID: "", Message: "Not authorized.", StatusCode: http.StatusUnauthorized})
 		return
 	}
-	req := &GitHubUserRequest{}
+	req := &BitbucketUserRequest{}
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&req); err != nil || req.UserID == "" {
 		if err != nil {
@@ -267,10 +267,10 @@ func (p *Plugin) getGitHubUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userInfo, apiErr := p.getGitHubUserInfo(req.UserID)
+	userInfo, apiErr := p.getBitbucketUserInfo(req.UserID)
 	if apiErr != nil {
 		if apiErr.ID == API_ERROR_ID_NOT_CONNECTED {
-			writeAPIError(w, &APIErrorResponse{ID: "", Message: "User is not connected to a GitHub account.", StatusCode: http.StatusNotFound})
+			writeAPIError(w, &APIErrorResponse{ID: "", Message: "User is not connected to a Bitbucket account.", StatusCode: http.StatusNotFound})
 		} else {
 			writeAPIError(w, apiErr)
 		}
@@ -278,11 +278,11 @@ func (p *Plugin) getGitHubUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if userInfo == nil {
-		writeAPIError(w, &APIErrorResponse{ID: "", Message: "User is not connected to a GitHub account.", StatusCode: http.StatusNotFound})
+		writeAPIError(w, &APIErrorResponse{ID: "", Message: "User is not connected to a Bitbucket account.", StatusCode: http.StatusNotFound})
 		return
 	}
 
-	resp := &GitHubUserResponse{Username: userInfo.GitHubUsername}
+	resp := &BitbucketUserResponse{Username: userInfo.GitHubUsername}
 	b, jsonErr := json.Marshal(resp)
 	if jsonErr != nil {
 		mlog.Error("Error encoding JSON response: " + jsonErr.Error())
@@ -306,7 +306,7 @@ func (p *Plugin) getConnected(w http.ResponseWriter, r *http.Request) {
 		Organization:      config.GitHubOrg,
 	}
 
-	info, _ := p.getGitHubUserInfo(userID)
+	info, _ := p.getBitbucketUserInfo(userID)
 	if info != nil && info.Token != nil {
 		resp.Connected = true
 		resp.GitHubUsername = info.GitHubUsername
@@ -327,11 +327,11 @@ func (p *Plugin) getConnected(w http.ResponseWriter, r *http.Request) {
 			if nt.Sub(lt).Hours() >= 1 && (nt.Day() != lt.Day() || nt.Month() != lt.Month() || nt.Year() != lt.Year()) {
 				p.PostToDo(info)
 				info.LastToDoPostAt = now
-				p.storeGitHubUserInfo(info)
+				p.storeBitbucketUserInfo(info)
 			}
 		}
 
-		privateRepoStoreKey := info.UserID + GITHUB_PRIVATE_REPO_KEY
+		privateRepoStoreKey := info.UserID + BITBUCKET_PRIVATE_REPO_KEY
 		if config.EnablePrivateRepo && !info.AllowedPrivateRepos {
 			hasBeenNotified := false
 			if val, err := p.API.KVGet(privateRepoStoreKey); err == nil {
@@ -341,7 +341,7 @@ func (p *Plugin) getConnected(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if !hasBeenNotified {
-				p.CreateBotDMPost(info.UserID, "Private repositories have been enabled for this plugin. To be able to use them you must disconnect and reconnect your GitHub account. To reconnect your account, use the following slash commands: `/github disconnect` followed by `/github connect`.", "")
+				p.CreateBotDMPost(info.UserID, "Private repositories have been enabled for this plugin. To be able to use them you must disconnect and reconnect your Bitbucket account. To reconnect your account, use the following slash commands: `/bitbucket disconnect` followed by `/bitbucket connect`.", "")
 				if err := p.API.KVSet(privateRepoStoreKey, []byte("1")); err != nil {
 					mlog.Error("Unable to set private repo key value, err=" + err.Error())
 				}
@@ -364,18 +364,18 @@ func (p *Plugin) getMentions(w http.ResponseWriter, r *http.Request) {
 	//
 	// ctx := context.Background()
 	//
-	// var githubClient *github.Client
+	// var bitbucketClient *github.Client
 	// username := ""
 	//
-	// if info, err := p.getGitHubUserInfo(userID); err != nil {
+	// if info, err := p.getBitbucketUserInfo(userID); err != nil {
 	// 	writeAPIError(w, err)
 	// 	return
 	// } else {
-	// 	githubClient = p.githubConnect(*info.Token)
+	// 	bitbucketClient = p.bitbucketConnect(*info.Token)
 	// 	username = info.GitHubUsername
 	// }
 	//
-	// result, _, err := githubClient.Search.Issues(ctx, getMentionSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
+	// result, _, err := bitbucketClient.Search.Issues(ctx, getMentionSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
 	// if err != nil {
 	// 	mlog.Error(err.Error())
 	// }
@@ -393,16 +393,16 @@ func (p *Plugin) getUnreads(w http.ResponseWriter, r *http.Request) {
 	//
 	// ctx := context.Background()
 	//
-	// var githubClient *github.Client
+	// var bitbucketClient *github.Client
 	//
-	// if info, err := p.getGitHubUserInfo(userID); err != nil {
+	// if info, err := p.getBitbucketUserInfo(userID); err != nil {
 	// 	writeAPIError(w, err)
 	// 	return
 	// } else {
-	// 	githubClient = p.githubConnect(*info.Token)
+	// 	bitbucketClient = p.bitbucketConnect(*info.Token)
 	// }
 	//
-	// notifications, _, err := githubClient.Activity.ListNotifications(ctx, &github.NotificationListOptions{})
+	// notifications, _, err := bitbucketClient.Activity.ListNotifications(ctx, &github.NotificationListOptions{})
 	// if err != nil {
 	// 	mlog.Error(err.Error())
 	// }
@@ -435,18 +435,18 @@ func (p *Plugin) getReviews(w http.ResponseWriter, r *http.Request) {
 	//
 	// ctx := context.Background()
 	//
-	// var githubClient *github.Client
+	// var bitbucketClient *github.Client
 	// username := ""
 	//
-	// if info, err := p.getGitHubUserInfo(userID); err != nil {
+	// if info, err := p.getBitbucketUserInfo(userID); err != nil {
 	// 	writeAPIError(w, err)
 	// 	return
 	// } else {
-	// 	githubClient = p.githubConnect(*info.Token)
+	// 	bitbucketClient = p.bitbucketConnect(*info.Token)
 	// 	username = info.GitHubUsername
 	// }
 	//
-	// result, _, err := githubClient.Search.Issues(ctx, getReviewSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
+	// result, _, err := bitbucketClient.Search.Issues(ctx, getReviewSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
 	// if err != nil {
 	// 	mlog.Error(err.Error())
 	// }
@@ -466,18 +466,18 @@ func (p *Plugin) getYourPrs(w http.ResponseWriter, r *http.Request) {
 	//
 	// ctx := context.Background()
 	//
-	// var githubClient *github.Client
+	// var bitbucketClient *github.Client
 	// username := ""
 	//
-	// if info, err := p.getGitHubUserInfo(userID); err != nil {
+	// if info, err := p.getBitbucketUserInfo(userID); err != nil {
 	// 	writeAPIError(w, err)
 	// 	return
 	// } else {
-	// 	githubClient = p.githubConnect(*info.Token)
+	// 	bitbucketClient = p.bitbucketConnect(*info.Token)
 	// 	username = info.GitHubUsername
 	// }
 	//
-	// result, _, err := githubClient.Search.Issues(ctx, getYourPrsSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
+	// result, _, err := bitbucketClient.Search.Issues(ctx, getYourPrsSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
 	// if err != nil {
 	// 	mlog.Error(err.Error())
 	// }
@@ -497,18 +497,18 @@ func (p *Plugin) getYourAssignments(w http.ResponseWriter, r *http.Request) {
 	//
 	// 	ctx := context.Background()
 	//
-	// 	var githubClient *github.Client
+	// 	var bitbucketClient *github.Client
 	// 	username := ""
 	//
-	// 	if info, err := p.getGitHubUserInfo(userID); err != nil {
+	// 	if info, err := p.getBitbucketUserInfo(userID); err != nil {
 	// 		writeAPIError(w, err)
 	// 		return
 	// 	} else {
-	// 		githubClient = p.githubConnect(*info.Token)
+	// 		bitbucketClient = p.bitbucketConnect(*info.Token)
 	// 		username = info.GitHubUsername
 	// 	}
 	//
-	// 	result, _, err := githubClient.Search.Issues(ctx, getYourAssigneeSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
+	// 	result, _, err := bitbucketClient.Search.Issues(ctx, getYourAssigneeSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
 	// 	if err != nil {
 	// 		mlog.Error(err.Error())
 	// 	}
@@ -525,18 +525,18 @@ func (p *Plugin) getYourAssignments(w http.ResponseWriter, r *http.Request) {
 	// 		return
 	// 	}
 	//
-	// 	var githubClient *github.Client
+	// 	var bitbucketClient *github.Client
 	// 	username := ""
 	//
-	// 	if info, err := p.getGitHubUserInfo(userID); err != nil {
+	// 	if info, err := p.getBitbucketUserInfo(userID); err != nil {
 	// 		writeAPIError(w, err)
 	// 		return
 	// 	} else {
-	// 		githubClient = p.githubConnect(*info.Token)
+	// 		bitbucketClient = p.bitbucketConnect(*info.Token)
 	// 		username = info.GitHubUsername
 	// 	}
 	//
-	// 	text, err := p.GetToDo(context.Background(), username, githubClient)
+	// 	text, err := p.GetToDo(context.Background(), username, bitbucketClient)
 	// 	if err != nil {
 	// 		mlog.Error(err.Error())
 	// 		writeAPIError(w, &APIErrorResponse{ID: "", Message: "Encountered an error getting the to do items.", StatusCode: http.StatusUnauthorized})
@@ -564,7 +564,7 @@ func (p *Plugin) updateSettings(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 	//
-	// info, err := p.getGitHubUserInfo(userID)
+	// info, err := p.getBitbucketUserInfo(userID)
 	// if err != nil {
 	// 	writeAPIError(w, err)
 	// 	return
@@ -572,7 +572,7 @@ func (p *Plugin) updateSettings(w http.ResponseWriter, r *http.Request) {
 	//
 	// info.Settings = settings
 	//
-	// if err := p.storeGitHubUserInfo(info); err != nil {
+	// if err := p.storeBitbucketUserInfo(info); err != nil {
 	// 	mlog.Error(err.Error())
 	// 	http.Error(w, "Encountered error updating settings", http.StatusInternalServerError)
 	// }
