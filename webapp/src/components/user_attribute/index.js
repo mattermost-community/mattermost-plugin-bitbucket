@@ -1,25 +1,25 @@
 import {connect} from 'react-redux';
 import {bindActionCreators} from 'redux';
 
-import {getGitHubUser} from '../../actions';
+import {getBitbucketUser} from '../../actions';
 
 import UserAttribute from './user_attribute.jsx';
 
 function mapStateToProps(state, ownProps) {
     const id = ownProps.user ? ownProps.user.id : '';
-    const user = state['plugins-github'].githubUsers[id] || {};
+    const user = state['plugins-bitbucket'].bitbucketUsers[id] || {};
 
     return {
         id,
         username: user.username,
-        enterpriseURL: state['plugins-github'].enterpriseURL,
+        enterpriseURL: state['plugins-bitbucket'].enterpriseURL,
     };
 }
 
 function mapDispatchToProps(dispatch) {
     return {
         actions: bindActionCreators({
-            getGitHubUser,
+            getBitbucketUser,
         }, dispatch),
     };
 }

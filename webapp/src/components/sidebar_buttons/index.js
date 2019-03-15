@@ -7,15 +7,15 @@ import SidebarButtons from './sidebar_buttons.jsx';
 
 function mapStateToProps(state) {
     return {
-        connected: state['plugins-github'].connected,
-        username: state['plugins-github'].username,
-        clientId: state['plugins-github'].clientId,
-        reviews: state['plugins-github'].reviews,
-        yourPrs: state['plugins-github'].yourPrs,
-        yourAssignments: state['plugins-github'].yourAssignments,
-        unreads: state['plugins-github'].unreads,
-        enterpriseURL: state['plugins-github'].enterpriseURL,
-        org: state['plugins-github'].organization,
+        connected: state['plugins-bitbucket'].connected,
+        username: state['plugins-bitbucket'].username,
+        clientId: state['plugins-bitbucket'].clientId,
+        reviews: state['plugins-bitbucket'].reviews,
+        yourPrs: state['plugins-bitbucket'].yourPrs,
+        yourAssignments: state['plugins-bitbucket'].yourAssignments,
+        unreads: state['plugins-bitbucket'].unreads,
+        enterpriseURL: state['plugins-bitbucket'].enterpriseURL,
+        org: state['plugins-bitbucket'].organization,
     };
 }
 

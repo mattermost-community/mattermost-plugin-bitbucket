@@ -2,7 +2,7 @@ import request from 'superagent';
 
 export default class Client {
     constructor() {
-        this.url = '/plugins/github/api/v1';
+        this.url = '/plugins/bitbucket/api/v1';
     }
 
     getConnected = async (reminder = false) => {
@@ -29,7 +29,7 @@ export default class Client {
         return this.doGet(`${this.url}/unreads`);
     }
 
-    getGitHubUser = async (userID) => {
+    getBitbucketUser = async (userID) => {
         return this.doPost(`${this.url}/user`, {user_id: userID});
     }
 
