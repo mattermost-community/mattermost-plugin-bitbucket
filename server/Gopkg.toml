@@ -22,3 +22,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/wbrefvem/go-bitbucket"
+
+[[constraint]]
+  name = "github.com/go-playground/webhooks"
+  version = "4.1.1"
