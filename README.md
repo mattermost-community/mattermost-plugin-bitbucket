@@ -73,20 +73,20 @@ __Requires Mattermost 5.2 or higher. If you're running Mattermost 5.6+, it is st
     1. Go to the System Console -> Plugins -> Bitbucket and click "Regenerate" under "At Rest Encryption Key"
     2. Save the settings
 6. (Optional) Lock the plugin to a Bitbucket organization
-    * Go to System Console -> Plugins -> Bitbucket and set the Bitbucket
+    1. Go to System Console -> Plugins -> Bitbucket and set the Bitbucket
       Organization field to the name of your Bitbucket organization
 7. (Optional) Enable private repositories
-    * Go to System Console -> Plugins -> Bitbucket and set Enable Private Repositories to true
-    * Note that if you do this after users have already connected their
+    1. Go to System Console -> Plugins -> Bitbucket and set Enable Private Repositories to true
+    2. Note that if you do this after users have already connected their
       accounts to Bitbucket they will need to disconnect and reconnect their accounts to be able to use private repositories
 8. (Not yet supported) Set your Enterprise URLs
-    * Go to System Console -> Plugins -> Bitbucket and set the Enterprise Base
+    1. Go to System Console -> Plugins -> Bitbucket and set the Enterprise Base
       URL and Enterprise Upload URL fields to your Bitbucket Enterprise URLs, ex: `https://bitbucket.example.com`
-    * The Base and Upload URLs are often the same
+    2. The Base and Upload URLs are often the same
 9. Enable the plugin 
-    * Go to System Console -> Plugins -> Management and click "Enable" underneath the Bitbucket plugin
+    1. Go to System Console -> Plugins -> Management and click "Enable" underneath the Bitbucket plugin
 10. Test it out
-    * In Mattermost, run the slash command `/bitbucket connect`
+    2. In Mattermost, run the slash command `/bitbucket connect`
 
 ## NOTES : bitbucket does not user a webhook secret
 
