@@ -10,6 +10,7 @@ import (
 	"github.com/mattermost/mattermost-server/mlog"
 
 	"github.com/google/go-github/github"
+	"github.com/wbrefvem/go-bitbucket"
 )
 
 const (
@@ -68,7 +69,7 @@ func (s *Subscription) Label() string {
 	return labelSplit[1]
 }
 
-func (p *Plugin) Subscribe(ctx context.Context, bitbucketClient *github.Client, userId, owner, repo, channelID, features string) error {
+func (p *Plugin) Subscribe(ctx context.Context, bitbucketClient *bitbucket.APIClient, userId, owner, repo, channelID, features string) error {
 	if owner == "" {
 		return fmt.Errorf("Invalid repository")
 	}
@@ -77,12 +78,22 @@ func (p *Plugin) Subscribe(ctx context.Context, bitbucketClient *github.Client, 
 		return err
 	}
 
-	if result, _, err := bitbucketClient.Repositories.Get(ctx, owner, repo); result == nil || err != nil {
-		if err != nil {
-			mlog.Error(err.Error())
-		}
+	result, _, err := bitbucketClient.RepositoriesApi.RepositoriesUsernameRepoSlugGet(ctx, owner, repo)
+	fmt.Printf("result = %+v\n", result)
+	if err != nil {
+		mlog.Error(err.Error())
 		return fmt.Errorf("Unknown repository %s/%s", owner, repo)
 	}
+	// if result, _, err := bitbucketClient.RepositoriesApi.RepositoriesUsernameRepoSlugGet(ctx, owner, repo); result == nil || err != nil {
+	// 	if err != nil {
+	// 		mlog.Error(err.Error())
+	// 	}
+	// 	return fmt.Errorf("Unknown repository %s/%s", owner, repo)
+	// }
+
+	fmt.Println("--- LETS SUBSCRIBE --")
+	fmt.Printf("--- ChannelID = %+v\n", channelID)
+	fmt.Printf("--- userid = %+v\n", userId)
 
 	sub := &Subscription{
 		ChannelID:  channelID,
@@ -215,22 +226,30 @@ func (p *Plugin) StoreSubscriptions(s *Subscriptions) error {
 	return nil
 }
 
-func (p *Plugin) GetSubscribedChannelsForRepository(repo *github.Repository) []*Subscription {
-	name := repo.GetFullName()
+// func (p *Plugin) GetSubscribedChannelsForRepository(repo *github.Repository) []*Subscription {
+func (p *Plugin) GetSubscribedChannelsForRepository(name string, isprivate bool) []*Subscription {
+	// name := repo.GetFullName()
+	fmt.Println("---- GetSubscribedChannelsForRepository ----")
 	subs, err := p.GetSubscriptions()
 	if err != nil {
 		return nil
 	}
 
+	fmt.Printf("---> name = %+v\n", name)
 	subsForRepo := subs.Repositories[name]
 	if subsForRepo == nil {
 		return nil
 	}
+	fmt.Printf("---> subsForRepo = %+v\n", subsForRepo)
 
 	subsToReturn := []*Subscription{}
 
 	for _, sub := range subsForRepo {
-		if repo.GetPrivate() && !p.permissionToRepo(sub.CreatorID, name) {
+		// if repo.GetPrivate() && !p.permissionToRepo(sub.CreatorID, name) {
+		fmt.Printf("----> sub = %+v\n", sub)
+		// fmt.Printf("isprivate = %+v\n", isprivate)
+		fmt.Printf("----> sub.CreatorID = %+v\n", sub.CreatorID)
+		if isprivate && !p.permissionToRepo(sub.CreatorID, name) {
 			continue
 		}
 		subsToReturn = append(subsToReturn, sub)

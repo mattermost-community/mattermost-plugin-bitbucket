@@ -55,6 +55,7 @@ type Plugin struct {
 func (p *Plugin) bitbucketConnect(token oauth2.Token) (*bitbucket.APIClient, context.Context) {
 
 	// config := p.getConfiguration()
+	// fmt.Printf("----- #### BB plugin.bitbucketConnect  -> HERE IS PROBLEM ***  config = %+v", config)
 
 	// get Oauth token source and client
 	ts := oauth2.StaticTokenSource(&token)

@@ -104,9 +104,8 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 
 	switch action {
 	case "subscribe":
-		fmt.Println("----- BB command.ExecuteCommand [action=subscribe]")
+		config := p.getConfiguration()
 		features := "pulls,issues,creates,deletes"
-		fmt.Printf("features = %+v\n", features)
 
 		txt := ""
 		if len(parameters) == 0 {
@@ -130,7 +129,9 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 			features = strings.Join(parameters[1:], " ")
 		}
 
-		// _, owner, repo := parseOwnerAndRepo(parameters[0], config.EnterpriseBaseURL)
+		_, owner, repo := parseOwnerAndRepo(parameters[0], config.EnterpriseBaseURL)
+		fmt.Printf("owner = %+v\n", owner)
+		fmt.Printf("repo = %+v\n", repo)
 		// if repo == "" {
 		// 	if err := p.SubscribeOrg(context.Background(), bitbucketClient, args.UserId, owner, args.ChannelId, features); err != nil {
 		// 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, err.Error()), nil
@@ -139,12 +140,11 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Successfully subscribed to organization %s.", owner)), nil
 		// }
 		//
-		// if err := p.Subscribe(context.Background(), bitbucketClient, args.UserId, owner, repo, args.ChannelId, features); err != nil {
-		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, err.Error()), nil
-		// }
+		if err := p.Subscribe(context.Background(), bitbucketClient, args.UserId, owner, repo, args.ChannelId, features); err != nil {
+			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, err.Error()), nil
+		}
+		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Successfully subscribed to %s.", repo)), nil
 
-		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Successfully subscribed to %s.", "repo  TODO")), nil
-		// return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Successfully subscribed to %s.", repo)), nil
 	case "unsubscribe":
 		// if len(parameters) == 0 {
 		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Please specify a repository."), nil
