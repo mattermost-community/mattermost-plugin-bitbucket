@@ -42,33 +42,25 @@ __Requires Mattermost 5.2 or higher. If you're running Mattermost 5.6+, it is st
     3. Upload the plugin
 2. Register a Bitbucket OAuth app
     1. Go to https://bitbucket.org
-      2. Click Avatar -> Bitbucket settings -> Settings -> Access Management (OAuth) -> Add consumer
-      3. Fill / select the following
-        3. Name: "Mattermost Bitbucket Plugin - &#060;your company name>" 
-        4. URL: "https://github.com/mattermost/mattermost-plugin-bitbucket"  
-        5. Callback URL: "https://your-mattermost-url.com/plugins/bitbucket/oauth/complete"  
-            * replace `https://your-mattermost-url.com` with your Mattermost URL 
-          * Permissions: for this oauth consumer account 
-            * Issues: Read
-            * Repositories: Read
-            * Account: Read
-        * Save and copy the Key and Secret
+    2. Click Avatar -> Bitbucket settings -> Settings -> Access Management (OAuth) -> Add consumer
+        1. Use "Mattermost Bitbucket Plugin - &#060;your company name>" as the name
+        2. Use "https://github.com/mattermost/mattermost-plugin-bitbucket" as the URL
+        3. Use "https://your-mattermost-url.com/plugins/bitbucket/oauth/complete" as the callback URL, replacing `https://your-mattermost-url.com` with your Mattermost URL. 
+        4. Set `Read` permissions on Issues, Repositories and Account for this OAuth consumer account 
+        5. Save and copy the Key and Secret
     3. In Mattermost, go to System Console -> Plugins -> Bitbucket 
-      4. Fill in the Client ID (Key) and Client Secret 
-      5. Save the settings
+        1. Fill in the Client ID (Key) and Client Secret and save the settings
 3. Create a Bitbucket webhook
-    1. In Mattermost, go to the System Console -> Plugins -> Bitbucket -> Regererate 
-      2. Copy the "Webhook Secret"
-    3. Go to the settings page of your Bitbucket repository and click on "Webhooks" in the sidebar
-      4. Click "Add webhook"
-      5. Fill / select the following 
-        6. Title: "Mattermost Bitbucket Webhook - &#060;repository_name>", where &#060;repository_name> is the name of your repository 
-        7. URL: "https://your-mattermost-url.com/plugins/bitbucket/webhook" 
-            8. replace `https://your-mattermost-url.com` with your Mattermost URL 
-        9. Triggers: select "Choose from a full list of trigger" 
-          10. Select Issues: "Created", "Updated", and "Comment Created" 
-    5. Save the webhook
-    6. __Note for each organization you want to receive notifications for or subscribe to, you must create a webhook__
+    1. In Mattermost, go to the System Console -> Plugins -> Bitbucket -> Regenerate 
+        1. Copy the "Webhook Secret"
+    2. Go to the settings page of your Bitbucket repository and click on "Webhooks" in the sidebar
+        1. Click "Add webhook"
+        2. Use "Mattermost Bitbucket Webhook - &#060;repository_name>" as the title, where &#060;repository_name is the name of your repository 
+        3. Use "https://your-mattermost-url.com/plugins/bitbucket/webhook" as the URL, replacing `https://your-mattermost-url.com` with your Mattermost URL 
+        4. Select "Choose from a full list of trigger" as your trigger
+        5. Select Issues: "Created", "Updated", and "Comment Created" 
+    3. Save the webhook
+    4. __Note for each organization you want to receive notifications for or subscribe to, you must create a webhook__
 4. Configure a bot account
     1. Create a new Mattermost user, through the regular UI or the CLI with the username "bitbucket"
     2. I created by signing out of MM and creating user through signup. 
@@ -87,9 +79,9 @@ __Requires Mattermost 5.2 or higher. If you're running Mattermost 5.6+, it is st
     * Go to System Console -> Plugins -> Bitbucket and set Enable Private Repositories to true
     * Note that if you do this after users have already connected their
       accounts to Bitbucket they will need to disconnect and reconnect their accounts to be able to use private repositories
-8. (Enterprise only) Set your Enterprise URLs
+8. (Not yet supported) Set your Enterprise URLs
     * Go to System Console -> Plugins -> Bitbucket and set the Enterprise Base
-      URL and Enterprise Upload URL fields to your Bitbucket Enterprise URLs, ex: `https://github.example.com`
+      URL and Enterprise Upload URL fields to your Bitbucket Enterprise URLs, ex: `https://bitbucket.example.com`
     * The Base and Upload URLs are often the same
 9. Enable the plugin 
     * Go to System Console -> Plugins -> Management and click "Enable" underneath the Bitbucket plugin
