@@ -6,8 +6,10 @@ A Bitbucket plugin for Mattermost. The plugin is currently in beta.
 
 * Slash commands
   * /bitbucket connect
+  * /bitbucket disconnect
   * /bitbucket me
   * /bitbucket subscribe owner/repo
+  * /bitbucket unsubscribe owner/repo
 * Webhook triggering events
   * Issues:
     * Created

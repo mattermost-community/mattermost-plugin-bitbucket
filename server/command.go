@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	// "github.com/mattermost/mattermost-server/mlog"
+	"github.com/mattermost/mattermost-server/mlog"
 	"github.com/mattermost/mattermost-server/plugin"
 
 	"github.com/mattermost/mattermost-server/model"
@@ -56,7 +56,7 @@ func getCommandResponse(responseType, text string) *model.CommandResponse {
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-	// fmt.Printf("----- BB command.ExecuteCommand \n    --> args=%+v", args)
+	fmt.Printf("----- BB command.ExecuteCommand \n    --> args=%+v", args)
 	split := strings.Fields(args.Command)
 	command := split[0]
 	parameters := []string{}
@@ -106,6 +106,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	case "subscribe":
 		config := p.getConfiguration()
 		features := "pulls,issues,creates,deletes"
+		fmt.Printf("args.ChannelId = %+v\n", args.ChannelId)
 
 		txt := ""
 		if len(parameters) == 0 {
@@ -146,18 +147,18 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Successfully subscribed to %s.", repo)), nil
 
 	case "unsubscribe":
-		// if len(parameters) == 0 {
-		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Please specify a repository."), nil
-		// }
-		//
-		// repo := parameters[0]
-		//
-		// if err := p.Unsubscribe(args.ChannelId, repo); err != nil {
-		// 	mlog.Error(err.Error())
-		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error trying to unsubscribe. Please try again."), nil
-		// }
-		//
-		// return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Succesfully unsubscribed from %s.", repo)), nil
+		if len(parameters) == 0 {
+			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Please specify a repository."), nil
+		}
+
+		repo := parameters[0]
+
+		if err := p.Unsubscribe(args.ChannelId, repo); err != nil {
+			mlog.Error(err.Error())
+			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error trying to unsubscribe. Please try again."), nil
+		}
+
+		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Succesfully unsubscribed from %s.", repo)), nil
 	case "disconnect":
 		fmt.Println("----- BB command.ExecuteCommand action=disconnect")
 		p.disconnectBitbucketAccount(args.UserId)
