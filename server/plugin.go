@@ -52,7 +52,7 @@ type Plugin struct {
 }
 
 // func (p *Plugin) bitbucketConnect(token oauth2.Token) (*bitbucket.APIClient, *context.valueCtx) {
-func (p *Plugin) bitbucketConnect(token oauth2.Token) (*bitbucket.APIClient, context.Context) {
+func (p *Plugin) bitbucketConnect(token oauth2.Token) *bitbucket.APIClient {
 
 	// config := p.getConfiguration()
 	// fmt.Printf("----- #### BB plugin.bitbucketConnect  -> HERE IS PROBLEM ***  config = %+v", config)
@@ -63,14 +63,17 @@ func (p *Plugin) bitbucketConnect(token oauth2.Token) (*bitbucket.APIClient, con
 	// setup Oauth context
 	auth := context.WithValue(oauth2.NoContext, bitbucket.ContextOAuth2, ts)
 
+	tc := oauth2.NewClient(auth, ts)
+
 	// create config for bitbucket API
 	config_bb := bitbucket.NewConfiguration()
+	config_bb.HTTPClient = tc
 
 	// create new bitbucket client API
 	new_client := bitbucket.NewAPIClient(config_bb)
 
 	// TODO figure out how to add auth to client so dont' have to return it
-	return new_client, auth
+	return new_client
 
 }
 

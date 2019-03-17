@@ -88,7 +88,6 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	ctx := context.Background()
 	fmt.Printf("----- BB command.ExecuteCommand --> \nctx = %+v\n", ctx)
 	var bitbucketClient *bitbucket.APIClient
-	var auth context.Context
 
 	info, apiErr := p.getBitbucketUserInfo(args.UserId)
 	fmt.Printf("----- BB commnad.ExecuteCOmmand --> \ninfo = %+v\n", info)
@@ -100,7 +99,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
 	}
 
-	bitbucketClient, auth = p.bitbucketConnect(*info.Token)
+	bitbucketClient = p.bitbucketConnect(*info.Token)
 
 	switch action {
 	case "subscribe":
@@ -171,7 +170,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		// }
 		// return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
 	case "me":
-		gitUser, _, err := bitbucketClient.UsersApi.UserGet(auth)
+		gitUser, _, err := bitbucketClient.UsersApi.UserGet(ctx)
 		avatar := gitUser.Links.Avatar.Href
 		html := gitUser.Links.Html.Href
 		username := gitUser.Username

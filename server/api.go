@@ -171,14 +171,12 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 	fmt.Printf("---- completeConnectUser  ->  tok = %+v\n", tok)
 
 	var bitbucketClient *bitbucket.APIClient
-	var auth context.Context
 
 	// connect to bitbucket API with authorization token
-	bitbucketClient, auth = p.bitbucketConnect(*tok)
-	fmt.Printf("---- completeConnectUser  ->  auth = %+v\n", auth)
+	bitbucketClient = p.bitbucketConnect(*tok)
 
 	// get bitbucket user from Authorized bitbucket API request
-	bitbucketUser, _, err := bitbucketClient.UsersApi.UserGet(auth)
+	bitbucketUser, _, err := bitbucketClient.UsersApi.UserGet(ctx)
 	fmt.Printf("---- completeConnectUser  ->  bitbucketUser = %+v\n", bitbucketUser)
 
 	if err != nil {
