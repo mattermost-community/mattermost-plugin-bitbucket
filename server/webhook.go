@@ -14,8 +14,7 @@ import (
 	"strings"
 
 	"github.com/google/go-github/github"
-	"github.com/mattermost/mattermost-server/mlog"
-	"github.com/mattermost/mattermost-server/model"
+	"github.com/mattermost/mattermost-server/v5/model"
 	// "github.com/wbrefvem/go-bitbucket"
 	bb_webhook "gopkg.in/go-playground/webhooks.v5/bitbucket"
 )
@@ -139,7 +138,7 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		mlog.Error(err.Error())
+		p.API.LogError(err.Error())
 		return
 	}
 
@@ -168,7 +167,7 @@ func (p *Plugin) postIssueUpdatedEvent(pl interface{}) {
 
 	userID := ""
 	if user, err := p.API.GetUserByUsername(config.Username); err != nil {
-		mlog.Error(err.Error())
+		p.API.LogError(err.Error())
 		return
 	} else {
 		userID = user.Id
@@ -193,7 +192,7 @@ func (p *Plugin) postIssueUpdatedEvent(pl interface{}) {
 		r.Issue.Links.HTML.Href,
 		r.Changes.Status.Old,
 		r.Changes.Status.New,
-		r.Actor.Username,
+		r.Actor.NickName,
 		r.Actor.Links.HTML.Href,
 		r.Issue.CreatedOn,
 		r.Issue.Links.HTML.Href,
@@ -252,7 +251,7 @@ func (p *Plugin) postIssueUpdatedEvent(pl interface{}) {
 		// post.ChannelId = "h94nhbsr4bfmu88ybrr94m5utc"
 		// fmt.Printf("sub.ChannelID = %+v\n", sub.ChannelID)
 		if _, err := p.API.CreatePost(post); err != nil {
-			mlog.Error(err.Error())
+			p.API.LogError(err.Error())
 		}
 	}
 }
@@ -280,7 +279,7 @@ func (p *Plugin) postIssueCreatedEvent(pl interface{}) {
 
 	userID := ""
 	if user, err := p.API.GetUserByUsername(config.Username); err != nil {
-		mlog.Error(err.Error())
+		p.API.LogError(err.Error())
 		return
 	} else {
 		userID = user.Id
@@ -301,7 +300,7 @@ func (p *Plugin) postIssueCreatedEvent(pl interface{}) {
 		r.Repository.FullName,
 		r.Issue.ID,
 		r.Issue.Links.HTML.Href,
-		r.Actor.Username,
+		r.Actor.NickName,
 		r.Actor.Links.HTML.Href,
 		r.Issue.CreatedOn,
 		r.Issue.Links.HTML.Href,
@@ -355,7 +354,7 @@ func (p *Plugin) postIssueCreatedEvent(pl interface{}) {
 
 		post.ChannelId = sub.ChannelID
 		if _, err := p.API.CreatePost(post); err != nil {
-			mlog.Error(err.Error())
+			p.API.LogError(err.Error())
 		}
 	}
 }
@@ -376,7 +375,7 @@ func (p *Plugin) postIssueCommentCreatedEvent(pl interface{}) {
 
 	userID := ""
 	if user, err := p.API.GetUserByUsername(config.Username); err != nil {
-		mlog.Error(err.Error())
+		p.API.LogError(err.Error())
 		return
 	} else {
 		userID = user.Id
@@ -390,8 +389,8 @@ func (p *Plugin) postIssueCommentCreatedEvent(pl interface{}) {
 	message := fmt.Sprintf("[\\[%s\\]](%s) New comment by [%s](%s) on [#%v %s]:\n\n%s",
 		r.Repository.FullName,
 		r.Repository.Links.HTML.Href,
-		r.Actor.Username,
-		r.Actor.Username,
+		r.Actor.NickName,
+		r.Actor.NickName,
 		r.Issue.ID,
 		r.Issue.Title,
 		r.Comment.Content.Raw)
@@ -447,7 +446,7 @@ func (p *Plugin) postIssueCommentCreatedEvent(pl interface{}) {
 		// post.ChannelId = "1qzoxocfh7dedcf3bhjfn8ss5e"
 		// post.ChannelId = "h94nhbsr4bfmu88ybrr94m5utc"
 		if _, err := p.API.CreatePost(post); err != nil {
-			mlog.Error(err.Error())
+			p.API.LogError(err.Error())
 		}
 	}
 
@@ -1035,7 +1034,7 @@ func (p *Plugin) handleCommentMentionNotification(event *github.IssueCommentEven
 		post.ChannelId = channel.Id
 		_, err = p.API.CreatePost(post)
 		if err != nil {
-			mlog.Error("Error creating mention post: " + err.Error())
+			p.API.LogError("Error creating mention post: " + err.Error())
 		}
 
 		p.sendRefreshEvent(userID)

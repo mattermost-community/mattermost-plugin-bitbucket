@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/mlog"
-
 	"github.com/google/go-github/github"
 	"github.com/wbrefvem/go-bitbucket"
 )
@@ -81,7 +79,7 @@ func (p *Plugin) Subscribe(ctx context.Context, bitbucketClient *bitbucket.APICl
 	result, _, err := bitbucketClient.RepositoriesApi.RepositoriesUsernameRepoSlugGet(ctx, owner, repo)
 	fmt.Printf("result = %+v\n", result)
 	if err != nil {
-		mlog.Error(err.Error())
+		p.API.LogError(err.Error())
 		return fmt.Errorf("Unknown repository %s/%s", owner, repo)
 	}
 	// if result, _, err := bitbucketClient.RepositoriesApi.RepositoriesUsernameRepoSlugGet(ctx, owner, repo); result == nil || err != nil {
@@ -123,7 +121,7 @@ func (p *Plugin) SubscribeOrg(ctx context.Context, bitbucketClient *github.Clien
 	repos, _, err := bitbucketClient.Repositories.ListByOrg(ctx, org, &listOrgOptions)
 	if repos == nil || err != nil {
 		if err != nil {
-			mlog.Error(err.Error())
+			p.API.LogError(err.Error())
 		}
 		return fmt.Errorf("Unknown organization %s", org)
 	}
