@@ -65,7 +65,7 @@ export default class SidebarButtons extends React.PureComponent {
 
     openConnectWindow = (e) => {
         e.preventDefault();
-        window.open('/plugins/github/oauth/connect', 'Connect Mattermost to GitHub', 'height=570,width=520');
+        window.open('/plugins/bitbucket/oauth/connect', 'Connect Mattermost to Bitbucket', 'height=570,width=520');
     }
 
     render() {
@@ -85,16 +85,16 @@ export default class SidebarButtons extends React.PureComponent {
             if (isTeamSidebar) {
                 return (
                     <OverlayTrigger
-                        key='githubConnectLink'
+                        key='bitbucketConnectLink'
                         placement={placement}
-                        overlay={<Tooltip id='reviewTooltip'>Connect to your GitHub</Tooltip>}
+                        overlay={<Tooltip id='reviewTooltip'>Connect to your Bitbucket</Tooltip>}
                     >
                         <a
-                            href='/plugins/github/oauth/connect'
+                            href='/plugins/bitbucket/oauth/connect'
                             onClick={this.openConnectWindow}
                             style={button}
                         >
-                            <i className='fa fa-github fa-2x'/>
+                            <i className='fa fa-bitbucket fa-2x'/>
                         </a>
                     </OverlayTrigger>
                 );
@@ -108,7 +108,7 @@ export default class SidebarButtons extends React.PureComponent {
         const yourAssignments = this.props.yourAssignments || [];
         const refreshClass = this.state.refreshing ? ' fa-spin' : '';
 
-        let baseURL = 'https://github.com';
+        let baseURL = 'https://bitbucket.org';
         if (this.props.enterpriseURL) {
             baseURL = this.props.enterpriseURL;
         }
@@ -121,16 +121,16 @@ export default class SidebarButtons extends React.PureComponent {
         return (
             <div style={container}>
                 <a
-                    key='githubHeader'
+                    key='bitbucketHeader'
                     href={baseURL + '/settings/connections/applications/' + this.props.clientId}
                     target='_blank'
                     rel='noopener noreferrer'
                     style={button}
                 >
-                    <i className='fa fa-github fa-lg'/>
+                    <i className='fa fa-bitbucket fa-lg'/>
                 </a>
                 <OverlayTrigger
-                    key='githubYourPrsLink'
+                    key='bitbucketYourPrsLink'
                     placement={placement}
                     overlay={<Tooltip id='yourPrsTooltip'>Your open pull requests</Tooltip>}
                 >
@@ -145,7 +145,7 @@ export default class SidebarButtons extends React.PureComponent {
                     </a>
                 </OverlayTrigger>
                 <OverlayTrigger
-                    key='githubReviewsLink'
+                    key='bitbucketReviewsLink'
                     placement={placement}
                     overlay={<Tooltip id='reviewTooltip'>Pull requests needing review</Tooltip>}
                 >
@@ -160,7 +160,7 @@ export default class SidebarButtons extends React.PureComponent {
                     </a>
                 </OverlayTrigger>
                 <OverlayTrigger
-                    key='githubAssignmentsLink'
+                    key='bitbucketAssignmentsLink'
                     placement={placement}
                     overlay={<Tooltip id='reviewTooltip'>Your assignments</Tooltip>}
                 >
@@ -175,7 +175,7 @@ export default class SidebarButtons extends React.PureComponent {
                     </a>
                 </OverlayTrigger>
                 <OverlayTrigger
-                    key='githubUnreadsLink'
+                    key='bitbucketUnreadsLink'
                     placement={placement}
                     overlay={<Tooltip id='unreadsTooltip'>Unread messages</Tooltip>}
                 >
@@ -190,7 +190,7 @@ export default class SidebarButtons extends React.PureComponent {
                     </a>
                 </OverlayTrigger>
                 <OverlayTrigger
-                    key='githubRefreshButton'
+                    key='bitbucketRefreshButton'
                     placement={placement}
                     overlay={<Tooltip id='refreshTooltip'>Refresh</Tooltip>}
                 >

@@ -26,8 +26,8 @@ function checkAndHandleNotConnected(data) {
                 type: ActionTypes.RECEIVED_CONNECTED,
                 data: {
                     connected: false,
-                    github_username: '',
-                    github_client_id: '',
+                    bitbucket_username: '',
+                    bitbucket_client_id: '',
                     settings: {},
                 },
             });
@@ -152,16 +152,16 @@ export function getUnreads() {
     };
 }
 
-const GITHUB_USER_GET_TIMEOUT_MILLISECONDS = 1000 * 60 * 60; // 1 hour
+const BITBUCKET_USER_GET_TIMEOUT_MILLISECONDS = 1000 * 60 * 60; // 1 hour
 
-export function getGitHubUser(userID) {
+export function getBitbucketUser(userID) {
     return async (dispatch, getState) => {
         if (!userID) {
             return {};
         }
 
-        const user = getState()['plugins-github'].githubUsers[userID];
-        if (user && user.last_try && Date.now() - user.last_try < GITHUB_USER_GET_TIMEOUT_MILLISECONDS) {
+        const user = getState()['plugins-bitbucket'].bitbucketUsers[userID];
+        if (user && user.last_try && Date.now() - user.last_try < BITBUCKET_USER_GET_TIMEOUT_MILLISECONDS) {
             return {};
         }
 
@@ -171,11 +171,11 @@ export function getGitHubUser(userID) {
 
         let data;
         try {
-            data = await Client.getGitHubUser(userID);
+            data = await Client.getBitbucketUser(userID);
         } catch (error) {
             if (error.status === 404) {
                 dispatch({
-                    type: ActionTypes.RECEIVED_GITHUB_USER,
+                    type: ActionTypes.RECEIVED_BITBUCKET_USER,
                     userID,
                     data: {last_try: Date.now()},
                 });
@@ -184,7 +184,7 @@ export function getGitHubUser(userID) {
         }
 
         dispatch({
-            type: ActionTypes.RECEIVED_GITHUB_USER,
+            type: ActionTypes.RECEIVED_BITBUCKET_USER,
             userID,
             data,
         });

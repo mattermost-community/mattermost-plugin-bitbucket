@@ -15,29 +15,31 @@ import (
 	"github.com/mattermost/mattermost-server/plugin"
 
 	"github.com/google/go-github/github"
+	"github.com/wbrefvem/go-bitbucket"
 	"golang.org/x/oauth2"
 )
 
 const (
-	GITHUB_TOKEN_KEY        = "_githubtoken"
-	GITHUB_STATE_KEY        = "_githubstate"
-	GITHUB_USERNAME_KEY     = "_githubusername"
-	GITHUB_PRIVATE_REPO_KEY = "_githubprivate"
-	WS_EVENT_CONNECT        = "connect"
-	WS_EVENT_DISCONNECT     = "disconnect"
-	WS_EVENT_REFRESH        = "refresh"
-	SETTING_BUTTONS_TEAM    = "team"
-	SETTING_BUTTONS_CHANNEL = "channel"
-	SETTING_BUTTONS_OFF     = "off"
-	SETTING_NOTIFICATIONS   = "notifications"
-	SETTING_REMINDERS       = "reminders"
-	SETTING_ON              = "on"
-	SETTING_OFF             = "off"
+	BITBUCKET_TOKEN_KEY        = "_bitbuckettoken"
+	BITBUCKET_STATE_KEY        = "_bitbucketstate"
+	BITBUCKET_USERNAME_KEY     = "_bitbucketusername"
+	BITBUCKET_PRIVATE_REPO_KEY = "_bitbucketprivate"
+	WS_EVENT_CONNECT           = "connect"
+	WS_EVENT_DISCONNECT        = "disconnect"
+	WS_EVENT_REFRESH           = "refresh"
+	SETTING_BUTTONS_TEAM       = "team"
+	SETTING_BUTTONS_CHANNEL    = "channel"
+	SETTING_BUTTONS_OFF        = "off"
+	SETTING_NOTIFICATIONS      = "notifications"
+	SETTING_REMINDERS          = "reminders"
+	SETTING_ON                 = "on"
+	SETTING_OFF                = "off"
 )
 
 type Plugin struct {
 	plugin.MattermostPlugin
-	githubClient *github.Client
+	// bitbucketClient    *github.Client
+	bitbucketClient *bitbucket.APIClient
 
 	BotUserID string
 
@@ -49,32 +51,34 @@ type Plugin struct {
 	configuration *configuration
 }
 
-func (p *Plugin) githubConnect(token oauth2.Token) *github.Client {
-	config := p.getConfiguration()
+// func (p *Plugin) bitbucketConnect(token oauth2.Token) (*bitbucket.APIClient, *context.valueCtx) {
+func (p *Plugin) bitbucketConnect(token oauth2.Token) *bitbucket.APIClient {
 
-	ctx := context.Background()
+	// config := p.getConfiguration()
+	// fmt.Printf("----- #### BB plugin.bitbucketConnect  -> HERE IS PROBLEM ***  config = %+v", config)
+
+	// get Oauth token source and client
 	ts := oauth2.StaticTokenSource(&token)
-	tc := oauth2.NewClient(ctx, ts)
 
-	if len(config.EnterpriseBaseURL) == 0 || len(config.EnterpriseUploadURL) == 0 {
-		return github.NewClient(tc)
-	}
+	// setup Oauth context
+	auth := context.WithValue(oauth2.NoContext, bitbucket.ContextOAuth2, ts)
 
-	baseURL, _ := url.Parse(config.EnterpriseBaseURL)
-	baseURL.Path = path.Join(baseURL.Path, "api", "v3")
+	tc := oauth2.NewClient(auth, ts)
 
-	uploadURL, _ := url.Parse(config.EnterpriseUploadURL)
-	uploadURL.Path = path.Join(uploadURL.Path, "api", "v3")
+	// create config for bitbucket API
+	config_bb := bitbucket.NewConfiguration()
+	config_bb.HTTPClient = tc
 
-	client, err := github.NewEnterpriseClient(baseURL.String(), uploadURL.String(), tc)
-	if err != nil {
-		mlog.Error(err.Error())
-		return github.NewClient(tc)
-	}
-	return client
+	// create new bitbucket client API
+	new_client := bitbucket.NewAPIClient(config_bb)
+
+	// TODO figure out how to add auth to client so dont' have to return it
+	return new_client
+
 }
 
 func (p *Plugin) OnActivate() error {
+
 	config := p.getConfiguration()
 
 	if err := config.IsValid(); err != nil {
@@ -92,28 +96,33 @@ func (p *Plugin) OnActivate() error {
 }
 
 func (p *Plugin) getOAuthConfig() *oauth2.Config {
+
 	config := p.getConfiguration()
 
-	authURL, _ := url.Parse("https://github.com/")
-	tokenURL, _ := url.Parse("https://github.com/")
+	authURL, _ := url.Parse("https://bitbucket.org/")
+	tokenURL, _ := url.Parse("https://bitbucket.org/")
+
 	if len(config.EnterpriseBaseURL) > 0 {
 		authURL, _ = url.Parse(config.EnterpriseBaseURL)
 		tokenURL, _ = url.Parse(config.EnterpriseBaseURL)
 	}
 
-	authURL.Path = path.Join(authURL.Path, "login", "oauth", "authorize")
-	tokenURL.Path = path.Join(tokenURL.Path, "login", "oauth", "access_token")
+	authURL.Path = path.Join(authURL.Path, "site", "oauth2", "authorize")
+	tokenURL.Path = path.Join(tokenURL.Path, "site", "oauth2", "access_token")
 
 	repo := "public_repo"
 	if config.EnablePrivateRepo {
 		// means that asks scope for privaterepositories
 		repo = "repo"
 	}
+	fmt.Printf("TODO : determine proper repo scrope for bitbucket %v", repo)
 
+	fmt.Println("TODO -> check Scopes statement -> differs from GH")
 	return &oauth2.Config{
-		ClientID:     config.GitHubOAuthClientID,
-		ClientSecret: config.GitHubOAuthClientSecret,
-		Scopes:       []string{repo, "notifications"},
+		ClientID:     config.BitbucketOAuthClientID,
+		ClientSecret: config.BitbucketOAuthClientSecret,
+		Scopes:       []string{"repository"},
+		// Scopes:       []string{repo, "notifications"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  authURL.String(),
 			TokenURL: tokenURL.String(),
@@ -121,10 +130,10 @@ func (p *Plugin) getOAuthConfig() *oauth2.Config {
 	}
 }
 
-type GitHubUserInfo struct {
+type BitbucketUserInfo struct {
 	UserID              string
 	Token               *oauth2.Token
-	GitHubUsername      string
+	BitbucketUsername   string
 	LastToDoPostAt      int64
 	Settings            *UserSettings
 	AllowedPrivateRepos bool
@@ -136,7 +145,7 @@ type UserSettings struct {
 	Notifications  bool   `json:"notifications"`
 }
 
-func (p *Plugin) storeGitHubUserInfo(info *GitHubUserInfo) error {
+func (p *Plugin) storeBitbucketUserInfo(info *BitbucketUserInfo) error {
 	config := p.getConfiguration()
 
 	encryptedToken, err := encrypt([]byte(config.EncryptionKey), info.Token.AccessToken)
@@ -151,20 +160,20 @@ func (p *Plugin) storeGitHubUserInfo(info *GitHubUserInfo) error {
 		return err
 	}
 
-	if err := p.API.KVSet(info.UserID+GITHUB_TOKEN_KEY, jsonInfo); err != nil {
+	if err := p.API.KVSet(info.UserID+BITBUCKET_TOKEN_KEY, jsonInfo); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (p *Plugin) getGitHubUserInfo(userID string) (*GitHubUserInfo, *APIErrorResponse) {
+func (p *Plugin) getBitbucketUserInfo(userID string) (*BitbucketUserInfo, *APIErrorResponse) {
 	config := p.getConfiguration()
 
-	var userInfo GitHubUserInfo
+	var userInfo BitbucketUserInfo
 
-	if infoBytes, err := p.API.KVGet(userID + GITHUB_TOKEN_KEY); err != nil || infoBytes == nil {
-		return nil, &APIErrorResponse{ID: API_ERROR_ID_NOT_CONNECTED, Message: "Must connect user account to GitHub first.", StatusCode: http.StatusBadRequest}
+	if infoBytes, err := p.API.KVGet(userID + BITBUCKET_TOKEN_KEY); err != nil || infoBytes == nil {
+		return nil, &APIErrorResponse{ID: API_ERROR_ID_NOT_CONNECTED, Message: "Must connect user account to Bitbucket first.", StatusCode: http.StatusBadRequest}
 	} else if err := json.Unmarshal(infoBytes, &userInfo); err != nil {
 		return nil, &APIErrorResponse{ID: "", Message: "Unable to parse token.", StatusCode: http.StatusInternalServerError}
 	}
@@ -180,26 +189,26 @@ func (p *Plugin) getGitHubUserInfo(userID string) (*GitHubUserInfo, *APIErrorRes
 	return &userInfo, nil
 }
 
-func (p *Plugin) storeGitHubToUserIDMapping(githubUsername, userID string) error {
-	if err := p.API.KVSet(githubUsername+GITHUB_USERNAME_KEY, []byte(userID)); err != nil {
-		return fmt.Errorf("Encountered error saving github username mapping")
+func (p *Plugin) storeBitbucketToUserIDMapping(bitbucketUsername, userID string) error {
+	if err := p.API.KVSet(bitbucketUsername+BITBUCKET_USERNAME_KEY, []byte(userID)); err != nil {
+		return fmt.Errorf("Encountered error saving bitbucket username mapping")
 	}
 	return nil
 }
 
-func (p *Plugin) getGitHubToUserIDMapping(githubUsername string) string {
-	userID, _ := p.API.KVGet(githubUsername + GITHUB_USERNAME_KEY)
+func (p *Plugin) getBitbucketToUserIDMapping(bitbucketUsername string) string {
+	userID, _ := p.API.KVGet(bitbucketUsername + BITBUCKET_USERNAME_KEY)
 	return string(userID)
 }
 
-func (p *Plugin) disconnectGitHubAccount(userID string) {
-	userInfo, _ := p.getGitHubUserInfo(userID)
+func (p *Plugin) disconnectBitbucketAccount(userID string) {
+	userInfo, _ := p.getBitbucketUserInfo(userID)
 	if userInfo == nil {
 		return
 	}
 
-	p.API.KVDelete(userID + GITHUB_TOKEN_KEY)
-	p.API.KVDelete(userInfo.GitHubUsername + GITHUB_USERNAME_KEY)
+	p.API.KVDelete(userID + BITBUCKET_TOKEN_KEY)
+	p.API.KVDelete(userInfo.BitbucketUsername + BITBUCKET_USERNAME_KEY)
 
 	if user, err := p.API.GetUser(userID); err == nil && user.Props != nil && len(user.Props["git_user"]) > 0 {
 		delete(user.Props, "git_user")
@@ -227,8 +236,8 @@ func (p *Plugin) CreateBotDMPost(userID, message, postType string) *model.AppErr
 		Type:      postType,
 		Props: map[string]interface{}{
 			"from_webhook":      "true",
-			"override_username": GITHUB_USERNAME,
-			"override_icon_url": GITHUB_ICON_URL,
+			"override_username": BITBUCKET_USERNAME,
+			"override_icon_url": BITBUCKET_ICON_URL,
 		},
 	}
 
@@ -240,35 +249,36 @@ func (p *Plugin) CreateBotDMPost(userID, message, postType string) *model.AppErr
 	return nil
 }
 
-func (p *Plugin) PostToDo(info *GitHubUserInfo) {
-	text, err := p.GetToDo(context.Background(), info.GitHubUsername, p.githubConnect(*info.Token))
-	if err != nil {
-		mlog.Error(err.Error())
-		return
-	}
-
-	p.CreateBotDMPost(info.UserID, text, "custom_git_todo")
+func (p *Plugin) PostToDo(info *BitbucketUserInfo) {
+	// text, err := p.GetToDo(context.Background(), info.BitbucketUsername,
+	// p.bitbucketConnect(*info.Token))
+	// if err != nil {
+	// 	mlog.Error(err.Error())
+	// 	return
+	// }
+	//
+	// p.CreateBotDMPost(info.UserID, text, "custom_git_todo")
 }
 
-func (p *Plugin) GetToDo(ctx context.Context, username string, githubClient *github.Client) (string, error) {
+func (p *Plugin) GetToDo(ctx context.Context, username string, bitbucketClient *github.Client) (string, error) {
 	config := p.getConfiguration()
 
-	issueResults, _, err := githubClient.Search.Issues(ctx, getReviewSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
+	issueResults, _, err := bitbucketClient.Search.Issues(ctx, getReviewSearchQuery(username, config.BitbucketOrg), &github.SearchOptions{})
 	if err != nil {
 		return "", err
 	}
 
-	notifications, _, err := githubClient.Activity.ListNotifications(ctx, &github.NotificationListOptions{})
+	notifications, _, err := bitbucketClient.Activity.ListNotifications(ctx, &github.NotificationListOptions{})
 	if err != nil {
 		return "", err
 	}
 
-	yourPrs, _, err := githubClient.Search.Issues(ctx, getYourPrsSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
+	yourPrs, _, err := bitbucketClient.Search.Issues(ctx, getYourPrsSearchQuery(username, config.BitbucketOrg), &github.SearchOptions{})
 	if err != nil {
 		return "", err
 	}
 
-	yourAssignments, _, err := githubClient.Search.Issues(ctx, getYourAssigneeSearchQuery(username, config.GitHubOrg), &github.SearchOptions{})
+	yourAssignments, _, err := bitbucketClient.Search.Issues(ctx, getYourAssigneeSearchQuery(username, config.BitbucketOrg), &github.SearchOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -293,10 +303,10 @@ func (p *Plugin) GetToDo(ctx context.Context, username string, githubClient *git
 
 		switch n.GetSubject().GetType() {
 		case "RepositoryVulnerabilityAlert":
-			message := fmt.Sprintf("[Vulnerability Alert for %v](%v)", n.GetRepository().GetFullName(), fixGithubNotificationSubjectURL(n.GetSubject().GetURL()))
+			message := fmt.Sprintf("[Vulnerability Alert for %v](%v)", n.GetRepository().GetFullName(), fixBitbucketNotificationSubjectURL(n.GetSubject().GetURL()))
 			notificationContent += fmt.Sprintf("* %v\n", message)
 		default:
-			url := fixGithubNotificationSubjectURL(n.GetSubject().GetURL())
+			url := fixBitbucketNotificationSubjectURL(n.GetSubject().GetURL())
 			notificationContent += fmt.Sprintf("* %v\n", url)
 		}
 
@@ -352,7 +362,7 @@ func (p *Plugin) GetToDo(ctx context.Context, username string, githubClient *git
 func (p *Plugin) checkOrg(org string) error {
 	config := p.getConfiguration()
 
-	configOrg := strings.TrimSpace(config.GitHubOrg)
+	configOrg := strings.TrimSpace(config.BitbucketOrg)
 	if configOrg != "" && configOrg != org {
 		return fmt.Errorf("Only repositories in the %v organization are supported", configOrg)
 	}

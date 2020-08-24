@@ -1,7 +1,7 @@
 {
-    "id": "github",
-    "name": "GitHub",
-    "description": "GitHub plugin for Mattermost.",
+    "id": "bitbucket",
+    "name": "Bitbucket",
+    "description": "Bitbucket plugin for Mattermost.",
     "version": "0.8.0",
     "server": {
       "executables": {
@@ -14,25 +14,25 @@
         "bundle_path": "webapp/dist/main.js"
     },
     "settings_schema": {
-        "header": "To set up the GitHub plugin, you need to register a GitHub OAuth app here https://github.com/settings/applications/new.",
+        "header": "To set up the Bitbucket plugin, you need to register a GitHub OAuth app here https://github.com/settings/applications/new.",
         "settings": [
             {
-                "key": "GitHubOAuthClientID",
-                "display_name": "Jason GitHub OAuth Client ID",
+                "key": "BitbucketOAuthClientID",
+                "display_name": "Bitbucket OAuth Client ID (Key)",
                 "type": "text",
-                "help_text": "The client ID for the OAuth app registered with GitHub."
+                "help_text": "The client ID for the OAuth app registered with Bitbucket."
             },
             {
-                "key": "GitHubOAuthClientSecret",
-                "display_name": "GitHub OAuth Client Secret",
+                "key": "BitbucketOAuthClientSecret",
+                "display_name": "Bitbucket OAuth Client Secret",
                 "type": "text",
-                "help_text": "The client secret for the OAuth app registered with GitHub."
+                "help_text": "The client secret for the OAuth app registered with Bitbucket."
             },
             {
                 "key": "WebhookSecret",
                 "display_name": "Webhook Secret",
                 "type": "generated",
-                "help_text": "The webhook secret set in GitHub."
+                "help_text": "The webhook secret set in Bitbucket."
             },
             {
                 "key": "Username",
@@ -47,7 +47,7 @@
                 "help_text": "The AES encryption key used to encrypt stored access tokens."
             },
             {
-                "key": "GithubOrg",
+                "key": "ithubOrg",
                 "display_name": "GitHub Organization",
                 "type": "text",
                 "help_text": "(Optional) Set to lock the plugin to a single GitHub organization."

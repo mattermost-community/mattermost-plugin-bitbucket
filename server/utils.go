@@ -105,7 +105,7 @@ func decrypt(key []byte, text string) (string, error) {
 
 func parseOwnerAndRepo(full, baseURL string) (string, string, string) {
 	if baseURL == "" {
-		baseURL = "https://github.com/"
+		baseURL = "https://bitbucket.org/"
 	}
 	full = strings.TrimSuffix(strings.TrimSpace(strings.Replace(full, baseURL, "", 1)), "/")
 	splitStr := strings.Split(full, "/")
@@ -122,7 +122,7 @@ func parseOwnerAndRepo(full, baseURL string) (string, string, string) {
 	return fmt.Sprintf("%s/%s", owner, repo), owner, repo
 }
 
-func parseGitHubUsernamesFromText(text string) []string {
+func parseBitbucketUsernamesFromText(text string) []string {
 	usernameMap := map[string]bool{}
 	usernames := []string{}
 
@@ -151,7 +151,7 @@ func parseGitHubUsernamesFromText(text string) []string {
 	return usernames
 }
 
-func fixGithubNotificationSubjectURL(url string) string {
+func fixBitbucketNotificationSubjectURL(url string) string {
 	url = strings.Replace(url, "api.", "", 1)
 	url = strings.Replace(url, "repos/", "", 1)
 	url = strings.Replace(url, "/pulls/", "/pull/", 1)

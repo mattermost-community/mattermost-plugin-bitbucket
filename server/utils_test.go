@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseGitHubUsernameFromText(t *testing.T) {
+func TestParseBitbucketUsernameFromText(t *testing.T) {
 	tcs := []struct {
 		Text     string
 		Expected []string
@@ -30,11 +30,11 @@ func TestParseGitHubUsernameFromText(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		assert.Equal(t, tc.Expected, parseGitHubUsernamesFromText(tc.Text))
+		assert.Equal(t, tc.Expected, parseBitbucketUsernamesFromText(tc.Text))
 	}
 }
 
-func TestFixGithubNotificationSubjectURL(t *testing.T) {
+func TestFixBitbucketNotificationSubjectURL(t *testing.T) {
 	tcs := []struct {
 		Text     string
 		Expected string
@@ -46,7 +46,7 @@ func TestFixGithubNotificationSubjectURL(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		assert.Equal(t, tc.Expected, fixGithubNotificationSubjectURL(tc.Text))
+		assert.Equal(t, tc.Expected, fixBitbucketNotificationSubjectURL(tc.Text))
 	}
 }
 

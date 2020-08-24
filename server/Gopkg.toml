@@ -14,3 +14,15 @@
 [[constraint]]
   name = "github.com/stretchr/testify"
   version = "~1.2.0"
+
+[[constraint]]
+  name = "github.com/ktrysmt/go-bitbucket"
+  version = "0.3.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/wbrefvem/go-bitbucket"
+
+[[constraint]]
+  name = "github.com/go-playground/webhooks"
+  version = "4.1.1"

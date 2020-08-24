@@ -115,7 +115,6 @@ dist: apply \
 deploy: dist
 ifneq ($(and $(MM_SERVICESETTINGS_SITEURL),$(MM_ADMIN_USERNAME),$(MM_ADMIN_PASSWORD),$(HTTP)),)
 	@echo "Installing plugin via API"
-	@echo "jason - Installing plugin via API"
 		(TOKEN=`http --print h POST $(MM_SERVICESETTINGS_SITEURL)/api/v4/users/login login_id=$(MM_ADMIN_USERNAME) password=$(MM_ADMIN_PASSWORD) | grep Token | cut -f2 -d' '` && \
 		  http --print b GET $(MM_SERVICESETTINGS_SITEURL)/api/v4/users/me Authorization:"Bearer $$TOKEN" && \
 			http --print b DELETE $(MM_SERVICESETTINGS_SITEURL)/api/v4/plugins/$(PLUGIN_ID) Authorization:"Bearer $$TOKEN" && \
@@ -125,7 +124,6 @@ ifneq ($(and $(MM_SERVICESETTINGS_SITEURL),$(MM_ADMIN_USERNAME),$(MM_ADMIN_PASSW
 	  )
 else ifneq ($(and $(MM_SERVICESETTINGS_SITEURL),$(MM_ADMIN_USERNAME),$(MM_ADMIN_PASSWORD),$(CURL)),)
 	@echo "Installing plugin via API"
-	@echo "frerich - Installing plugin via API"
 	$(eval TOKEN := $(shell curl -i -X POST $(MM_SERVICESETTINGS_SITEURL)/api/v4/users/login -d '{"login_id": "$(MM_ADMIN_USERNAME)", "password": "$(MM_ADMIN_PASSWORD)"}' | grep Token | cut -f2 -d' ' 2> /dev/null))
 	@curl -s -H "Authorization: Bearer $(TOKEN)" -X DELETE $(MM_SERVICESETTINGS_SITEURL)/api/v4/plugins/$(PLUGIN_ID) > /dev/null
 	@curl -s -H "Authorization: Bearer $(TOKEN)" -X POST $(MM_SERVICESETTINGS_SITEURL)/api/v4/plugins -F "plugin=@dist/$(BUNDLE_NAME)" > /dev/null && \
@@ -133,7 +131,6 @@ else ifneq ($(and $(MM_SERVICESETTINGS_SITEURL),$(MM_ADMIN_USERNAME),$(MM_ADMIN_
 		echo "OK." || echo "Sorry, something went wrong."
 else ifneq ($(wildcard ../mattermost-server/.*),)
 	@echo "Installing plugin via filesystem. Server restart and manual plugin enabling required"
-	@echo "anthony - Installing plugin via API"
 	mkdir -p ../mattermost-server/plugins
 	tar -C ../mattermost-server/plugins -zxvf dist/$(BUNDLE_NAME)
 else

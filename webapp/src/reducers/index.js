@@ -39,7 +39,7 @@ function organization(state = '', action) {
 function username(state = '', action) {
     switch (action.type) {
     case ActionTypes.RECEIVED_CONNECTED:
-        return action.data.github_username;
+        return action.data.bitbucket_username;
     default:
         return state;
     }
@@ -57,7 +57,7 @@ function settings(state = {sidebar_buttons: Constants.SETTING_BUTTONS_TEAM, dail
 function clientId(state = '', action) {
     switch (action.type) {
     case ActionTypes.RECEIVED_CONNECTED:
-        return action.data.github_client_id;
+        return action.data.bitbucket_client_id;
     default:
         return state;
     }
@@ -108,9 +108,9 @@ function unreads(state = [], action) {
     }
 }
 
-function githubUsers(state = {}, action) {
+function bitbucketUsers(state = {}, action) {
     switch (action.type) {
-    case ActionTypes.RECEIVED_GITHUB_USER: {
+    case ActionTypes.RECEIVED_BITBUCKET_USER: {
         const nextState = {...state};
         nextState[action.userID] = action.data;
         return nextState;
@@ -132,5 +132,5 @@ export default combineReducers({
     yourAssignments,
     mentions,
     unreads,
-    githubUsers,
+    bitbucketUsers,
 });
