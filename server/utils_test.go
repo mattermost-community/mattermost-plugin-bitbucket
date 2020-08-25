@@ -59,11 +59,11 @@ func TestParseOwnerAndRepo(t *testing.T) {
 	}{
 		{Full: "mattermost", BaseURL: "", ExpectedOwner: "mattermost", ExpectedRepo: ""},
 		{Full: "mattermost", BaseURL: "https://github.com/", ExpectedOwner: "mattermost", ExpectedRepo: ""},
-		{Full: "https://github.com/mattermost", BaseURL: "", ExpectedOwner: "mattermost", ExpectedRepo: ""},
+		{Full: "https://bitbucket.org/mattermost", BaseURL: "", ExpectedOwner: "mattermost", ExpectedRepo: ""},
 		{Full: "https://github.com/mattermost", BaseURL: "https://github.com/", ExpectedOwner: "mattermost", ExpectedRepo: ""},
 		{Full: "mattermost/mattermost-server", BaseURL: "", ExpectedOwner: "mattermost", ExpectedRepo: "mattermost-server"},
 		{Full: "mattermost/mattermost-server", BaseURL: "https://github.com/", ExpectedOwner: "mattermost", ExpectedRepo: "mattermost-server"},
-		{Full: "https://github.com/mattermost/mattermost-server", BaseURL: "", ExpectedOwner: "mattermost", ExpectedRepo: "mattermost-server"},
+		{Full: "https://bitbucket.org/mattermost/mattermost-server", BaseURL: "", ExpectedOwner: "mattermost", ExpectedRepo: "mattermost-server"},
 		{Full: "https://github.com/mattermost/mattermost-server", BaseURL: "https://github.com/", ExpectedOwner: "mattermost", ExpectedRepo: "mattermost-server"},
 		{Full: "", BaseURL: "", ExpectedOwner: "", ExpectedRepo: ""},
 		{Full: "mattermost/mattermost/invalid_repo_url", BaseURL: "", ExpectedOwner: "", ExpectedRepo: ""},
@@ -73,7 +73,7 @@ func TestParseOwnerAndRepo(t *testing.T) {
 	for _, tc := range tcs {
 		_, owner, repo := parseOwnerAndRepo(tc.Full, tc.BaseURL)
 
-		assert.Equal(t, owner, tc.ExpectedOwner)
-		assert.Equal(t, repo, tc.ExpectedRepo)
+		assert.Equal(t, tc.ExpectedOwner, owner)
+		assert.Equal(t, tc.ExpectedRepo, repo)
 	}
 }

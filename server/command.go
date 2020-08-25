@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/mlog"
-	"github.com/mattermost/mattermost-server/plugin"
+	"github.com/mattermost/mattermost-server/v5/plugin"
 
-	"github.com/mattermost/mattermost-server/model"
+	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/wbrefvem/go-bitbucket"
 )
 
@@ -153,7 +152,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		repo := parameters[0]
 
 		if err := p.Unsubscribe(args.ChannelId, repo); err != nil {
-			mlog.Error(err.Error())
+			p.API.LogError(err.Error())
 			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error trying to unsubscribe. Please try again."), nil
 		}
 

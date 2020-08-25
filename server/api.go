@@ -9,10 +9,8 @@ import (
 	"strings"
 	"time"
 
-	// "github.com/google/go-github/github"
-	"github.com/mattermost/mattermost-server/mlog"
-	"github.com/mattermost/mattermost-server/model"
-	"github.com/mattermost/mattermost-server/plugin"
+	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/wbrefvem/go-bitbucket"
 
 	"golang.org/x/oauth2"
@@ -291,7 +289,7 @@ func (p *Plugin) getBitbucketUser(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&req); err != nil || req.UserID == "" {
 		if err != nil {
-			mlog.Error("Error decoding JSON body: " + err.Error())
+			p.API.LogError("Error decoding JSON body: " + err.Error())
 		}
 		writeAPIError(w, &APIErrorResponse{ID: "", Message: "Please provide a JSON object with a non-blank user_id field.", StatusCode: http.StatusBadRequest})
 		return
@@ -315,7 +313,7 @@ func (p *Plugin) getBitbucketUser(w http.ResponseWriter, r *http.Request) {
 	resp := &BitbucketUserResponse{Username: userInfo.BitbucketUsername}
 	b, jsonErr := json.Marshal(resp)
 	if jsonErr != nil {
-		mlog.Error("Error encoding JSON response: " + jsonErr.Error())
+		p.API.LogError("Error encoding JSON response: " + jsonErr.Error())
 		writeAPIError(w, &APIErrorResponse{ID: "", Message: "Encountered an unexpected error. Please try again.", StatusCode: http.StatusInternalServerError})
 	}
 	w.Write(b)
@@ -367,13 +365,13 @@ func (p *Plugin) getConnected(w http.ResponseWriter, r *http.Request) {
 			if val, err := p.API.KVGet(privateRepoStoreKey); err == nil {
 				hasBeenNotified = val != nil
 			} else {
-				mlog.Error("Unable to get private repo key value, err=" + err.Error())
+				p.API.LogError("Unable to get private repo key value, err=" + err.Error())
 			}
 
 			if !hasBeenNotified {
 				p.CreateBotDMPost(info.UserID, "Private repositories have been enabled for this plugin. To be able to use them you must disconnect and reconnect your Bitbucket account. To reconnect your account, use the following slash commands: `/bitbucket disconnect` followed by `/bitbucket connect`.", "")
 				if err := p.API.KVSet(privateRepoStoreKey, []byte("1")); err != nil {
-					mlog.Error("Unable to set private repo key value, err=" + err.Error())
+					p.API.LogError("Unable to set private repo key value, err=" + err.Error())
 				}
 			}
 		}

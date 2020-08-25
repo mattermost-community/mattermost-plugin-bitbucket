@@ -10,9 +10,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mattermost/mattermost-server/mlog"
-	"github.com/mattermost/mattermost-server/model"
-	"github.com/mattermost/mattermost-server/plugin"
+	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/google/go-github/github"
 	"github.com/wbrefvem/go-bitbucket"
@@ -87,7 +86,7 @@ func (p *Plugin) OnActivate() error {
 	p.API.RegisterCommand(getCommand())
 	user, err := p.API.GetUserByUsername(config.Username)
 	if err != nil {
-		mlog.Error(err.Error())
+		p.API.LogError(err.Error())
 		return fmt.Errorf("Unable to find user with configured username: %v", config.Username)
 	}
 
@@ -123,6 +122,7 @@ func (p *Plugin) getOAuthConfig() *oauth2.Config {
 		ClientSecret: config.BitbucketOAuthClientSecret,
 		Scopes:       []string{"repository"},
 		// Scopes:       []string{repo, "notifications"},
+		RedirectURL: fmt.Sprintf("%s/plugins/%s/oauth/complete", *p.API.GetConfig().ServiceSettings.SiteURL, manifest.Id),
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  authURL.String(),
 			TokenURL: tokenURL.String(),
@@ -180,7 +180,7 @@ func (p *Plugin) getBitbucketUserInfo(userID string) (*BitbucketUserInfo, *APIEr
 
 	unencryptedToken, err := decrypt([]byte(config.EncryptionKey), userInfo.Token.AccessToken)
 	if err != nil {
-		mlog.Error(err.Error())
+		p.API.LogError(err.Error())
 		return nil, &APIErrorResponse{ID: "", Message: "Unable to decrypt access token.", StatusCode: http.StatusInternalServerError}
 	}
 
@@ -225,7 +225,7 @@ func (p *Plugin) disconnectBitbucketAccount(userID string) {
 func (p *Plugin) CreateBotDMPost(userID, message, postType string) *model.AppError {
 	channel, err := p.API.GetDirectChannel(userID, p.BotUserID)
 	if err != nil {
-		mlog.Error("Couldn't get bot's DM channel", mlog.String("user_id", userID))
+		p.API.LogError("Couldn't get bot's DM channel")
 		return err
 	}
 
@@ -242,7 +242,7 @@ func (p *Plugin) CreateBotDMPost(userID, message, postType string) *model.AppErr
 	}
 
 	if _, err := p.API.CreatePost(post); err != nil {
-		mlog.Error(err.Error())
+		p.API.LogError(err.Error())
 		return err
 	}
 
