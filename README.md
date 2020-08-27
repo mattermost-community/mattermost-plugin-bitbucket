@@ -1,4 +1,4 @@
-# Mattermost Bitbucket Plugin [![Build Status](https://travis-ci.org/mattermost/mattermost-plugin-github.svg?branch=master)](https://travis-ci.org/mattermost/mattermost-plugin-github)
+# Mattermost Bitbucket Plugin
 
 A Bitbucket plugin for Mattermost. The plugin is currently in beta.
 
@@ -103,7 +103,19 @@ Use `make dist` to build distributions of the plugin that you can upload to a Ma
 
 Use `make check-style` to check the style.
 
-Use `make deploy` to deploy the plugin to your local server. Before running `make deploy` you need to set a few environment variables:
+Use `make deploy` to deploy the plugin to your local server. Before running `make deploy` you need to enable [local mode](https://docs.mattermost.com/administration/mmctl-cli-tool.html#local-mode). Edit your server configuration as follows:
+                                                                                                      
+```json
+{
+  "ServiceSettings": {
+      ...
+      "EnableLocalMode": true,
+      "LocalModeSocketLocation": "/var/tmp/mattermost_local.socket"
+  }
+}
+```
+
+Alternatively, you can authenticate with the server's API with credentials:
 
 ```
 export MM_SERVICESETTINGS_SITEURL=http://localhost:8065
