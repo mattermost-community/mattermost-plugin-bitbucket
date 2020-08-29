@@ -88,8 +88,8 @@ webapp: webapp/node_modules
 ifneq ($(HAS_WEBAPP),)
 ifeq ($(MM_DEBUG),)
 	cd webapp && $(NPM) run build;
-else
-	cd webapp && $(NPM) run debug;
+# else
+# 	cd webapp && $(NPM) run debug;
 endif
 endif
 

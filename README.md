@@ -63,31 +63,23 @@ __Requires Mattermost 5.2 or higher. If you're running Mattermost 5.6+, it is st
         5. Select Issues: "Created", "Updated", and "Comment Created" 
     3. Save the webhook
     4. __Note for each organization you want to receive notifications for or subscribe to, you must create a webhook__
-4. Configure a bot account
-    1. Create a new Mattermost user, through the regular UI or the CLI with the username "bitbucket"
-    2. I created by signing out of MM and creating user through signup. 
-      3. First Enable with System Console -> Security -> Sign Up. 
-      4. Email/username/password/team = bitbucket@example.com/bitbucket/bitbucket/bitbucket-demo. 
-      5. After creation, log back in as sysadmin 
-    4. Go to the System Console -> Plugins -> Bitbucket and select this user (bitbucket) in the User setting
-    5. Save the settings
-5. Generate an at rest encryption key
+4. Generate an at rest encryption key
     1. Go to the System Console -> Plugins -> Bitbucket and click "Regenerate" under "At Rest Encryption Key"
     2. Save the settings
-6. (Optional) Lock the plugin to a Bitbucket organization
+5. (Optional) Lock the plugin to a Bitbucket organization
     1. Go to System Console -> Plugins -> Bitbucket and set the Bitbucket
       Organization field to the name of your Bitbucket organization
-7. (Optional) Enable private repositories
+6. (Optional) Enable private repositories
     1. Go to System Console -> Plugins -> Bitbucket and set Enable Private Repositories to true
     2. Note that if you do this after users have already connected their
       accounts to Bitbucket they will need to disconnect and reconnect their accounts to be able to use private repositories
-8. (Not yet supported) Set your Enterprise URLs
+7. (Not yet supported) Set your Enterprise URLs
     1. Go to System Console -> Plugins -> Bitbucket and set the Enterprise Base
       URL and Enterprise Upload URL fields to your Bitbucket Enterprise URLs, ex: `https://bitbucket.example.com`
     2. The Base and Upload URLs are often the same
-9. Enable the plugin 
+8. Enable the plugin 
     1. Go to System Console -> Plugins -> Management and click "Enable" underneath the Bitbucket plugin
-10. Test it out
+9. Test it out
     2. In Mattermost, run the slash command `/bitbucket connect`
 
 ## NOTES : bitbucket does not user a webhook secret
