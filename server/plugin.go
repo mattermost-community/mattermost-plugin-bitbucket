@@ -377,3 +377,12 @@ func (p *Plugin) sendRefreshEvent(userID string) {
 		&model.WebsocketBroadcast{UserId: userID},
 	)
 }
+
+func (p *Plugin) getBaseURL() string {
+	config := p.getConfiguration()
+	if config.EnterpriseBaseURL != "" {
+		return config.EnterpriseBaseURL
+	}
+
+	return "https://bitbucket.org/"
+}
