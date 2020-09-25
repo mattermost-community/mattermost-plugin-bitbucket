@@ -2,362 +2,114 @@ package main
 
 import (
 	"context"
-	"github.com/mattermost/mattermost-server/v5/mlog"
+	"encoding/json"
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/subscription"
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhook"
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhook_payload"
 	"github.com/mattermost/mattermost-server/v5/model"
-	bb_webhook "gopkg.in/go-playground/webhooks.v5/bitbucket"
 	"net/http"
+	"strconv"
 )
 
 const (
-	PostTypeIssueCreated     = "custom_bb_issue_create"
-	PostTypePushed           = "custom_bb_push"
-	PostTypeIssueUpdated     = "custom_bb_issue_update"
-	PostTypePrCommentCreated = "custom_bb_pr_cc"
-	PostTypePrMerged         = "custom_bb_pr_merged"
-	PostTypePrApproved       = "custom_bb_pr_approved"
-	PostTypePrCreated        = "custom_bb_pr_created"
-	PostTypeCommentCreated   = "custom_bb_issue_cc"
-
-	TemplateErrorText = "failed to render template"
+	KeyAssignUserPr          = "pr_assigned_"
+	BitbucketWebhookPostType = "custom_bb_webhook"
 )
 
 func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
-	hook, _ := bb_webhook.New()
+	hook, _ := webhook_payload.New()
 	payload, err := hook.Parse(r,
-		bb_webhook.RepoPushEvent,
-		bb_webhook.IssueCreatedEvent,
-		bb_webhook.IssueUpdatedEvent,
-		bb_webhook.IssueCommentCreatedEvent,
-		bb_webhook.PullRequestCreatedEvent,
-		bb_webhook.PullRequestApprovedEvent,
-		bb_webhook.PullRequestMergedEvent,
-		bb_webhook.PullRequestCommentCreatedEvent)
-
-	var handler func()
-
-	switch payload.(type) {
-	case bb_webhook.RepoPushPayload:
-		handler = func() {
-			p.repoPushEvent(payload)
-			return
-		}
-	case bb_webhook.IssueUpdatedPayload:
-		handler = func() {
-			p.postIssueUpdatedEvent(payload)
-			return
-		}
-	case bb_webhook.IssueCreatedPayload:
-		handler = func() {
-			p.postIssueCreatedEvent(payload)
-			return
-		}
-	case bb_webhook.IssueCommentCreatedPayload:
-		handler = func() {
-			p.postIssueCommentCreatedEvent(payload)
-			return
-		}
-	case bb_webhook.PullRequestCreatedPayload:
-		handler = func() {
-			p.postPullRequestCreatedEvent(payload)
-			return
-		}
-	case bb_webhook.PullRequestCommentCreatedPayload:
-		handler = func() {
-			p.postPullRequestCommentCreatedEvent(payload)
-			return
-		}
-	case bb_webhook.PullRequestApprovedPayload:
-		handler = func() {
-			p.postPullRequestApprovedEvent(payload)
-			return
-		}
-	case bb_webhook.PullRequestMergedPayload:
-		handler = func() {
-			p.postPullRequestMergedEvent(payload)
-			return
-		}
-	}
+		webhook_payload.RepoPushEvent,
+		webhook_payload.IssueCreatedEvent,
+		webhook_payload.IssueUpdatedEvent,
+		webhook_payload.IssueCommentCreatedEvent,
+		webhook_payload.PullRequestCreatedEvent,
+		webhook_payload.PullRequestUpdatedEvent,
+		webhook_payload.PullRequestApprovedEvent,
+		webhook_payload.PullRequestUnapprovedEvent,
+		webhook_payload.PullRequestDeclinedEvent,
+		webhook_payload.PullRequestMergedEvent,
+		webhook_payload.PullRequestCommentCreatedEvent)
 
 	if err != nil {
 		p.API.LogError(err.Error())
 		return
 	}
 
-	handler()
+	var handlers []*webhook.HandleWebhook
+	var handlerError error
+
+	switch payload.(type) {
+	case webhook_payload.RepoPushPayload:
+		handlers, handlerError = p.webhookHandler.HandleRepoPushEvent(payload.(webhook_payload.RepoPushPayload))
+	case webhook_payload.IssueCreatedPayload:
+		handlers, handlerError = p.webhookHandler.HandleIssueCreatedEvent(payload.(webhook_payload.IssueCreatedPayload))
+	case webhook_payload.IssueUpdatedPayload:
+		handlers, handlerError = p.webhookHandler.HandleIssueUpdatedEvent(payload.(webhook_payload.IssueUpdatedPayload))
+	case webhook_payload.IssueCommentCreatedPayload:
+		handlers, handlerError = p.webhookHandler.HandleIssueCommentCreatedEvent(payload.(webhook_payload.IssueCommentCreatedPayload))
+	case webhook_payload.PullRequestCreatedPayload:
+		handlers, handlerError = p.webhookHandler.HandlePullRequestCreatedEvent(payload.(webhook_payload.PullRequestCreatedPayload))
+	case webhook_payload.PullRequestUpdatedPayload:
+		handlers, handlerError = p.webhookHandler.HandlePullRequestUpdatedEvent(payload.(webhook_payload.PullRequestUpdatedPayload))
+	case webhook_payload.PullRequestApprovedPayload:
+		handlers, handlerError = p.webhookHandler.HandlePullRequestApprovedEvent(payload.(webhook_payload.PullRequestApprovedPayload))
+	case webhook_payload.PullRequestCommentCreatedPayload:
+		handlers, handlerError = p.webhookHandler.HandlePullRequestCommentCreatedEvent(payload.(webhook_payload.PullRequestCommentCreatedPayload))
+	case webhook_payload.PullRequestDeclinedPayload:
+		handlers, handlerError = p.webhookHandler.HandlePullRequestDeclinedEvent(payload.(webhook_payload.PullRequestDeclinedPayload))
+	case webhook_payload.PullRequestUnapprovedPayload:
+		handlers, handlerError = p.webhookHandler.HandlePullRequestUnapprovedEvent(payload.(webhook_payload.PullRequestUnapprovedPayload))
+	case webhook_payload.PullRequestMergedPayload:
+		handlers, handlerError = p.webhookHandler.HandlePullRequestMergedEvent(payload.(webhook_payload.PullRequestMergedPayload))
+	}
+
+	if handlerError != nil {
+		p.API.LogError(handlerError.Error())
+		return
+	}
+
+	p.executeHandlers(handlers, payload.(webhook_payload.Payload))
 }
 
-func (p *Plugin) repoPushEvent(pl interface{}) {
-	r := pl.(bb_webhook.RepoPushPayload)
+func (p *Plugin) executeHandlers(webhookHandlers []*webhook.HandleWebhook, pl webhook_payload.Payload) {
+	for _, webhookHandler := range webhookHandlers {
 
-	reponame := r.Repository.FullName
-	isprivate := r.Repository.IsPrivate
-
-	subs := p.GetSubscribedChannelsForRepository(reponame, isprivate)
-	if subs == nil || len(subs) == 0 {
-		return
-	}
-
-	message, err := renderTemplate("pushed", r)
-	if err != nil {
-		mlog.Error(TemplateErrorText, mlog.Err(err))
-		return
-	}
-
-	post := &model.Post{
-		Type:    PostTypePushed,
-		UserId:  p.BotUserID,
-		Message: message,
-	}
-
-	for _, sub := range subs {
-		if !sub.Pushes() {
-			continue
+		post := &model.Post{
+			UserId:  p.BotUserID,
+			Message: webhookHandler.Message,
+			Type:    BitbucketWebhookPostType,
 		}
 
-		post.ChannelId = sub.ChannelID
-		if _, err := p.API.CreatePost(post); err != nil {
-			mlog.Error(err.Error())
+		for _, channelID := range webhookHandler.ToChannels {
+			post.ChannelId = channelID
+			if _, err := p.API.CreatePost(post); err != nil {
+				p.API.LogError(err.Error())
+			}
 		}
-	}
-}
 
-func (p *Plugin) postIssueUpdatedEvent(pl interface{}) {
-	r := pl.(bb_webhook.IssueUpdatedPayload)
+		for _, toBitbucketUser := range webhookHandler.ToBitbucketUsers {
+			userID := p.getBitbucketAccountIDToMattermostUserIDMapping(toBitbucketUser)
+			if userID == "" {
+				continue
+			}
 
-	reponame := r.Repository.FullName
-	isprivate := r.Repository.IsPrivate
+			if pl.GetRepository().IsPrivate && !p.permissionToRepo(userID, pl.GetRepository().FullName) {
+				continue
+			}
 
-	subs := p.GetSubscribedChannelsForRepository(reponame, isprivate)
-	if subs == nil || len(subs) == 0 {
-		return
-	}
+			channel, err := p.API.GetDirectChannel(userID, p.BotUserID)
+			if err != nil {
+				continue
+			}
 
-	message, err := renderTemplate("issueUpdated", r)
-	if err != nil {
-		mlog.Error(TemplateErrorText, mlog.Err(err))
-		return
-	}
-
-	post := &model.Post{
-		Type:    PostTypeIssueUpdated,
-		UserId:  p.BotUserID,
-		Message: message,
-	}
-
-	for _, sub := range subs {
-		if !sub.Issues() {
-			continue
-		}
-		post.ChannelId = sub.ChannelID
-		if _, err := p.API.CreatePost(post); err != nil {
-			p.API.LogError(err.Error())
-		}
-	}
-}
-
-func (p *Plugin) postIssueCreatedEvent(pl interface{}) {
-	r := pl.(bb_webhook.IssueCreatedPayload)
-
-	reponame := r.Repository.FullName
-	isprivate := r.Repository.IsPrivate
-
-	subs := p.GetSubscribedChannelsForRepository(reponame, isprivate)
-	if subs == nil || len(subs) == 0 {
-		return
-	}
-
-	message, err := renderTemplate("issueCreated", r)
-	if err != nil {
-		mlog.Error(TemplateErrorText, mlog.Err(err))
-		return
-	}
-
-	post := &model.Post{
-		Type:    PostTypeIssueCreated,
-		UserId:  p.BotUserID,
-		Message: message,
-	}
-
-	for _, sub := range subs {
-		if !sub.Issues() {
-			continue
-		}
-		post.ChannelId = sub.ChannelID
-		if _, err := p.API.CreatePost(post); err != nil {
-			p.API.LogError(err.Error())
-		}
-	}
-}
-
-func (p *Plugin) postIssueCommentCreatedEvent(pl interface{}) {
-	r := pl.(bb_webhook.IssueCommentCreatedPayload)
-
-	reponame := r.Repository.FullName
-	isprivate := r.Repository.IsPrivate
-
-	subs := p.GetSubscribedChannelsForRepository(reponame, isprivate)
-
-	if subs == nil || len(subs) == 0 {
-		return
-	}
-
-	message, err := renderTemplate("issueCommentCreated", r)
-	if err != nil {
-		mlog.Error(TemplateErrorText, mlog.Err(err))
-		return
-	}
-
-	post := &model.Post{
-		Type:    PostTypeCommentCreated,
-		UserId:  p.BotUserID,
-		Message: message,
-	}
-
-	for _, sub := range subs {
-		if !sub.IssueComments() {
-			continue
-		}
-		post.ChannelId = sub.ChannelID
-		if _, err := p.API.CreatePost(post); err != nil {
-			p.API.LogError(err.Error())
-		}
-	}
-
-}
-
-func (p *Plugin) postPullRequestCreatedEvent(pl interface{}) {
-	r := pl.(bb_webhook.PullRequestCreatedPayload)
-
-	reponame := r.Repository.FullName
-	isprivate := r.Repository.IsPrivate
-
-	subs := p.GetSubscribedChannelsForRepository(reponame, isprivate)
-	if subs == nil || len(subs) == 0 {
-		return
-	}
-
-	message, err := renderTemplate("prCreated", r)
-	if err != nil {
-		mlog.Error(TemplateErrorText, mlog.Err(err))
-		return
-	}
-
-	post := &model.Post{
-		Type:    PostTypePrCreated,
-		UserId:  p.BotUserID,
-		Message: message,
-	}
-
-	for _, sub := range subs {
-		if !sub.Pulls() {
-			continue
-		}
-		post.ChannelId = sub.ChannelID
-		if _, err := p.API.CreatePost(post); err != nil {
-			p.API.LogError(err.Error())
-		}
-	}
-}
-
-func (p *Plugin) postPullRequestApprovedEvent(pl interface{}) {
-	r := pl.(bb_webhook.PullRequestApprovedPayload)
-
-	reponame := r.Repository.FullName
-	isprivate := r.Repository.IsPrivate
-
-	subs := p.GetSubscribedChannelsForRepository(reponame, isprivate)
-	if subs == nil || len(subs) == 0 {
-		return
-	}
-
-	message, err := renderTemplate("prApproved", r)
-	if err != nil {
-		mlog.Error(TemplateErrorText, mlog.Err(err))
-		return
-	}
-
-	post := &model.Post{
-		Type:    PostTypePrApproved,
-		UserId:  p.BotUserID,
-		Message: message,
-	}
-
-	for _, sub := range subs {
-		if !sub.PullReviews() {
-			continue
-		}
-		post.ChannelId = sub.ChannelID
-		if _, err := p.API.CreatePost(post); err != nil {
-			p.API.LogError(err.Error())
-		}
-	}
-}
-
-func (p *Plugin) postPullRequestMergedEvent(pl interface{}) {
-	r := pl.(bb_webhook.PullRequestMergedPayload)
-
-	reponame := r.Repository.FullName
-	isprivate := r.Repository.IsPrivate
-
-	subs := p.GetSubscribedChannelsForRepository(reponame, isprivate)
-	if subs == nil || len(subs) == 0 {
-		return
-	}
-
-	message, err := renderTemplate("prMerged", r)
-	if err != nil {
-		mlog.Error(TemplateErrorText, mlog.Err(err))
-		return
-	}
-
-	post := &model.Post{
-		Type:    PostTypePrMerged,
-		UserId:  p.BotUserID,
-		Message: message,
-	}
-
-	for _, sub := range subs {
-		if !sub.PullReviews() {
-			continue
-		}
-		post.ChannelId = sub.ChannelID
-		if _, err := p.API.CreatePost(post); err != nil {
-			p.API.LogError(err.Error())
-		}
-	}
-}
-
-func (p *Plugin) postPullRequestCommentCreatedEvent(pl interface{}) {
-	r := pl.(bb_webhook.PullRequestCommentCreatedPayload)
-
-	reponame := r.Repository.FullName
-	isprivate := r.Repository.IsPrivate
-
-	subs := p.GetSubscribedChannelsForRepository(reponame, isprivate)
-	if subs == nil || len(subs) == 0 {
-		return
-	}
-
-	message, err := renderTemplate("prCommentCreated", r)
-	if err != nil {
-		mlog.Error(TemplateErrorText, mlog.Err(err))
-		return
-	}
-
-	post := &model.Post{
-		Type:    PostTypePrCommentCreated,
-		UserId:  p.BotUserID,
-		Message: message,
-	}
-
-	for _, sub := range subs {
-		if !sub.PullReviews() {
-			continue
-		}
-		post.ChannelId = sub.ChannelID
-		if _, err := p.API.CreatePost(post); err != nil {
-			p.API.LogError(err.Error())
+			post.ChannelId = channel.Id
+			_, err = p.API.CreatePost(post)
+			if err != nil {
+				p.API.LogError(err.Error())
+			}
+			p.sendRefreshEvent(userID)
 		}
 	}
 }
@@ -380,8 +132,64 @@ func (p *Plugin) permissionToRepo(userID string, ownerAndRepo string) bool {
 	bitbucketClient := p.bitbucketConnect(*info.Token)
 
 	if _, _, err := bitbucketClient.RepositoriesApi.RepositoriesUsernameRepoSlugGet(context.Background(), owner, repo); err != nil {
-		mlog.Error(err.Error())
+		p.API.LogError(err.Error())
 		return false
 	}
 	return true
+}
+
+type pullRequestReviewHandler struct {
+	p *Plugin
+}
+
+type pullRequestReviewers struct {
+	Users []string
+}
+
+type subscriptionHandler struct {
+	p *Plugin
+}
+
+func (s subscriptionHandler) GetSubscribedChannelsForRepository(pl webhook_payload.Payload) []*subscription.Subscription {
+	return s.p.GetSubscribedChannelsForRepository(pl)
+}
+
+func (r *pullRequestReviewHandler) GetAlreadyNotifiedUsers(pullRequestID int64) ([]string, error) {
+	bytesThisPrReviewers, err := r.p.API.KVGet(KeyAssignUserPr + strconv.FormatInt(pullRequestID, 10))
+	if err != nil {
+		return nil, err
+	}
+
+	//if nil, then return empty list
+	if bytesThisPrReviewers == nil {
+		return []string{}, nil
+	}
+
+	var pullRequestReviewers pullRequestReviewers
+	appErr := json.Unmarshal(bytesThisPrReviewers, &pullRequestReviewers)
+	if appErr != nil {
+		r.p.API.LogError("Couldn't read information about notified users",
+			"pl.PullRequest.ID", pullRequestID, "err", appErr)
+		return nil, appErr
+	}
+
+	return pullRequestReviewers.Users, nil
+}
+
+func (r pullRequestReviewHandler) SaveNotifiedUsers(pullRequestID int64, notifiedUsers []string) {
+	thisPrReviewers := pullRequestReviewers{}
+	thisPrReviewers.Users = notifiedUsers
+	bytesThisPrReviewers, err := json.Marshal(thisPrReviewers)
+	if err != nil {
+		r.p.API.LogWarn("Couldn't marshal notified users for PR",
+			"thisPrReviewers", thisPrReviewers, "err", err)
+		return
+	}
+
+	err = r.p.API.KVSet(KeyAssignUserPr+strconv.FormatInt(pullRequestID, 10), bytesThisPrReviewers)
+	if err != nil {
+		//err is nil, but it's still going here don't know why todo
+		r.p.API.LogWarn("Couldn't save information about notified users for PR",
+			"thisPrReviewers", thisPrReviewers, "err", err)
+	}
 }

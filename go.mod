@@ -4,7 +4,9 @@ go 1.12
 
 require (
 	github.com/Masterminds/sprig/v3 v3.1.0
+	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/google/go-github v17.0.0+incompatible
+	github.com/grokify/html-strip-tags-go v0.0.0-20200322061010-ea0c1cf2f119
 	github.com/mattermost/mattermost-server/v5 v5.3.2-0.20200723144633-ed34468996e6
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.6.1

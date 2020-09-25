@@ -10,12 +10,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"unicode"
 )
-
-func getMentionSearchQuery(username, org string) string {
-	return buildSearchQuery("is:open mentions:%v archived:false %v", username, org)
-}
 
 func getReviewSearchQuery(username, org string) string {
 	return buildSearchQuery("is:pr is:open review-requested:%v archived:false %v", username, org)
@@ -120,35 +115,6 @@ func parseOwnerAndRepo(full, baseURL string) (string, string, string) {
 	repo := splitStr[1]
 
 	return fmt.Sprintf("%s/%s", owner, repo), owner, repo
-}
-
-func parseBitbucketUsernamesFromText(text string) []string {
-	usernameMap := map[string]bool{}
-	usernames := []string{}
-
-	for _, word := range strings.FieldsFunc(text, func(c rune) bool {
-		return !(c == '-' || c == '@' || unicode.IsLetter(c) || unicode.IsNumber(c))
-	}) {
-		if len(word) < 2 || word[0] != '@' {
-			continue
-		}
-
-		if word[1] == '-' || word[len(word)-1] == '-' {
-			continue
-		}
-
-		if strings.Contains(word, "--") {
-			continue
-		}
-
-		name := word[1:]
-		if !usernameMap[name] {
-			usernames = append(usernames, name)
-			usernameMap[name] = true
-		}
-	}
-
-	return usernames
 }
 
 func fixBitbucketNotificationSubjectURL(url string) string {
