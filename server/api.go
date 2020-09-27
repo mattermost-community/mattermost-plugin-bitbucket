@@ -211,6 +211,10 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 		fmt.Println(err.Error())
 	}
 
+	if err := p.storeBitbucketUserIDToMattermostUserIDMapping(bitbucketUser.AccountId, userID); err != nil {
+		fmt.Println(err.Error())
+	}
+
 	// Post intro post
 	message := fmt.Sprintf("#### Welcome to the Mattermost Bitbucket Plugin!\n"+
 		"You've connected your Mattermost account to [%s](%s) on Bitbucket. Read about the features of this plugin below:\n\n"+

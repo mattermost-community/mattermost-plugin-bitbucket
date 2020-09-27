@@ -25,7 +25,6 @@ const COMMAND_HELP = `* |/bitbucket connect| - Connect your Mattermost account t
     * deletes - includes branch and tag deletions
     * issue_comments - includes new issue comments
     * pull_reviews - includes pull request reviews
-	* label:"<labelname>" - must include "pulls" or "issues" in feature list when using a label
   * Defaults to "pulls,issues,creates,deletes"
 * |/bitbucket unsubscribe owner/repo| - Unsubscribe the current channel from a repository
 * |/bitbucket me| - Display the connected Bitbucket account

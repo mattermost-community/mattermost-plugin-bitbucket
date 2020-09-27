@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/template_renderer"
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhook"
+	"github.com/pkg/errors"
 	"net/http"
 	"net/url"
 	"path"
@@ -20,15 +23,13 @@ import (
 
 const (
 	BITBUCKET_TOKEN_KEY        = "_bitbuckettoken"
-	BITBUCKET_STATE_KEY        = "_bitbucketstate"
 	BITBUCKET_USERNAME_KEY     = "_bitbucketusername"
+	BITBUCKET_ACCOUNT_ID_KEY   = "_bitbucketaccountid"
 	BITBUCKET_PRIVATE_REPO_KEY = "_bitbucketprivate"
 	WS_EVENT_CONNECT           = "connect"
 	WS_EVENT_DISCONNECT        = "disconnect"
 	WS_EVENT_REFRESH           = "refresh"
 	SETTING_BUTTONS_TEAM       = "team"
-	SETTING_BUTTONS_CHANNEL    = "channel"
-	SETTING_BUTTONS_OFF        = "off"
 	SETTING_NOTIFICATIONS      = "notifications"
 	SETTING_REMINDERS          = "reminders"
 	SETTING_ON                 = "on"
@@ -48,13 +49,13 @@ type Plugin struct {
 	// configuration is the active plugin configuration. Consult getConfiguration and
 	// setConfiguration for usage.
 	configuration *configuration
+
+	// webhookHandler is responsible for handling webhook events.
+	webhookHandler webhook.Webhook
 }
 
 // func (p *Plugin) bitbucketConnect(token oauth2.Token) (*bitbucket.APIClient, *context.valueCtx) {
 func (p *Plugin) bitbucketConnect(token oauth2.Token) *bitbucket.APIClient {
-
-	// config := p.getConfiguration()
-	// fmt.Printf("----- #### BB plugin.bitbucketConnect  -> HERE IS PROBLEM ***  config = %+v", config)
 
 	// get Oauth token source and client
 	ts := oauth2.StaticTokenSource(&token)
@@ -65,15 +66,14 @@ func (p *Plugin) bitbucketConnect(token oauth2.Token) *bitbucket.APIClient {
 	tc := oauth2.NewClient(auth, ts)
 
 	// create config for bitbucket API
-	config_bb := bitbucket.NewConfiguration()
-	config_bb.HTTPClient = tc
+	configBb := bitbucket.NewConfiguration()
+	configBb.HTTPClient = tc
 
 	// create new bitbucket client API
-	new_client := bitbucket.NewAPIClient(config_bb)
+	newClient := bitbucket.NewAPIClient(configBb)
 
 	// TODO figure out how to add auth to client so dont' have to return it
-	return new_client
-
+	return newClient
 }
 
 func (p *Plugin) OnActivate() error {
@@ -81,16 +81,33 @@ func (p *Plugin) OnActivate() error {
 	config := p.getConfiguration()
 
 	if err := config.IsValid(); err != nil {
-		return err
-	}
-	p.API.RegisterCommand(getCommand())
-	user, err := p.API.GetUserByUsername(config.Username)
-	if err != nil {
-		p.API.LogError(err.Error())
-		return fmt.Errorf("Unable to find user with configured username: %v", config.Username)
+		return errors.Wrap(err, "invalid config")
 	}
 
-	p.BotUserID = user.Id
+	if p.API.GetConfig().ServiceSettings.SiteURL == nil {
+		return errors.New("siteURL is not set. Please set a siteURL and restart the plugin")
+	}
+
+	err := p.API.RegisterCommand(getCommand())
+	if err != nil {
+		return errors.Wrap(err, "failed to register command")
+	}
+
+	botID, err := p.Helpers.EnsureBot(&model.Bot{
+		Username:    "bitbucket",
+		DisplayName: "BitBucket",
+		Description: "Created by the BitBucket plugin.",
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to ensure BitBucket bot")
+	}
+
+	p.BotUserID = botID
+
+	templateRenderer := template_renderer.MakeTemplateRenderer()
+	templateRenderer.RegisterBitBucketAccountIDToUsernameMappingCallback(p.getBitBucketAccountIDToMattermostUsernameMapping)
+	p.webhookHandler = webhook.NewWebhook(&subscriptionHandler{p}, &pullRequestReviewHandler{p}, templateRenderer)
+
 	return nil
 }
 
@@ -121,8 +138,7 @@ func (p *Plugin) getOAuthConfig() *oauth2.Config {
 		ClientID:     config.BitbucketOAuthClientID,
 		ClientSecret: config.BitbucketOAuthClientSecret,
 		Scopes:       []string{"repository"},
-		// Scopes:       []string{repo, "notifications"},
-		RedirectURL: fmt.Sprintf("%s/plugins/%s/oauth/complete", *p.API.GetConfig().ServiceSettings.SiteURL, manifest.Id),
+		RedirectURL:  fmt.Sprintf("%s/plugins/%s/oauth/complete", *p.API.GetConfig().ServiceSettings.SiteURL, manifest.Id),
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  authURL.String(),
 			TokenURL: tokenURL.String(),
@@ -191,13 +207,25 @@ func (p *Plugin) getBitbucketUserInfo(userID string) (*BitbucketUserInfo, *APIEr
 
 func (p *Plugin) storeBitbucketToUserIDMapping(bitbucketUsername, userID string) error {
 	if err := p.API.KVSet(bitbucketUsername+BITBUCKET_USERNAME_KEY, []byte(userID)); err != nil {
-		return fmt.Errorf("Encountered error saving bitbucket username mapping")
+		return fmt.Errorf("Encountered error saving BitBucket username mapping")
+	}
+	return nil
+}
+
+func (p *Plugin) storeBitbucketUserIDToMattermostUserIDMapping(bitbucketUserID, userID string) error {
+	if err := p.API.KVSet(bitbucketUserID+BITBUCKET_ACCOUNT_ID_KEY, []byte(userID)); err != nil {
+		return fmt.Errorf("Encountered error saving BitBucket user ID mapping")
 	}
 	return nil
 }
 
 func (p *Plugin) getBitbucketToUserIDMapping(bitbucketUsername string) string {
 	userID, _ := p.API.KVGet(bitbucketUsername + BITBUCKET_USERNAME_KEY)
+	return string(userID)
+}
+
+func (p *Plugin) getBitbucketAccountIDToMattermostUserIDMapping(bitbucketAccountID string) string {
+	userID, _ := p.API.KVGet(bitbucketAccountID + BITBUCKET_ACCOUNT_ID_KEY)
 	return string(userID)
 }
 
@@ -306,8 +334,8 @@ func (p *Plugin) GetToDo(ctx context.Context, username string, bitbucketClient *
 			message := fmt.Sprintf("[Vulnerability Alert for %v](%v)", n.GetRepository().GetFullName(), fixBitbucketNotificationSubjectURL(n.GetSubject().GetURL()))
 			notificationContent += fmt.Sprintf("* %v\n", message)
 		default:
-			url := fixBitbucketNotificationSubjectURL(n.GetSubject().GetURL())
-			notificationContent += fmt.Sprintf("* %v\n", url)
+			subjectURL := fixBitbucketNotificationSubjectURL(n.GetSubject().GetURL())
+			notificationContent += fmt.Sprintf("* %v\n", subjectURL)
 		}
 
 		notificationCount++
@@ -376,4 +404,23 @@ func (p *Plugin) sendRefreshEvent(userID string) {
 		nil,
 		&model.WebsocketBroadcast{UserId: userID},
 	)
+}
+
+func (p *Plugin) getBaseURL() string {
+	config := p.getConfiguration()
+	if config.EnterpriseBaseURL != "" {
+		return config.EnterpriseBaseURL
+	}
+
+	return "https://bitbucket.org/"
+}
+
+// getBitBucketAccountIDToMattermostUsernameMapping maps a BitBucket account ID to the corresponding Mattermost username, if any.
+func (p *Plugin) getBitBucketAccountIDToMattermostUsernameMapping(bitbucketAccountID string) string {
+	user, _ := p.API.GetUser(p.getBitbucketAccountIDToMattermostUserIDMapping(bitbucketAccountID))
+	if user == nil {
+		return ""
+	}
+
+	return user.Username
 }

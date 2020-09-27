@@ -5,67 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	"github.com/google/go-github/github"
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/subscription"
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhook_payload"
 	"github.com/wbrefvem/go-bitbucket"
 )
 
 const (
 	SUBSCRIPTIONS_KEY = "subscriptions"
 )
-
-type Subscription struct {
-	ChannelID  string
-	CreatorID  string
-	Features   string
-	Repository string
-}
-
-type Subscriptions struct {
-	Repositories map[string][]*Subscription
-}
-
-func (s *Subscription) Pulls() bool {
-	return strings.Contains(s.Features, "pulls")
-}
-
-func (s *Subscription) Issues() bool {
-	return strings.Contains(s.Features, "issues")
-}
-
-func (s *Subscription) Pushes() bool {
-	return strings.Contains(s.Features, "pushes")
-}
-
-func (s *Subscription) Creates() bool {
-	return strings.Contains(s.Features, "creates")
-}
-
-func (s *Subscription) Deletes() bool {
-	return strings.Contains(s.Features, "deletes")
-}
-
-func (s *Subscription) IssueComments() bool {
-	return strings.Contains(s.Features, "issue_comments")
-}
-
-func (s *Subscription) PullReviews() bool {
-	return strings.Contains(s.Features, "pull_reviews")
-}
-
-func (s *Subscription) Label() string {
-	if !strings.Contains(s.Features, "label:") {
-		return ""
-	}
-
-	labelSplit := strings.Split(s.Features, "\"")
-	if len(labelSplit) < 3 {
-		return ""
-	}
-
-	return labelSplit[1]
-}
 
 func (p *Plugin) Subscribe(ctx context.Context, bitbucketClient *bitbucket.APIClient, userId, owner, repo, channelID, features string) error {
 	if owner == "" {
@@ -93,7 +41,7 @@ func (p *Plugin) Subscribe(ctx context.Context, bitbucketClient *bitbucket.APICl
 	fmt.Printf("--- ChannelID = %+v\n", channelID)
 	fmt.Printf("--- userid = %+v\n", userId)
 
-	sub := &Subscription{
+	sub := &subscription.Subscription{
 		ChannelID:  channelID,
 		CreatorID:  userId,
 		Features:   features,
@@ -127,7 +75,7 @@ func (p *Plugin) SubscribeOrg(ctx context.Context, bitbucketClient *github.Clien
 	}
 
 	for _, repo := range repos {
-		sub := &Subscription{
+		sub := &subscription.Subscription{
 			ChannelID:  channelID,
 			CreatorID:  userId,
 			Features:   features,
@@ -142,8 +90,8 @@ func (p *Plugin) SubscribeOrg(ctx context.Context, bitbucketClient *github.Clien
 	return nil
 }
 
-func (p *Plugin) GetSubscriptionsByChannel(channelID string) ([]*Subscription, error) {
-	var filteredSubs []*Subscription
+func (p *Plugin) GetSubscriptionsByChannel(channelID string) ([]*subscription.Subscription, error) {
+	var filteredSubs []*subscription.Subscription
 	subs, err := p.GetSubscriptions()
 	if err != nil {
 		return nil, err
@@ -164,7 +112,7 @@ func (p *Plugin) GetSubscriptionsByChannel(channelID string) ([]*Subscription, e
 	return filteredSubs, nil
 }
 
-func (p *Plugin) AddSubscription(repo string, sub *Subscription) error {
+func (p *Plugin) AddSubscription(repo string, sub *subscription.Subscription) error {
 	subs, err := p.GetSubscriptions()
 	if err != nil {
 		return err
@@ -172,7 +120,7 @@ func (p *Plugin) AddSubscription(repo string, sub *Subscription) error {
 
 	repoSubs := subs.Repositories[repo]
 	if repoSubs == nil {
-		repoSubs = []*Subscription{sub}
+		repoSubs = []*subscription.Subscription{sub}
 	} else {
 		exists := false
 		for index, s := range repoSubs {
@@ -198,8 +146,8 @@ func (p *Plugin) AddSubscription(repo string, sub *Subscription) error {
 	return nil
 }
 
-func (p *Plugin) GetSubscriptions() (*Subscriptions, error) {
-	var subscriptions *Subscriptions
+func (p *Plugin) GetSubscriptions() (*subscription.Subscriptions, error) {
+	var subscriptions *subscription.Subscriptions
 
 	value, err := p.API.KVGet(SUBSCRIPTIONS_KEY)
 	if err != nil {
@@ -207,7 +155,7 @@ func (p *Plugin) GetSubscriptions() (*Subscriptions, error) {
 	}
 
 	if value == nil {
-		subscriptions = &Subscriptions{Repositories: map[string][]*Subscription{}}
+		subscriptions = &subscription.Subscriptions{Repositories: map[string][]*subscription.Subscription{}}
 	} else {
 		json.NewDecoder(bytes.NewReader(value)).Decode(&subscriptions)
 	}
@@ -215,7 +163,7 @@ func (p *Plugin) GetSubscriptions() (*Subscriptions, error) {
 	return subscriptions, nil
 }
 
-func (p *Plugin) StoreSubscriptions(s *Subscriptions) error {
+func (p *Plugin) StoreSubscriptions(s *subscription.Subscriptions) error {
 	b, err := json.Marshal(s)
 	if err != nil {
 		return err
@@ -224,30 +172,28 @@ func (p *Plugin) StoreSubscriptions(s *Subscriptions) error {
 	return nil
 }
 
-// func (p *Plugin) GetSubscribedChannelsForRepository(repo *github.Repository) []*Subscription {
-func (p *Plugin) GetSubscribedChannelsForRepository(name string, isprivate bool) []*Subscription {
-	// name := repo.GetFullName()
+func (p *Plugin) GetSubscribedChannelsForRepository(pl webhook_payload.Payload) []*subscription.Subscription {
 	fmt.Println("---- GetSubscribedChannelsForRepository ----")
 	subs, err := p.GetSubscriptions()
 	if err != nil {
 		return nil
 	}
 
-	fmt.Printf("---> name = %+v\n", name)
-	subsForRepo := subs.Repositories[name]
+	fmt.Printf("---> name = %+v\n", pl.GetRepository().FullName)
+	subsForRepo := subs.Repositories[pl.GetRepository().FullName]
 	if subsForRepo == nil {
 		return nil
 	}
 	fmt.Printf("---> subsForRepo = %+v\n", subsForRepo)
 
-	subsToReturn := []*Subscription{}
+	subsToReturn := []*subscription.Subscription{}
 
 	for _, sub := range subsForRepo {
 		// if repo.GetPrivate() && !p.permissionToRepo(sub.CreatorID, name) {
 		fmt.Printf("----> sub = %+v\n", sub)
 		// fmt.Printf("isprivate = %+v\n", isprivate)
 		fmt.Printf("----> sub.CreatorID = %+v\n", sub.CreatorID)
-		if isprivate && !p.permissionToRepo(sub.CreatorID, name) {
+		if pl.GetRepository().IsPrivate && !p.permissionToRepo(sub.CreatorID, pl.GetRepository().FullName) {
 			continue
 		}
 		subsToReturn = append(subsToReturn, sub)
