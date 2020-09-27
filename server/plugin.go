@@ -54,14 +54,13 @@ type Plugin struct {
 	webhookHandler webhook.Webhook
 }
 
-// func (p *Plugin) bitbucketConnect(token oauth2.Token) (*bitbucket.APIClient, *context.valueCtx) {
 func (p *Plugin) bitbucketConnect(token oauth2.Token) *bitbucket.APIClient {
 
 	// get Oauth token source and client
-	ts := oauth2.StaticTokenSource(&token)
+	ts := p.getOAuthConfig().TokenSource(context.Background(), &token)
 
 	// setup Oauth context
-	auth := context.WithValue(oauth2.NoContext, bitbucket.ContextOAuth2, ts)
+	auth := context.WithValue(context.Background(), bitbucket.ContextOAuth2, ts)
 
 	tc := oauth2.NewClient(auth, ts)
 

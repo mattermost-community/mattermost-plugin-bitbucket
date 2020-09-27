@@ -132,7 +132,7 @@ func (p *Plugin) permissionToRepo(userID string, ownerAndRepo string) bool {
 	bitbucketClient := p.bitbucketConnect(*info.Token)
 
 	if _, _, err := bitbucketClient.RepositoriesApi.RepositoriesUsernameRepoSlugGet(context.Background(), owner, repo); err != nil {
-		p.API.LogError(err.Error())
+		p.API.LogError("Couldn't fetch repositories info", "err", err)
 		return false
 	}
 	return true
