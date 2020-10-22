@@ -8,29 +8,41 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/mattermost/mattermost-server/v5/utils"
 	"io"
 	"strings"
 )
 
-func getReviewSearchQuery(username, org string) string {
-	return buildSearchQuery("is:pr is:open review-requested:%v archived:false %v", username, org)
+func getBaseUrl() string {
+	return "https://api.bitbucket.org/2.0"
 }
 
-func getYourPrsSearchQuery(username, org string) string {
-	return buildSearchQuery("is:pr is:open author:%v archived:false %v", username, org)
+func getYourOrgReposSearchQuery(organizationName string) string {
+	return getBaseUrl() + "/repositories/" + organizationName + "?role=member"
 }
 
-func getYourAssigneeSearchQuery(username, org string) string {
-	return buildSearchQuery("is:open assignee:%v archived:false %v", username, org)
+func getYourAllReposSearchQuery() string {
+	return getBaseUrl() + "/repositories?role=member"
 }
 
-func buildSearchQuery(query, username, org string) string {
-	orgField := ""
-	if len(org) != 0 {
-		orgField = fmt.Sprintf("org:%v", org)
-	}
+func getYourAssigneeIssuesSearchQuery(userAccountID, repoFullName string) string {
+	return getBaseUrl() + "/repositories/" + repoFullName + "/issues?q=" +
+		utils.UrlEncode("assignee.account_id=\""+userAccountID+"\" AND state!=\"closed\"")
+}
 
-	return fmt.Sprintf(query, username, orgField)
+func getYourAssigneePRsSearchQuery(userAccountID, repoFullName string) string {
+	return getBaseUrl() + "/repositories/" + repoFullName + "/pullrequests?q=" +
+		utils.UrlEncode("reviewers.account_id=\""+userAccountID+"\" AND state=\"open\"")
+}
+
+func getYourOpenPRsSearchQuery(userAccountID, repoFullName string) string {
+	return getBaseUrl() + "/repositories/" + repoFullName + "/pullrequests?q=" +
+		utils.UrlEncode("author.account_id=\""+userAccountID+"\" AND state=\"open\"")
+}
+
+func getSearchIssuesQuery(repoFullName, searchTerm string) string {
+	return getBaseUrl() + "/repositories/" + repoFullName + "/issues?q=" +
+		utils.UrlEncode("title ~ \""+searchTerm+"\"") + "&sort=-updated_on"
 }
 
 func pad(src []byte) []byte {
@@ -64,7 +76,7 @@ func encrypt(key []byte, text string) (string, error) {
 	}
 
 	cfb := cipher.NewCFBEncrypter(block, iv)
-	cfb.XORKeyStream(ciphertext[aes.BlockSize:], []byte(msg))
+	cfb.XORKeyStream(ciphertext[aes.BlockSize:], msg)
 	finalMsg := base64.URLEncoding.EncodeToString(ciphertext)
 	return finalMsg, nil
 }
@@ -98,7 +110,7 @@ func decrypt(key []byte, text string) (string, error) {
 	return string(unpadMsg), nil
 }
 
-func parseOwnerAndRepo(full, baseURL string) (string, string, string) {
+func parseOwnerAndRepoAndReturnFullAlso(full, baseURL string) (string, string, string) {
 	if baseURL == "" {
 		baseURL = "https://bitbucket.org/"
 	}
@@ -117,10 +129,47 @@ func parseOwnerAndRepo(full, baseURL string) (string, string, string) {
 	return fmt.Sprintf("%s/%s", owner, repo), owner, repo
 }
 
-func fixBitbucketNotificationSubjectURL(url string) string {
-	url = strings.Replace(url, "api.", "", 1)
-	url = strings.Replace(url, "repos/", "", 1)
-	url = strings.Replace(url, "/pulls/", "/pull/", 1)
-	url = strings.Replace(url, "/api/v3", "", 1)
-	return url
+func parseOwnerAndRepo(full, baseURL string) (string, string) {
+	if baseURL == "" {
+		baseURL = "https://bitbucket.org/"
+	}
+	full = strings.TrimSuffix(strings.TrimSpace(strings.Replace(full, baseURL, "", 1)), "/")
+	splitStr := strings.Split(full, "/")
+
+	if len(splitStr) == 1 {
+		owner := splitStr[0]
+		return owner, ""
+	} else if len(splitStr) != 2 {
+		return "", ""
+	}
+	owner := splitStr[0]
+	repo := splitStr[1]
+
+	return owner, repo
+}
+
+// getToDoDisplayText returns the text to be displayed in todo listings.
+func getToDoDisplayText(baseURL, title, url, notifType string) string {
+	owner, repo := parseOwnerAndRepo(url, baseURL)
+	repoURL := fmt.Sprintf("%s%s/%s", baseURL, owner, repo)
+	repoWords := strings.Split(repo, "-")
+	if len(repo) > 20 && len(repoWords) > 1 {
+		repo = "..." + repoWords[len(repoWords)-1]
+	}
+	repoPart := fmt.Sprintf("[%s/%s](%s)", owner, repo, repoURL)
+
+	if len(title) > 80 {
+		title = strings.TrimSpace(title[:80]) + "..."
+	}
+	titlePart := fmt.Sprintf("[%s](%s)", title, url)
+
+	if notifType == "" {
+		return fmt.Sprintf("* %s %s\n", repoPart, titlePart)
+	}
+
+	return fmt.Sprintf("* %s %s %s\n", repoPart, notifType, titlePart)
+}
+
+func fullNameFromOwnerAndRepo(owner, repo string) string {
+	return fmt.Sprintf("%s/%s", owner, repo)
 }

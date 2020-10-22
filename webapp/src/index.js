@@ -1,11 +1,16 @@
-// Copyright (c) 2017-present Mattermost, Inc. All Rights Reserved.
-// See License.txt for license information.
+import AttachCommentToIssuePostMenuAction from 'components/post_menu_actions/attach_comment_to_issue';
+import AttachCommentToIssueModal from 'components/modals/attach_comment_to_issue';
 
+import CreateIssueModal from './components/modals/create_issue';
+
+import CreateIssuePostMenuAction from './components/post_menu_actions/create_issue';
 import SidebarHeader from './components/sidebar_header';
 import TeamSidebar from './components/team_sidebar';
 import UserAttribute from './components/user_attribute';
+import SidebarRight from './components/sidebar_right';
+import LinkTooltip from './components/link_tooltip';
 import Reducer from './reducers';
-import {getConnected} from './actions';
+import {getConnected, setShowRHSAction} from './actions';
 import {handleConnect, handleDisconnect, handleReconnect, handleRefresh} from './websocket';
 
 let activityFunc;
@@ -21,6 +26,14 @@ class PluginClass {
         registry.registerLeftSidebarHeaderComponent(SidebarHeader);
         registry.registerBottomTeamSidebarComponent(TeamSidebar);
         registry.registerPopoverUserAttributesComponent(UserAttribute);
+        registry.registerRootComponent(CreateIssueModal);
+        registry.registerPostDropdownMenuComponent(CreateIssuePostMenuAction);
+        registry.registerRootComponent(AttachCommentToIssueModal);
+        registry.registerPostDropdownMenuComponent(AttachCommentToIssuePostMenuAction);
+        registry.registerLinkTooltipComponent(LinkTooltip);
+
+        const {showRHSPlugin} = registry.registerRightHandSidebarComponent(SidebarRight, 'Bitbucket');
+        store.dispatch(setShowRHSAction(() => store.dispatch(showRHSPlugin)));
 
         registry.registerWebSocketEventHandler('custom_bitbucket_connect', handleConnect(store));
         registry.registerWebSocketEventHandler('custom_bitbucket_disconnect', handleDisconnect(store));

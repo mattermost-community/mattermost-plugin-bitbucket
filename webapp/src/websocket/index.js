@@ -1,6 +1,8 @@
 import ActionTypes from '../action_types';
 import Constants from '../constants';
-import {getConnected, getReviews, getUnreads, getYourPrs, getYourAssignments} from '../actions';
+import {getConnected, getReviews, getYourAssignments, getYourPrs} from '../actions';
+
+import {id as pluginId} from '../manifest';
 
 export function handleConnect(store) {
     return (msg) => {
@@ -34,7 +36,6 @@ export function handleReconnect(store, reminder = false) {
         const {data} = await getConnected(reminder)(store.dispatch, store.getState);
         if (data && data.connected) {
             getReviews()(store.dispatch, store.getState);
-            getUnreads()(store.dispatch, store.getState);
             getYourPrs()(store.dispatch, store.getState);
             getYourAssignments()(store.dispatch, store.getState);
         }
@@ -43,9 +44,8 @@ export function handleReconnect(store, reminder = false) {
 
 export function handleRefresh(store) {
     return () => {
-        if (store.getState()['plugins-bitbucket'].connected) {
+        if (store.getState()[`plugins-${pluginId}`].connected) {
             getReviews()(store.dispatch, store.getState);
-            getUnreads()(store.dispatch, store.getState);
             getYourPrs()(store.dispatch, store.getState);
             getYourAssignments()(store.dispatch, store.getState);
         }

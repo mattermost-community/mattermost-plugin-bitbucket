@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/pkg/errors"
-	// "github.com/wbrefvem/go-bitbucket"
 )
 
 // configuration captures the plugin's external configuration as exposed in the Mattermost server
@@ -19,95 +17,88 @@ import (
 //
 // If you add non-reference types to your configuration struct, be sure to rewrite Clone as a deep
 // copy appropriate for your types.
-type configuration struct {
+type Configuration struct {
 	BitbucketOrg               string
-	Username                   string
 	BitbucketOAuthClientID     string
 	BitbucketOAuthClientSecret string
 	WebhookSecret              string
 	EnablePrivateRepo          bool
 	EncryptionKey              string
-	EnterpriseBaseURL          string
-	EnterpriseUploadURL        string
 }
 
-// Clone shallow copies the configuration. Your implementation may require a deep copy if
-// your configuration has reference types.
-func (c *configuration) Clone() *configuration {
+// Clone shallow copies the Configuration. Your implementation may require a deep copy if
+// your Configuration has reference types.
+func (c *Configuration) Clone() *Configuration {
 	var clone = *c
 	return &clone
 }
 
 // IsValid checks if all needed fields are set.
-func (c *configuration) IsValid() error {
+func (c *Configuration) IsValid() error {
 	if c.BitbucketOAuthClientID == "" {
-		return fmt.Errorf("Must have a bitbucket oauth client id")
+		return errors.New("must have a bitbucket oauth client id")
 	}
 
 	if c.BitbucketOAuthClientSecret == "" {
-		return fmt.Errorf("Must have a bitbucket oauth client secret")
+		return errors.New("must have a bitbucket oauth client secret")
 	}
 
 	if c.EncryptionKey == "" {
-		return fmt.Errorf("Must have an encryption key")
-	}
-
-	if c.Username == "" {
-		return fmt.Errorf("Need a user to make posts as")
+		return errors.New("must have an encryption key")
 	}
 
 	return nil
 }
 
-// getConfiguration retrieves the active configuration under lock, making it safe to use
-// concurrently. The active configuration may change underneath the client of this method, but
+// getConfiguration retrieves the active Configuration under lock, making it safe to use
+// concurrently. The active Configuration may change underneath the client of this method, but
 // the struct returned by this API call is considered immutable.
-func (p *Plugin) getConfiguration() *configuration {
+func (p *Plugin) getConfiguration() *Configuration {
 	p.configurationLock.RLock()
 	defer p.configurationLock.RUnlock()
 
 	if p.configuration == nil {
-		return &configuration{}
+		return &Configuration{}
 	}
 
 	return p.configuration
 }
 
-// setConfiguration replaces the active configuration under lock.
+// setConfiguration replaces the active Configuration under lock.
 //
 // Do not call setConfiguration while holding the configurationLock, as sync.Mutex is not
 // reentrant. In particular, avoid using the plugin API entirely, as this may in turn trigger a
 // hook back into the plugin. If that hook attempts to acquire this lock, a deadlock may occur.
 //
-// This method panics if setConfiguration is called with the existing configuration. This almost
-// certainly means that the configuration was modified without being cloned and may result in
+// This method panics if setConfiguration is called with the existing Configuration. This almost
+// certainly means that the Configuration was modified without being cloned and may result in
 // an unsafe access.
-func (p *Plugin) setConfiguration(configuration *configuration) {
+func (p *Plugin) setConfiguration(configuration *Configuration) {
 	p.configurationLock.Lock()
 	defer p.configurationLock.Unlock()
 
 	if configuration != nil && p.configuration == configuration {
-		// Ignore assignment if the configuration struct is empty. Go will optimize the
+		// Ignore assignment if the Configuration struct is empty. Go will optimize the
 		// allocation for same to point at the same memory address, breaking the check
 		// above.
 		if reflect.ValueOf(*configuration).NumField() == 0 {
 			return
 		}
 
-		panic("setConfiguration called with the existing configuration")
+		panic("setConfiguration called with the existing Configuration")
 	}
 
 	p.configuration = configuration
 }
 
-// OnConfigurationChange is invoked when configuration changes may have been made.
+// OnConfigurationChange is invoked when Configuration changes may have been made.
 func (p *Plugin) OnConfigurationChange() error {
-	var configuration = new(configuration)
-	// var configuration = bitbucket.NewConfiguration()
+	var configuration = new(Configuration)
+	// var Configuration = bitbucket.NewConfiguration()
 
-	// Load the public configuration fields from the Mattermost server configuration.
+	// Load the public Configuration fields from the Mattermost server Configuration.
 	if err := p.API.LoadPluginConfiguration(configuration); err != nil {
-		return errors.Wrap(err, "failed to load plugin configuration")
+		return errors.Wrap(err, "failed to load plugin Configuration")
 	}
 
 	p.setConfiguration(configuration)

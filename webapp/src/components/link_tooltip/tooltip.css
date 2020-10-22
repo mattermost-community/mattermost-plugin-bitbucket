@@ -1,0 +1,126 @@
+:root {
+    --light-gray: #6a737d;
+    --gray: #586069;
+    --dark-gray: #24292e;
+    --blue: #274466;
+    --light-blue: #eff7ff;
+}
+
+@media (min-width: 544px) {
+    .bitbucket-tooltip--large {
+        min-width: 320px;
+    }
+}
+
+/* Bitbucket Tooltip */
+.bitbucket-tooltip .box {
+    background-color: white;
+    box-shadow: 0 1px 15px rgba(27,31,35,.15);
+    position: relative;
+    width: 360px;
+    border-radius: 4px;
+}
+
+.bitbucket-tooltip--bottom-left, .bitbucket-tooltip--top-left {
+    left: -9px;
+    margin-left: 0;
+}
+
+/* Header */
+.bitbucket-tooltip .header {
+    color: var(--light-gray);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.bitbucket-tooltip .header a {
+    text-decoration: none;
+    color: var(--gray);
+    display: inline-block;
+}
+
+/* Body */
+.bitbucket-tooltip .body > span {
+    line-height: 1.25;
+}
+
+/* Info */
+.bitbucket-tooltip .tooltip-info {
+    line-height: 1.25;
+    display: flex;
+    flex-direction: column;
+}
+.bitbucket-tooltip .tooltip-info > a, .bitbucket-tooltip .tooltip-info > a:hover {
+    display: block;
+    text-decoration: none;
+    color: var(--dark-gray);
+}
+.bitbucket-tooltip .tooltip-info > a span {
+    color: var(--light-gray);
+}
+
+.bitbucket-tooltip .tooltip-info h5 {
+    font-weight: 600;
+    font-size: 14px;
+    display: inline;
+}
+
+.bitbucket-tooltip .tooltip-info .markdown-text {
+    -webkit-hyphens: auto;
+    -ms-hyphens: auto;
+    hyphens: auto;
+    max-height: 150px;
+    line-height: 1.25;
+    overflow: hidden;
+    word-break: break-all;
+    font-size: 12px;
+}
+
+.bitbucket-tooltip .tooltip-info .markdown-text::-webkit-scrollbar {
+    display: none;
+}
+
+.bitbucket-tooltip .see-more {
+    font-weight: 600;
+    font-size: 12px;
+}
+
+/* Labels */
+.bitbucket-tooltip .labels {
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.bitbucket-tooltip .label {
+    height: 20px;
+    padding: .15em 4px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 15px;
+    border-radius: 2px;
+    box-shadow: inset 0 -1px 0 rgba(27,31,35,.12);
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 125px;
+}
+
+.bitbucket-tooltip .base-head {
+    display: flex;
+    line-height: 1;
+    align-items: center;
+}
+
+.bitbucket-tooltip .commit-ref {
+    position: relative;
+    display: inline-block;
+    padding: 0 5px;
+    font: .75em/2 SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;
+    color: var(--blue);
+    background-color: var(--light-blue);
+    border-radius: 3px;
+    max-width: 140px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}

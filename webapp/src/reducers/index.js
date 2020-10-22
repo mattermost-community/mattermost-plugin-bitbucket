@@ -54,18 +54,18 @@ function settings(state = {sidebar_buttons: Constants.SETTING_BUTTONS_TEAM, dail
     }
 }
 
-function clientId(state = '', action) {
+function reviews(state = [], action) {
     switch (action.type) {
-    case ActionTypes.RECEIVED_CONNECTED:
-        return action.data.bitbucket_client_id;
+    case ActionTypes.RECEIVED_REVIEWS:
+        return action.data;
     default:
         return state;
     }
 }
 
-function reviews(state = [], action) {
+function reviewsDetails(state = [], action) {
     switch (action.type) {
-    case ActionTypes.RECEIVED_REVIEWS:
+    case ActionTypes.RECEIVED_REVIEWS_DETAILS:
         return action.data;
     default:
         return state;
@@ -81,27 +81,27 @@ function yourPrs(state = [], action) {
     }
 }
 
+function yourRepos(state = [], action) {
+    switch (action.type) {
+    case ActionTypes.RECEIVED_REPOSITORIES:
+        return action.data;
+    default:
+        return state;
+    }
+}
+
+function yourPrsDetails(state = [], action) {
+    switch (action.type) {
+    case ActionTypes.RECEIVED_YOUR_PRS_DETAILS:
+        return action.data;
+    default:
+        return state;
+    }
+}
+
 function yourAssignments(state = [], action) {
     switch (action.type) {
     case ActionTypes.RECEIVED_YOUR_ASSIGNMENTS:
-        return action.data;
-    default:
-        return state;
-    }
-}
-
-function mentions(state = [], action) {
-    switch (action.type) {
-    case ActionTypes.RECEIVED_MENTIONS:
-        return action.data;
-    default:
-        return state;
-    }
-}
-
-function unreads(state = [], action) {
-    switch (action.type) {
-    case ActionTypes.RECEIVED_UNREADS:
         return action.data;
     default:
         return state;
@@ -120,17 +120,85 @@ function bitbucketUsers(state = {}, action) {
     }
 }
 
+function rhsPluginAction(state = null, action) {
+    switch (action.type) {
+    case ActionTypes.RECEIVED_SHOW_RHS_ACTION:
+        return action.showRHSPluginAction;
+    default:
+        return state;
+    }
+}
+
+function rhsState(state = null, action) {
+    switch (action.type) {
+    case ActionTypes.UPDATE_RHS_STATE:
+        return action.state;
+    default:
+        return state;
+    }
+}
+
+const isCreateIssueModalVisible = (state = false, action) => {
+    switch (action.type) {
+    case ActionTypes.OPEN_CREATE_ISSUE_MODAL:
+        return true;
+    case ActionTypes.CLOSE_CREATE_ISSUE_MODAL:
+        return false;
+    default:
+        return state;
+    }
+};
+
+const attachCommentToIssueModalVisible = (state = false, action) => {
+    switch (action.type) {
+    case ActionTypes.OPEN_ATTACH_COMMENT_TO_ISSUE_MODAL:
+        return true;
+    case ActionTypes.CLOSE_ATTACH_COMMENT_TO_ISSUE_MODAL:
+        return false;
+    default:
+        return state;
+    }
+};
+
+const createIssueModalForPostId = (state = '', action) => {
+    switch (action.type) {
+    case ActionTypes.OPEN_CREATE_ISSUE_MODAL:
+        return action.data.postId;
+    case ActionTypes.CLOSE_CREATE_ISSUE_MODAL:
+        return '';
+    default:
+        return state;
+    }
+};
+
+const attachCommentToIssueModalForPostId = (state = '', action) => {
+    switch (action.type) {
+    case ActionTypes.OPEN_ATTACH_COMMENT_TO_ISSUE_MODAL:
+        return action.data.postId;
+    case ActionTypes.CLOSE_ATTACH_COMMENT_TO_ISSUE_MODAL:
+        return '';
+    default:
+        return state;
+    }
+};
+
 export default combineReducers({
     connected,
     enterpriseURL,
     organization,
     username,
     settings,
-    clientId,
     reviews,
+    reviewsDetails,
     yourPrs,
+    yourRepos,
+    yourPrsDetails,
     yourAssignments,
-    mentions,
-    unreads,
     bitbucketUsers,
+    rhsPluginAction,
+    rhsState,
+    isCreateIssueModalVisible,
+    createIssueModalForPostId,
+    attachCommentToIssueModalVisible,
+    attachCommentToIssueModalForPostId,
 });

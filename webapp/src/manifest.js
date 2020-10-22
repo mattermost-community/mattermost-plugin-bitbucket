@@ -5,7 +5,7 @@ const manifest = JSON.parse(`
     "id": "bitbucket",
     "name": "Bitbucket",
     "description": "Bitbucket plugin for Mattermost.",
-    "version": "0.8.0",
+    "version": "0.0.1",
     "server": {
         "executables": {
             "linux-amd64": "server/dist/plugin-linux-amd64",
@@ -18,8 +18,8 @@ const manifest = JSON.parse(`
         "bundle_path": "webapp/dist/main.js"
     },
     "settings_schema": {
-        "header": "To set up the Bitbucket plugin, you need to register a GitHub OAuth app here https://github.com/settings/applications/new.",
-        "footer": "* To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/mattermost/mattermost-plugin-github).",
+        "header": "To set up the Bitbucket plugin, you need to register a Bitbucket OAuth consumer here https://bitbucket.org/YOURWORKSPACE/workspace/settings/oauth-consumers/new.",
+        "footer": "* To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/kosgrz/mattermost-plugin-bitbucket).",
         "settings": [
             {
                 "key": "BitbucketOAuthClientID",
@@ -46,14 +46,6 @@ const manifest = JSON.parse(`
                 "default": null
             },
             {
-                "key": "Username",
-                "display_name": "User",
-                "type": "username",
-                "help_text": "Select the username of the user that the plugin will post with. This can be any user, the name and icon will be overridden when posting.",
-                "placeholder": "",
-                "default": null
-            },
-            {
                 "key": "EncryptionKey",
                 "display_name": "At Rest Encryption Key",
                 "type": "generated",
@@ -62,26 +54,10 @@ const manifest = JSON.parse(`
                 "default": null
             },
             {
-                "key": "ithubOrg",
-                "display_name": "GitHub Organization",
+                "key": "BitbucketOrg",
+                "display_name": "Bitbucket Organization",
                 "type": "text",
-                "help_text": "(Optional) Set to lock the plugin to a single GitHub organization.",
-                "placeholder": "",
-                "default": null
-            },
-            {
-                "key": "EnterpriseBaseURL",
-                "display_name": "Enterprise Base URL",
-                "type": "text",
-                "help_text": "(Optional) The base URL for using the plugin with a GitHub Enterprise installation. Example: https://github.example.com",
-                "placeholder": "",
-                "default": null
-            },
-            {
-                "key": "EnterpriseUploadURL",
-                "display_name": "Enterprise Upload URL",
-                "type": "text",
-                "help_text": "(Optional) The upload URL for using the plugin with a GitHub Enterprise installation. This is often the same as your Base URL.",
+                "help_text": "(Optional) Set to lock the plugin to a single Bitbucket organization.",
                 "placeholder": "",
                 "default": null
             },

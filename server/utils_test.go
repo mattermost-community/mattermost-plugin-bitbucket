@@ -6,22 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFixBitbucketNotificationSubjectURL(t *testing.T) {
-	tcs := []struct {
-		Text     string
-		Expected string
-	}{
-		{Text: "https://api.github.com/repos/jwilander/mattermost-webapp/issues/123", Expected: "https://github.com/jwilander/mattermost-webapp/issues/123"},
-		{Text: "https://api.github.com/repos/jwilander/mattermost-webapp/pulls/123", Expected: "https://github.com/jwilander/mattermost-webapp/pull/123"},
-		{Text: "https://enterprise.github.com/api/v3/jwilander/mattermost-webapp/issues/123", Expected: "https://enterprise.github.com/jwilander/mattermost-webapp/issues/123"},
-		{Text: "https://enterprise.github.com/api/v3/jwilander/mattermost-webapp/pull/123", Expected: "https://enterprise.github.com/jwilander/mattermost-webapp/pull/123"},
-	}
-
-	for _, tc := range tcs {
-		assert.Equal(t, tc.Expected, fixBitbucketNotificationSubjectURL(tc.Text))
-	}
-}
-
 func TestParseOwnerAndRepo(t *testing.T) {
 	tcs := []struct {
 		Full          string
@@ -43,9 +27,15 @@ func TestParseOwnerAndRepo(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		_, owner, repo := parseOwnerAndRepo(tc.Full, tc.BaseURL)
+		_, owner, repo := parseOwnerAndRepoAndReturnFullAlso(tc.Full, tc.BaseURL)
 
 		assert.Equal(t, tc.ExpectedOwner, owner)
 		assert.Equal(t, tc.ExpectedRepo, repo)
 	}
+}
+
+func TestGetYourAssigneeSearchQuery(t *testing.T) {
+	result := getYourAssigneeIssuesSearchQuery("123", "testworkspace/testrepo")
+	assert.Equal(t, "https://api.bitbucket.org/2.0/repositories/testworkspace/testrepo/issues?q=assignee.account_id%3D%22123%22%20AND%20state%21%3D%22closed%22",
+		result)
 }

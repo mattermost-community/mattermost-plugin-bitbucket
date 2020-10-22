@@ -1,4 +1,5 @@
-import request from 'superagent';
+import {Client4} from 'mattermost-redux/client';
+import {ClientError} from 'mattermost-redux/client/client4';
 
 export default class Client {
     constructor() {
@@ -17,89 +18,86 @@ export default class Client {
         return this.doGet(`${this.url}/yourprs`);
     }
 
+    getPrsDetails = async (prList) => {
+        return this.doPost(`${this.url}/prsdetails`, prList);
+    }
+
     getYourAssignments = async () => {
         return this.doGet(`${this.url}/yourassignments`);
-    }
-
-    getMentions = async () => {
-        return this.doGet(`${this.url}/mentions`);
-    }
-
-    getUnreads = async () => {
-        return this.doGet(`${this.url}/unreads`);
     }
 
     getBitbucketUser = async (userID) => {
         return this.doPost(`${this.url}/user`, {user_id: userID});
     }
 
+    getRepositories = async () => {
+        return this.doGet(`${this.url}/repositories`);
+    }
+
+    createIssue = async (payload) => {
+        return this.doPost(`${this.url}/createissue`, payload);
+    }
+
+    searchIssues = async (searchTerm) => {
+        return this.doGet(`${this.url}/searchissues?term=${searchTerm}`);
+    }
+
+    attachCommentToIssue = async (payload) => {
+        return this.doPost(`${this.url}/createissuecomment`, payload);
+    }
+
+    getIssue = async (owner, repo, issueId) => {
+        return this.doGet(`${this.url}/issue?owner=${owner}&repo=${repo}&id=${issueId}`);
+    }
+
+    getPullRequest = async (owner, repo, prId) => {
+        return this.doGet(`${this.url}/pr?owner=${owner}&repo=${repo}&id=${prId}`);
+    }
+
     doGet = async (url, body, headers = {}) => {
-        headers['X-Requested-With'] = 'XMLHttpRequest';
         headers['X-Timezone-Offset'] = new Date().getTimezoneOffset();
 
-        try {
-            const response = await request.
-                get(url).
-                set(headers).
-                accept('application/json');
+        const options = {
+            method: 'get',
+            headers,
+        };
 
-            return response.body;
-        } catch (err) {
-            throw err;
+        const response = await fetch(url, Client4.getOptions(options));
+
+        if (response.ok) {
+            return response.json();
         }
+
+        const text = await response.text();
+
+        throw new ClientError(Client4.url, {
+            message: text || '',
+            status_code: response.status,
+            url,
+        });
     }
 
     doPost = async (url, body, headers = {}) => {
-        headers['X-Requested-With'] = 'XMLHttpRequest';
         headers['X-Timezone-Offset'] = new Date().getTimezoneOffset();
 
-        try {
-            const response = await request.
-                post(url).
-                send(body).
-                set(headers).
-                type('application/json').
-                accept('application/json');
+        const options = {
+            method: 'post',
+            body: JSON.stringify(body),
+            headers,
+        };
 
-            return response.body;
-        } catch (err) {
-            throw err;
+        const response = await fetch(url, Client4.getOptions(options));
+
+        if (response.ok) {
+            return response.json();
         }
-    }
 
-    doDelete = async (url, body, headers = {}) => {
-        headers['X-Requested-With'] = 'XMLHttpRequest';
-        headers['X-Timezone-Offset'] = new Date().getTimezoneOffset();
+        const text = await response.text();
 
-        try {
-            const response = await request.
-                delete(url).
-                send(body).
-                set(headers).
-                type('application/json').
-                accept('application/json');
-
-            return response.body;
-        } catch (err) {
-            throw err;
-        }
-    }
-
-    doPut = async (url, body, headers = {}) => {
-        headers['X-Requested-With'] = 'XMLHttpRequest';
-        headers['X-Timezone-Offset'] = new Date().getTimezoneOffset();
-
-        try {
-            const response = await request.
-                put(url).
-                send(body).
-                set(headers).
-                type('application/json').
-                accept('application/json');
-
-            return response.body;
-        } catch (err) {
-            throw err;
-        }
+        throw new ClientError(Client4.url, {
+            message: text || '',
+            status_code: response.status,
+            url,
+        });
     }
 }

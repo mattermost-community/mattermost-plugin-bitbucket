@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/kosgrz/mattermost-plugin-bitbucket/server/template_renderer"
 	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhook"
 	"github.com/pkg/errors"
@@ -16,42 +17,71 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
-	"github.com/google/go-github/github"
 	"github.com/wbrefvem/go-bitbucket"
 	"golang.org/x/oauth2"
 )
 
 const (
-	BITBUCKET_TOKEN_KEY        = "_bitbuckettoken"
-	BITBUCKET_USERNAME_KEY     = "_bitbucketusername"
-	BITBUCKET_ACCOUNT_ID_KEY   = "_bitbucketaccountid"
-	BITBUCKET_PRIVATE_REPO_KEY = "_bitbucketprivate"
-	WS_EVENT_CONNECT           = "connect"
-	WS_EVENT_DISCONNECT        = "disconnect"
-	WS_EVENT_REFRESH           = "refresh"
-	SETTING_BUTTONS_TEAM       = "team"
-	SETTING_NOTIFICATIONS      = "notifications"
-	SETTING_REMINDERS          = "reminders"
-	SETTING_ON                 = "on"
-	SETTING_OFF                = "off"
+	BitbucketTokenKey       = "_bitbuckettoken"
+	BitbucketAccountIdKey   = "_bitbucketaccountid"
+	BitbucketPrivateRepoKey = "_bitbucketprivate"
+
+	WsEventConnect    = "connect"
+	WsEventDisconnect = "disconnect"
+	WsEventRefresh    = "refresh"
+
+	SettingButtonsTeam   = "team"
+	SettingNotifications = "notifications"
+	SettingReminders     = "reminders"
+	SettingOn            = "on"
+	SettingOff           = "off"
 )
 
 type Plugin struct {
 	plugin.MattermostPlugin
-	// bitbucketClient    *github.Client
+
 	bitbucketClient *bitbucket.APIClient
 
 	BotUserID string
+
+	CommandHandlers map[string]CommandHandleFunc
 
 	// configurationLock synchronizes access to the configuration.
 	configurationLock sync.RWMutex
 
 	// configuration is the active plugin configuration. Consult getConfiguration and
 	// setConfiguration for usage.
-	configuration *configuration
+	configuration *Configuration
 
 	// webhookHandler is responsible for handling webhook events.
 	webhookHandler webhook.Webhook
+
+	router *mux.Router
+}
+
+// NewPlugin returns an instance of a Plugin.
+func NewPlugin() *Plugin {
+	p := &Plugin{}
+
+	p.CommandHandlers = map[string]CommandHandleFunc{
+		"subscribe":   p.handleSubscribe,
+		"unsubscribe": p.handleUnsubscribe,
+		"disconnect":  p.handleDisconnect,
+		"todo":        p.handleTodo,
+		"me":          p.handleMe,
+		"help":        p.handleHelp,
+		"":            p.handleHelp,
+		"settings":    p.handleSettings,
+	}
+
+	return p
+}
+
+func (p *Plugin) initializeWebhookHandler() {
+	templateRenderer := template_renderer.MakeTemplateRenderer()
+	templateRenderer.RegisterBitBucketAccountIDToUsernameMappingCallback(
+		p.getBitBucketAccountIDToMattermostUsernameMapping)
+	p.webhookHandler = webhook.NewWebhook(&subscriptionHandler{p}, &pullRequestReviewHandler{p}, templateRenderer)
 }
 
 func (p *Plugin) bitbucketConnect(token oauth2.Token) *bitbucket.APIClient {
@@ -69,14 +99,10 @@ func (p *Plugin) bitbucketConnect(token oauth2.Token) *bitbucket.APIClient {
 	configBb.HTTPClient = tc
 
 	// create new bitbucket client API
-	newClient := bitbucket.NewAPIClient(configBb)
-
-	// TODO figure out how to add auth to client so dont' have to return it
-	return newClient
+	return bitbucket.NewAPIClient(configBb)
 }
 
 func (p *Plugin) OnActivate() error {
-
 	config := p.getConfiguration()
 
 	if err := config.IsValid(); err != nil {
@@ -86,6 +112,9 @@ func (p *Plugin) OnActivate() error {
 	if p.API.GetConfig().ServiceSettings.SiteURL == nil {
 		return errors.New("siteURL is not set. Please set a siteURL and restart the plugin")
 	}
+
+	p.initializeAPI()
+	p.initializeWebhookHandler()
 
 	err := p.API.RegisterCommand(getCommand())
 	if err != nil {
@@ -103,10 +132,6 @@ func (p *Plugin) OnActivate() error {
 
 	p.BotUserID = botID
 
-	templateRenderer := template_renderer.MakeTemplateRenderer()
-	templateRenderer.RegisterBitBucketAccountIDToUsernameMappingCallback(p.getBitBucketAccountIDToMattermostUsernameMapping)
-	p.webhookHandler = webhook.NewWebhook(&subscriptionHandler{p}, &pullRequestReviewHandler{p}, templateRenderer)
-
 	return nil
 }
 
@@ -116,23 +141,9 @@ func (p *Plugin) getOAuthConfig() *oauth2.Config {
 
 	authURL, _ := url.Parse("https://bitbucket.org/")
 	tokenURL, _ := url.Parse("https://bitbucket.org/")
-
-	if len(config.EnterpriseBaseURL) > 0 {
-		authURL, _ = url.Parse(config.EnterpriseBaseURL)
-		tokenURL, _ = url.Parse(config.EnterpriseBaseURL)
-	}
-
 	authURL.Path = path.Join(authURL.Path, "site", "oauth2", "authorize")
 	tokenURL.Path = path.Join(tokenURL.Path, "site", "oauth2", "access_token")
 
-	repo := "public_repo"
-	if config.EnablePrivateRepo {
-		// means that asks scope for privaterepositories
-		repo = "repo"
-	}
-	fmt.Printf("TODO : determine proper repo scrope for bitbucket %v", repo)
-
-	fmt.Println("TODO -> check Scopes statement -> differs from GH")
 	return &oauth2.Config{
 		ClientID:     config.BitbucketOAuthClientID,
 		ClientSecret: config.BitbucketOAuthClientSecret,
@@ -149,6 +160,7 @@ type BitbucketUserInfo struct {
 	UserID              string
 	Token               *oauth2.Token
 	BitbucketUsername   string
+	BitbucketAccountID  string
 	LastToDoPostAt      int64
 	Settings            *UserSettings
 	AllowedPrivateRepos bool
@@ -165,18 +177,18 @@ func (p *Plugin) storeBitbucketUserInfo(info *BitbucketUserInfo) error {
 
 	encryptedToken, err := encrypt([]byte(config.EncryptionKey), info.Token.AccessToken)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "error occurred while encrypting access token")
 	}
 
 	info.Token.AccessToken = encryptedToken
 
 	jsonInfo, err := json.Marshal(info)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "error while converting user info to json")
 	}
 
-	if err := p.API.KVSet(info.UserID+BITBUCKET_TOKEN_KEY, jsonInfo); err != nil {
-		return err
+	if err := p.API.KVSet(info.UserID+BitbucketTokenKey, jsonInfo); err != nil {
+		return errors.Wrap(err, "error occurred while trying to store user info into KV store")
 	}
 
 	return nil
@@ -187,15 +199,15 @@ func (p *Plugin) getBitbucketUserInfo(userID string) (*BitbucketUserInfo, *APIEr
 
 	var userInfo BitbucketUserInfo
 
-	if infoBytes, err := p.API.KVGet(userID + BITBUCKET_TOKEN_KEY); err != nil || infoBytes == nil {
-		return nil, &APIErrorResponse{ID: API_ERROR_ID_NOT_CONNECTED, Message: "Must connect user account to Bitbucket first.", StatusCode: http.StatusBadRequest}
+	if infoBytes, err := p.API.KVGet(userID + BitbucketTokenKey); err != nil || infoBytes == nil {
+		return nil, &APIErrorResponse{ID: APIErrorIDNotConnected, Message: "Must connect user account to Bitbucket first.", StatusCode: http.StatusBadRequest}
 	} else if err := json.Unmarshal(infoBytes, &userInfo); err != nil {
 		return nil, &APIErrorResponse{ID: "", Message: "Unable to parse token.", StatusCode: http.StatusInternalServerError}
 	}
 
 	unencryptedToken, err := decrypt([]byte(config.EncryptionKey), userInfo.Token.AccessToken)
 	if err != nil {
-		p.API.LogError(err.Error())
+		p.API.LogError("Unable to decrypt access token", "err", err.Error())
 		return nil, &APIErrorResponse{ID: "", Message: "Unable to decrypt access token.", StatusCode: http.StatusInternalServerError}
 	}
 
@@ -204,27 +216,15 @@ func (p *Plugin) getBitbucketUserInfo(userID string) (*BitbucketUserInfo, *APIEr
 	return &userInfo, nil
 }
 
-func (p *Plugin) storeBitbucketToUserIDMapping(bitbucketUsername, userID string) error {
-	if err := p.API.KVSet(bitbucketUsername+BITBUCKET_USERNAME_KEY, []byte(userID)); err != nil {
-		return fmt.Errorf("Encountered error saving BitBucket username mapping")
+func (p *Plugin) storeBitbucketAccountIDToMattermostUserIDMapping(bitbucketAccountID, userID string) error {
+	if err := p.API.KVSet(bitbucketAccountID+BitbucketAccountIdKey, []byte(userID)); err != nil {
+		return errors.New("encountered error saving BitBucket account ID mapping")
 	}
 	return nil
-}
-
-func (p *Plugin) storeBitbucketUserIDToMattermostUserIDMapping(bitbucketUserID, userID string) error {
-	if err := p.API.KVSet(bitbucketUserID+BITBUCKET_ACCOUNT_ID_KEY, []byte(userID)); err != nil {
-		return fmt.Errorf("Encountered error saving BitBucket user ID mapping")
-	}
-	return nil
-}
-
-func (p *Plugin) getBitbucketToUserIDMapping(bitbucketUsername string) string {
-	userID, _ := p.API.KVGet(bitbucketUsername + BITBUCKET_USERNAME_KEY)
-	return string(userID)
 }
 
 func (p *Plugin) getBitbucketAccountIDToMattermostUserIDMapping(bitbucketAccountID string) string {
-	userID, _ := p.API.KVGet(bitbucketAccountID + BITBUCKET_ACCOUNT_ID_KEY)
+	userID, _ := p.API.KVGet(bitbucketAccountID + BitbucketAccountIdKey)
 	return string(userID)
 }
 
@@ -234,26 +234,29 @@ func (p *Plugin) disconnectBitbucketAccount(userID string) {
 		return
 	}
 
-	p.API.KVDelete(userID + BITBUCKET_TOKEN_KEY)
-	p.API.KVDelete(userInfo.BitbucketUsername + BITBUCKET_USERNAME_KEY)
+	if appErr := p.API.KVDelete(userID + BitbucketTokenKey); appErr != nil {
+		p.API.LogWarn("Failed to delete bitbucket token from KV store", "userID", userID, "error", appErr.Error())
+	}
 
-	if user, err := p.API.GetUser(userID); err == nil && user.Props != nil && len(user.Props["git_user"]) > 0 {
-		delete(user.Props, "git_user")
-		p.API.UpdateUser(user)
+	if appErr := p.API.KVDelete(userInfo.BitbucketAccountID + BitbucketAccountIdKey); appErr != nil {
+		p.API.LogWarn("Failed to delete bitbucket account ID from KV store", "userID", userID,
+			"userInfo.BitbucketAccountID", userInfo.BitbucketAccountID, "error", appErr.Error())
 	}
 
 	p.API.PublishWebSocketEvent(
-		WS_EVENT_DISCONNECT,
+		WsEventDisconnect,
 		nil,
 		&model.WebsocketBroadcast{UserId: userID},
 	)
 }
 
-func (p *Plugin) CreateBotDMPost(userID, message, postType string) *model.AppError {
+// CreateBotDMPost posts a direct message using the bot account.
+// Any error are not returned and instead logged.
+func (p *Plugin) CreateBotDMPost(userID, message, postType string) {
 	channel, err := p.API.GetDirectChannel(userID, p.BotUserID)
 	if err != nil {
-		p.API.LogError("Couldn't get bot's DM channel")
-		return err
+		p.API.LogWarn("Couldn't get bot's DM channel", "userID", userID, "error", err.Error())
+		return
 	}
 
 	post := &model.Post{
@@ -261,129 +264,269 @@ func (p *Plugin) CreateBotDMPost(userID, message, postType string) *model.AppErr
 		ChannelId: channel.Id,
 		Message:   message,
 		Type:      postType,
-		Props: map[string]interface{}{
-			"from_webhook":      "true",
-			"override_username": BITBUCKET_USERNAME,
-			"override_icon_url": BITBUCKET_ICON_URL,
-		},
 	}
 
 	if _, err := p.API.CreatePost(post); err != nil {
-		p.API.LogError(err.Error())
-		return err
+		p.API.LogWarn("Failed to create DM post", "userID", userID, "error", err.Error())
+		return
 	}
-
-	return nil
 }
 
 func (p *Plugin) PostToDo(info *BitbucketUserInfo) {
-	// text, err := p.GetToDo(context.Background(), info.BitbucketUsername,
-	// p.bitbucketConnect(*info.Token))
-	// if err != nil {
-	// 	mlog.Error(err.Error())
-	// 	return
-	// }
-	//
-	// p.CreateBotDMPost(info.UserID, text, "custom_git_todo")
+	text, err := p.GetToDo(context.Background(), info, p.bitbucketConnect(*info.Token))
+	if err != nil {
+		p.API.LogWarn("Failed to get todo text", "userID", info.UserID, "error", err.Error())
+		return
+	}
+
+	p.CreateBotDMPost(info.UserID, text, "custom_bitbucket_todo")
 }
 
-func (p *Plugin) GetToDo(ctx context.Context, username string, bitbucketClient *github.Client) (string, error) {
-	config := p.getConfiguration()
+func (p *Plugin) GetToDo(ctx context.Context, userInfo *BitbucketUserInfo, bitbucketClient *bitbucket.APIClient) (string, error) {
 
-	issueResults, _, err := bitbucketClient.Search.Issues(ctx, getReviewSearchQuery(username, config.BitbucketOrg), &github.SearchOptions{})
+	userRepos, err := p.getUserRepositories(ctx, bitbucketClient)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "error occurred while searching for repositories")
 	}
 
-	notifications, _, err := bitbucketClient.Activity.ListNotifications(ctx, &github.NotificationListOptions{})
+	baseURL := p.getBaseURL()
+
+	yourAssignments, err := p.getAssignedIssues(ctx, userInfo, bitbucketClient, userRepos)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "error occurred while searching for assignments")
 	}
 
-	yourPrs, _, err := bitbucketClient.Search.Issues(ctx, getYourPrsSearchQuery(username, config.BitbucketOrg), &github.SearchOptions{})
+	yourOpenPrs, err := p.getOpenPRs(ctx, userInfo, bitbucketClient, userRepos)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "error occurred while searching for your open PRs")
 	}
 
-	yourAssignments, _, err := bitbucketClient.Search.Issues(ctx, getYourAssigneeSearchQuery(username, config.BitbucketOrg), &github.SearchOptions{})
+	assignedPRs, err := p.getAssignedPRs(ctx, userInfo, bitbucketClient, userRepos)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "error occurred while searching for assigned PRs")
 	}
 
 	text := "##### Unread Messages\n"
 
-	notificationCount := 0
-	notificationContent := ""
-	for _, n := range notifications {
-		if n.GetReason() == "subscribed" {
-			continue
-		}
+	text += "##### Your Assignments\n"
 
-		if n.GetRepository() == nil {
-			p.API.LogError("Unable to get repository for notification in todo list. Skipping.")
-			continue
-		}
-
-		if p.checkOrg(n.GetRepository().GetOwner().GetLogin()) != nil {
-			continue
-		}
-
-		switch n.GetSubject().GetType() {
-		case "RepositoryVulnerabilityAlert":
-			message := fmt.Sprintf("[Vulnerability Alert for %v](%v)", n.GetRepository().GetFullName(), fixBitbucketNotificationSubjectURL(n.GetSubject().GetURL()))
-			notificationContent += fmt.Sprintf("* %v\n", message)
-		default:
-			subjectURL := fixBitbucketNotificationSubjectURL(n.GetSubject().GetURL())
-			notificationContent += fmt.Sprintf("* %v\n", subjectURL)
-		}
-
-		notificationCount++
-	}
-
-	if notificationCount == 0 {
-		text += "You don't have any unread messages.\n"
+	if len(yourAssignments) == 0 {
+		text += "You don't have any assignments.\n"
 	} else {
-		text += fmt.Sprintf("You have %v unread messages:\n", notificationCount)
-		text += notificationContent
+		text += fmt.Sprintf("You have %v assignments:\n", len(yourAssignments))
+
+		for _, assign := range yourAssignments {
+			text += getToDoDisplayText(baseURL, assign.Title, assign.Links.Html.Href, "")
+		}
 	}
 
 	text += "##### Review Requests\n"
 
-	if issueResults.GetTotal() == 0 {
-		text += "You have don't have any pull requests awaiting your review.\n"
+	if len(assignedPRs) == 0 {
+		text += "You don't have any pull requests awaiting your review.\n"
 	} else {
-		text += fmt.Sprintf("You have %v pull requests awaiting your review:\n", issueResults.GetTotal())
+		text += fmt.Sprintf("You have %v pull requests awaiting your review:\n", len(assignedPRs))
 
-		for _, pr := range issueResults.Issues {
-			text += fmt.Sprintf("* %v\n", pr.GetHTMLURL())
+		for _, assign := range assignedPRs {
+			text += getToDoDisplayText(baseURL, assign.Title, assign.Links.Html.Href, "")
 		}
 	}
 
 	text += "##### Your Open Pull Requests\n"
 
-	if yourPrs.GetTotal() == 0 {
-		text += "You have don't have any open pull requests.\n"
+	if len(yourOpenPrs) == 0 {
+		text += "You don't have any open pull requests.\n"
 	} else {
-		text += fmt.Sprintf("You have %v open pull requests:\n", yourPrs.GetTotal())
+		text += fmt.Sprintf("You have %v open pull requests:\n", len(yourOpenPrs))
 
-		for _, pr := range yourPrs.Issues {
-			text += fmt.Sprintf("* %v\n", pr.GetHTMLURL())
-		}
-	}
-
-	text += "##### Your Assignments\n"
-
-	if yourAssignments.GetTotal() == 0 {
-		text += "You have don't have any assignments.\n"
-	} else {
-		text += fmt.Sprintf("You have %v assignments:\n", yourAssignments.GetTotal())
-
-		for _, assign := range yourAssignments.Issues {
-			text += fmt.Sprintf("* %v\n", assign.GetHTMLURL())
+		for _, assign := range yourOpenPrs {
+			text += getToDoDisplayText(baseURL, assign.Title, assign.Links.Html.Href, "")
 		}
 	}
 
 	return text, nil
+}
+
+func (p *Plugin) getUserRepositories(ctx context.Context, bitbucketClient *bitbucket.APIClient) ([]bitbucket.Repository, error) {
+	options := make(map[string]interface{})
+	options["role"] = "member"
+
+	var urlForRepos string
+	org := p.getConfiguration().BitbucketOrg
+	if org != "" {
+		urlForRepos = getYourOrgReposSearchQuery(org)
+	} else {
+		urlForRepos = getYourAllReposSearchQuery()
+	}
+
+	userRepos, err := p.fetchRepositoriesWithNextPagesIfAny(urlForRepos, ctx, bitbucketClient)
+	if err != nil {
+		return nil, errors.Wrap(err, "error occurred while fetching repositories")
+	}
+
+	return userRepos, nil
+}
+
+func (p *Plugin) fetchRepositoriesWithNextPagesIfAny(urlToFetch string, ctx context.Context, bitbucketClient *bitbucket.APIClient) ([]bitbucket.Repository, error) {
+	var result []bitbucket.Repository
+
+	paginatedRepositories, _, err := bitbucketClient.PagingApi.RepositoriesPageGet(ctx, urlToFetch)
+	if err != nil {
+		return nil, errors.Wrap(err, "error occurred while fetching repositories")
+	}
+
+	result = append(result, paginatedRepositories.Values...)
+
+	if paginatedRepositories.Next != "" {
+		nextPaginatedRepositories, err := p.fetchRepositoriesWithNextPagesIfAny(paginatedRepositories.Next, ctx, bitbucketClient)
+		if err != nil {
+			return nil, errors.Wrap(err, "error occurred while fetching repositories")
+		}
+
+		result = append(result, nextPaginatedRepositories...)
+	}
+
+	return result, nil
+}
+
+func (p *Plugin) getIssuesWithTerm(bitbucketClient *bitbucket.APIClient, searchTerm string) ([]bitbucket.Issue, error) {
+	userRepos, err := p.getUserRepositories(context.Background(), bitbucketClient)
+	if err != nil {
+		return nil, errors.Wrap(err, "error occurred while fetching repositories")
+	}
+
+	var foundIssues []bitbucket.Issue
+	for _, repo := range userRepos {
+		paginatedIssues, _, err := bitbucketClient.PagingApi.IssuesPageGet(context.Background(), getSearchIssuesQuery(repo.FullName, searchTerm))
+		if err != nil {
+			return nil, errors.Wrap(err, "error occurred while fetching issues")
+		}
+
+		foundIssues = append(foundIssues, paginatedIssues.Values...)
+
+		if paginatedIssues.Next != "" {
+			for {
+				paginatedIssues, _, err = bitbucketClient.PagingApi.IssuesPageGet(context.Background(), paginatedIssues.Next)
+				if err != nil {
+					return nil, errors.Wrap(err, "error occurred while fetching issues")
+				}
+
+				foundIssues = append(foundIssues, paginatedIssues.Values...)
+
+				if paginatedIssues.Next == "" {
+					break
+				}
+			}
+		}
+	}
+
+	return foundIssues, nil
+}
+
+func (p *Plugin) fetchIssuesWithNextPagesIfAny(urlToFetch string, ctx context.Context, bitbucketClient *bitbucket.APIClient) ([]bitbucket.Issue, error) {
+	var result []bitbucket.Issue
+
+	paginatedIssues, _, err := bitbucketClient.PagingApi.IssuesPageGet(ctx, urlToFetch)
+	if err != nil {
+		return nil, errors.Wrap(err, "error occurred while fetching issues")
+	}
+
+	result = append(result, paginatedIssues.Values...)
+
+	if paginatedIssues.Next != "" {
+		for {
+			paginatedIssues, _, err = bitbucketClient.PagingApi.IssuesPageGet(context.Background(), paginatedIssues.Next)
+			if err != nil {
+				return nil, errors.Wrap(err, "error occurred while fetching issues")
+			}
+
+			result = append(result, paginatedIssues.Values...)
+
+			if paginatedIssues.Next == "" {
+				break
+			}
+		}
+	}
+
+	return result, nil
+}
+
+func (p *Plugin) fetchPRsWithNextPagesIfAny(urlToFetch string, ctx context.Context, bitbucketClient *bitbucket.APIClient) ([]bitbucket.Pullrequest, error) {
+	var result []bitbucket.Pullrequest
+
+	paginatedPrs, _, err := bitbucketClient.PagingApi.PullrequestsPageGet(ctx, urlToFetch)
+	if err != nil {
+		return nil, errors.Wrap(err, "error occurred while fetching pull requests")
+	}
+
+	result = append(result, paginatedPrs.Values...)
+
+	if paginatedPrs.Next != "" {
+		for {
+			paginatedPrs, _, err = bitbucketClient.PagingApi.PullrequestsPageGet(ctx, paginatedPrs.Next)
+			if err != nil {
+				return nil, errors.Wrap(err, "error occurred while fetching PRs")
+			}
+
+			result = append(result, paginatedPrs.Values...)
+
+			if paginatedPrs.Next == "" {
+				break
+			}
+		}
+	}
+
+	return result, nil
+}
+
+func (p *Plugin) getAssignedIssues(ctx context.Context, userInfo *BitbucketUserInfo, bitbucketClient *bitbucket.APIClient, userRepos []bitbucket.Repository) ([]bitbucket.Issue, error) {
+	var issuesResult []bitbucket.Issue
+
+	for _, repo := range userRepos {
+		urlForIssues := getYourAssigneeIssuesSearchQuery(userInfo.BitbucketAccountID, repo.FullName)
+
+		paginatedIssuesInRepo, err := p.fetchIssuesWithNextPagesIfAny(urlForIssues, ctx, bitbucketClient)
+		if err != nil {
+			return nil, errors.Wrap(err, "error occurred while fetching issues")
+		}
+
+		issuesResult = append(issuesResult, paginatedIssuesInRepo...)
+	}
+
+	return issuesResult, nil
+}
+
+func (p *Plugin) getAssignedPRs(ctx context.Context, userInfo *BitbucketUserInfo, bitbucketClient *bitbucket.APIClient, userRepos []bitbucket.Repository) ([]bitbucket.Pullrequest, error) {
+	var prsResult []bitbucket.Pullrequest
+	for _, repo := range userRepos {
+		urlForPRs := getYourAssigneePRsSearchQuery(userInfo.BitbucketAccountID, repo.FullName)
+
+		paginatedIssuesInRepo, err := p.fetchPRsWithNextPagesIfAny(urlForPRs, ctx, bitbucketClient)
+		if err != nil {
+			return nil, errors.Wrap(err, "error occurred while fetching pull requests")
+		}
+
+		prsResult = append(prsResult, paginatedIssuesInRepo...)
+	}
+
+	return prsResult, nil
+}
+
+func (p *Plugin) getOpenPRs(ctx context.Context, userInfo *BitbucketUserInfo, bitbucketClient *bitbucket.APIClient, userRepos []bitbucket.Repository) ([]bitbucket.Pullrequest, error) {
+	var prsResult []bitbucket.Pullrequest
+
+	for _, repo := range userRepos {
+		urlForPRs := getYourOpenPRsSearchQuery(userInfo.BitbucketAccountID, repo.FullName)
+
+		paginatedIssuesInRepo, err := p.fetchPRsWithNextPagesIfAny(urlForPRs, ctx, bitbucketClient)
+		if err != nil {
+			return nil, errors.Wrap(err, "error occurred while fetching pull requests")
+		}
+
+		prsResult = append(prsResult, paginatedIssuesInRepo...)
+	}
+
+	return prsResult, nil
 }
 
 func (p *Plugin) checkOrg(org string) error {
@@ -391,7 +534,7 @@ func (p *Plugin) checkOrg(org string) error {
 
 	configOrg := strings.TrimSpace(config.BitbucketOrg)
 	if configOrg != "" && configOrg != org {
-		return fmt.Errorf("Only repositories in the %v organization are supported", configOrg)
+		return errors.Errorf("only repositories in the %v organization are supported", configOrg)
 	}
 
 	return nil
@@ -399,18 +542,13 @@ func (p *Plugin) checkOrg(org string) error {
 
 func (p *Plugin) sendRefreshEvent(userID string) {
 	p.API.PublishWebSocketEvent(
-		WS_EVENT_REFRESH,
+		WsEventRefresh,
 		nil,
 		&model.WebsocketBroadcast{UserId: userID},
 	)
 }
 
 func (p *Plugin) getBaseURL() string {
-	config := p.getConfiguration()
-	if config.EnterpriseBaseURL != "" {
-		return config.EnterpriseBaseURL
-	}
-
 	return "https://bitbucket.org/"
 }
 
@@ -422,4 +560,65 @@ func (p *Plugin) getBitBucketAccountIDToMattermostUsernameMapping(bitbucketAccou
 	}
 
 	return user.Username
+}
+
+func (p *Plugin) HasUnreads(info *BitbucketUserInfo) bool {
+	ctx := context.Background()
+	bitbucketClient := p.bitbucketConnect(*info.Token)
+
+	userRepos, err := p.getUserRepositories(ctx, bitbucketClient)
+	if err != nil {
+		p.API.LogError("error occurred while searching for repositories", "err", err.Error())
+		return false
+	}
+
+	yourAssignments, err := p.getAssignedIssues(ctx, info, bitbucketClient, userRepos)
+	if err != nil {
+		p.API.LogError("error occurred while searching for assignments", "err", err.Error())
+		return false
+	}
+	if len(yourAssignments) > 0 {
+		return true
+	}
+
+	yourOpenPrs, err := p.getOpenPRs(ctx, info, bitbucketClient, userRepos)
+	if err != nil {
+		p.API.LogError("error occurred while searching for your open PRs", "err", err.Error())
+		return false
+	}
+	if len(yourOpenPrs) > 0 {
+		return true
+	}
+
+	yourPrs, err := p.getAssignedPRs(ctx, info, bitbucketClient, userRepos)
+	if err != nil {
+		p.API.LogError("error occurred while searching for assigned PRs", "err", err.Error())
+		return false
+	}
+	if len(yourPrs) > 0 {
+		return true
+	}
+
+	return false
+}
+
+// getUsername returns the BitBucket username for a given Mattermost user,
+// if the user is connected to BitBucket via this plugin.
+// Otherwise it return the Mattermost username. It will be escaped via backticks.
+func (p *Plugin) getUsername(mmUserID string) (string, error) {
+	info, apiEr := p.getBitbucketUserInfo(mmUserID)
+	if apiEr != nil {
+		if apiEr.ID != APIErrorIDNotConnected {
+			return "", apiEr
+		}
+
+		user, appEr := p.API.GetUser(mmUserID)
+		if appEr != nil {
+			return "", appEr
+		}
+
+		return fmt.Sprintf("`@%s`", user.Username), nil
+	}
+
+	return "@" + info.BitbucketUsername, nil
 }

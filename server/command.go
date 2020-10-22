@@ -8,10 +8,9 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/wbrefvem/go-bitbucket"
 )
 
-const COMMAND_HELP = `* |/bitbucket connect| - Connect your Mattermost account to your Bitbucket account
+const CommandHelp = `* |/bitbucket connect| - Connect your Mattermost account to your Bitbucket account
 * |/bitbucket disconnect| - Disconnect your Mattermost account from your * Bitbucket account
 * |/bitbucket todo| - Get a list of unread messages and pull requests awaiting your review
 * |/bitbucket subscribe list| - Will list the current channel subscriptions
@@ -32,6 +31,55 @@ const COMMAND_HELP = `* |/bitbucket connect| - Connect your Mattermost account t
   * |setting| can be "notifications" or "reminders"
   * |value| can be "on" or "off"`
 
+const (
+	featureIssues        = "issues"
+	featurePulls         = "pulls"
+	featurePushes        = "pushes"
+	featureCreates       = "creates"
+	featureDeletes       = "deletes"
+	featureIssueComments = "issue_comments"
+	featurePullReviews   = "pull_reviews"
+)
+
+var validFeatures = map[string]bool{
+	featureIssues:        true,
+	featurePulls:         true,
+	featurePushes:        true,
+	featureCreates:       true,
+	featureDeletes:       true,
+	featureIssueComments: true,
+	featurePullReviews:   true,
+}
+
+// validateFeatures returns false when 1 or more given features
+// are invalid along with a list of the invalid features.
+func validateFeatures(features []string) (bool, []string) {
+	var invalidFeatures []string
+	valid := true
+	hasLabel := false
+	for _, f := range features {
+		if _, ok := validFeatures[f]; ok {
+			continue
+		}
+		if strings.HasPrefix(f, "label") {
+			hasLabel = true
+			continue
+		}
+		invalidFeatures = append(invalidFeatures, f)
+		valid = false
+	}
+	if valid && hasLabel {
+		// must have "pulls" or "issues" in features when using a label
+		for _, f := range features {
+			if f == featurePulls || f == featureIssues {
+				return valid, invalidFeatures
+			}
+		}
+		valid = false
+	}
+	return valid, invalidFeatures
+}
+
 func getCommand() *model.Command {
 	return &model.Command{
 		Trigger:          "bitbucket",
@@ -43,21 +91,202 @@ func getCommand() *model.Command {
 	}
 }
 
-func getCommandResponse(responseType, text string) *model.CommandResponse {
-	return &model.CommandResponse{
-		ResponseType: responseType,
-		Text:         text,
-		Username:     BITBUCKET_USERNAME,
-		IconURL:      BITBUCKET_ICON_URL,
-		Type:         model.POST_DEFAULT,
+func (p *Plugin) postCommandResponse(args *model.CommandArgs, text string) {
+	post := &model.Post{
+		UserId:    p.BotUserID,
+		ChannelId: args.ChannelId,
+		Message:   text,
 	}
+	_ = p.API.SendEphemeralPost(args.UserId, post)
 }
 
+func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, parameters []string, userInfo *BitbucketUserInfo) string {
+	features := "pulls,issues,creates,deletes"
+
+	txt := ""
+	switch {
+	case len(parameters) == 0:
+		return "Please specify a repository or 'list' command."
+	case len(parameters) == 1 && parameters[0] == "list":
+		subs, err := p.GetSubscriptionsByChannel(args.ChannelId)
+		if err != nil {
+			return err.Error()
+		}
+
+		if len(subs) == 0 {
+			txt = "Currently there are no subscriptions in this channel"
+		} else {
+			txt = "### Subscriptions in this channel\n"
+		}
+		for _, sub := range subs {
+			txt += fmt.Sprintf("* `%s` - %s", strings.Trim(sub.Repository, "/"), sub.Features)
+			txt += "\n"
+		}
+		return txt
+	case len(parameters) > 1:
+		var optionList []string
+
+		for _, element := range parameters[1:] {
+			optionList = append(optionList, element)
+		}
+
+		if len(optionList) > 1 {
+			return "Just one list of features is allowed"
+		} else if len(optionList) == 1 {
+			features = optionList[0]
+			fs := strings.Split(features, ",")
+			ok, ifs := validateFeatures(fs)
+			if !ok {
+				msg := fmt.Sprintf("Invalid feature(s) provided: %s", strings.Join(ifs, ","))
+				if len(ifs) == 0 {
+					msg = "Feature list must have \"pulls\" or \"issues\" when using a label."
+				}
+				return msg
+			}
+		}
+	}
+
+	ctx := context.Background()
+	bitbucketClient := p.bitbucketConnect(*userInfo.Token)
+
+	owner, repo := parseOwnerAndRepo(parameters[0], p.getBaseURL())
+	if repo == "" {
+		if err := p.SubscribeOrg(ctx, bitbucketClient, args.UserId, owner, args.ChannelId, features); err != nil {
+			return err.Error()
+		}
+
+		return fmt.Sprintf("Successfully subscribed to organization %s.", owner)
+	}
+
+	if err := p.Subscribe(ctx, bitbucketClient, args.UserId, owner, repo, args.ChannelId, features); err != nil {
+		return err.Error()
+	}
+
+	return fmt.Sprintf("Successfully subscribed to %s.", repo)
+}
+
+func (p *Plugin) handleUnsubscribe(_ *plugin.Context, args *model.CommandArgs, parameters []string, _ *BitbucketUserInfo) string {
+	if len(parameters) == 0 {
+		return "Please specify a repository."
+	}
+
+	repo := parameters[0]
+
+	if err := p.Unsubscribe(args.ChannelId, repo); err != nil {
+		p.API.LogError("Encountered an error trying to unsubscribe", "err", err.Error())
+		return "Encountered an error trying to unsubscribe. Please try again."
+	}
+
+	return fmt.Sprintf("Successfully unsubscribed from %s.", repo)
+}
+
+func (p *Plugin) handleDisconnect(_ *plugin.Context, args *model.CommandArgs, _ []string, _ *BitbucketUserInfo) string {
+	p.disconnectBitbucketAccount(args.UserId)
+	return "Disconnected your Bitbucket account."
+}
+
+func (p *Plugin) handleTodo(_ *plugin.Context, _ *model.CommandArgs, _ []string, userInfo *BitbucketUserInfo) string {
+	bitbucketClient := p.bitbucketConnect(*userInfo.Token)
+
+	text, err := p.GetToDo(context.Background(), userInfo, bitbucketClient)
+	if err != nil {
+		p.API.LogError("Encountered an error getting your to do items", "err", err.Error())
+		return "Encountered an error getting your to do items."
+	}
+	return text
+}
+
+func (p *Plugin) handleMe(_ *plugin.Context, _ *model.CommandArgs, _ []string, userInfo *BitbucketUserInfo) string {
+	bitbucketClient := p.bitbucketConnect(*userInfo.Token)
+	bitbucketUser, _, err := bitbucketClient.UsersApi.UserGet(context.Background())
+	if err != nil {
+		return "Encountered an error getting your Bitbucket profile."
+	}
+
+	text := fmt.Sprintf("You are connected to Bitbucket as:\n# [![image](%s =40x40)](%s) [%s](%s)",
+		bitbucketUser.Links.Avatar.Href, bitbucketUser.Links.Html.Href, bitbucketUser.Username, bitbucketUser.Links.Html.Href)
+	return text
+}
+
+func (p *Plugin) handleHelp(_ *plugin.Context, _ *model.CommandArgs, _ []string, userInfo *BitbucketUserInfo) string {
+	bitbucketClient := p.bitbucketConnect(*userInfo.Token)
+	bitbucketUser, _, err := bitbucketClient.UsersApi.UserGet(context.Background())
+	if err != nil {
+		return "Encountered an error getting your Bitbucket profile."
+	}
+
+	message := fmt.Sprintf("#### Welcome to the Mattermost Bitbucket Plugin!\n"+
+		"You've connected your Mattermost account to [%s](%s) on Bitbucket. Read about the features of this plugin below:\n\n"+
+		"##### Daily Reminders\n"+
+		"The first time you log in each day, you will get a post right here letting you know what messages you need to read and what pull requests are awaiting your review.\n"+
+		"Turn off reminders with `/bitbucket settings reminders off`.\n\n"+
+		"##### Notifications\n"+
+		"When someone mentions you, requests your review, comments on or modifies one of your pull requests/issues, or assigns you, you'll get a post here about it.\n"+
+		"Turn off notifications with `/bitbucket settings notifications off`.\n\n"+
+		"##### Sidebar Buttons\n"+
+		"Check out the buttons in the left-hand sidebar of Mattermost.\n"+
+		"* The first button tells you how many pull requests you have submitted.\n"+
+		"* The second shows the number of PR that are awaiting your review.\n"+
+		"* The third shows the number of PR and issues your are assiged to.\n"+
+		"* The fourth will refresh the numbers.\n\n"+
+		"Click on them!\n\n"+
+		"##### Slash Commands\n"+
+		strings.Replace(CommandHelp, "|", "`", -1), bitbucketUser.Username, bitbucketUser.Links.Html.Href)
+
+	return message
+}
+
+func (p *Plugin) handleSettings(_ *plugin.Context, _ *model.CommandArgs, parameters []string, userInfo *BitbucketUserInfo) string {
+	if len(parameters) < 2 {
+		return "Please specify both a setting and value. Use `/bitbucket help` for more usage information."
+	}
+
+	setting := parameters[0]
+	if setting != SettingNotifications && setting != SettingReminders {
+		return "Unknown setting."
+	}
+
+	strValue := parameters[1]
+	value := false
+	if strValue == SettingOn {
+		value = true
+	} else if strValue != SettingOff {
+		return "Invalid value. Accepted values are: \"on\" or \"off\"."
+	}
+
+	if setting == SettingNotifications {
+		if value {
+			err := p.storeBitbucketAccountIDToMattermostUserIDMapping(userInfo.BitbucketAccountID, userInfo.UserID)
+			if err != nil {
+				p.API.LogError("Encountered an error storing Bitbucket account ID to Mattermost user ID mapping", "err", err.Error())
+			}
+		} else {
+			err := p.API.KVDelete(userInfo.BitbucketUsername + BitbucketAccountIdKey)
+			if err != nil {
+				p.API.LogError("Encountered an error deleting Bitbucket account ID to Mattermost user ID mapping", "err", err.Error())
+			}
+		}
+
+		userInfo.Settings.Notifications = value
+	} else if setting == SettingReminders {
+		userInfo.Settings.DailyReminder = value
+	}
+
+	err := p.storeBitbucketUserInfo(userInfo)
+	if err != nil {
+		p.API.LogError("Failed to store settings", "err", err.Error())
+		return "Failed to store settings"
+	}
+
+	return "Settings updated."
+}
+
+type CommandHandleFunc func(c *plugin.Context, args *model.CommandArgs, parameters []string, userInfo *BitbucketUserInfo) string
+
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-	fmt.Printf("----- BB command.ExecuteCommand \n    --> args=%+v", args)
 	split := strings.Fields(args.Command)
 	command := split[0]
-	parameters := []string{}
+	var parameters []string
 	action := ""
 	if len(split) > 1 {
 		action = split[1]
@@ -71,153 +300,52 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	}
 
 	if action == "connect" {
-		fmt.Println("----- BB command.ExecuteCommand action=connect")
-		config := p.API.GetConfig()
-		// fmt.Printf("----- config.ServiceSettings.SiteURL = %+v\n", config.ServiceSettings.SiteURL)
-		if config.ServiceSettings.SiteURL == nil {
-			// fmt.Printf("----- ServiceSettings.SiteURL = %+v\n", config.ServiceSettings.SiteURL)
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error connecting to Bitbucket."), nil
+		siteURL := p.API.GetConfig().ServiceSettings.SiteURL
+		if siteURL == nil {
+			p.postCommandResponse(args, "Encountered an error connecting to Bitbucket.")
+			return &model.CommandResponse{}, nil
 		}
-		resp := getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("[Click here to link your Bitbucket account.](%s/plugins/bitbucket/oauth/connect)", *config.ServiceSettings.SiteURL))
-		fmt.Printf("----- BB command.ExecuteCommand resp = %+v\n", resp)
-		return resp, nil
-	}
 
-	ctx := context.Background()
-	fmt.Printf("----- BB command.ExecuteCommand --> \nctx = %+v\n", ctx)
-	var bitbucketClient *bitbucket.APIClient
+		privateAllowed := false
+		if len(parameters) > 0 {
+			if len(parameters) != 1 || parameters[0] != "private" {
+				p.postCommandResponse(args, fmt.Sprintf("Unknown command `%v`. Do you meant `/bitbucket connect private`?", args.Command))
+				return &model.CommandResponse{}, nil
+			}
+
+			privateAllowed = true
+		}
+
+		qparams := ""
+		if privateAllowed {
+			if !p.getConfiguration().EnablePrivateRepo {
+				p.postCommandResponse(args, "Private repositories are disabled. Please ask a System Admin to enabled them.")
+				return &model.CommandResponse{}, nil
+			}
+			qparams = "?private=true"
+		}
+
+		msg := fmt.Sprintf("[Click here to link your Bitbucket account.](%s/plugins/bitbucket/oauth/connect%s)", *siteURL, qparams)
+		p.postCommandResponse(args, msg)
+		return &model.CommandResponse{}, nil
+	}
 
 	info, apiErr := p.getBitbucketUserInfo(args.UserId)
-	fmt.Printf("----- BB commnad.ExecuteCOmmand --> \ninfo = %+v\n", info)
 	if apiErr != nil {
 		text := "Unknown error."
-		if apiErr.ID == API_ERROR_ID_NOT_CONNECTED {
+		if apiErr.ID == APIErrorIDNotConnected {
 			text = "You must connect your account to Bitbucket first. Either click on the Bitbucket logo in the bottom left of the screen or enter `/bitbucket connect`."
 		}
-		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
+		p.postCommandResponse(args, text)
+		return &model.CommandResponse{}, nil
 	}
 
-	bitbucketClient = p.bitbucketConnect(*info.Token)
-
-	switch action {
-	case "subscribe":
-		config := p.getConfiguration()
-		features := "pulls,issues,creates,deletes"
-		fmt.Printf("args.ChannelId = %+v\n", args.ChannelId)
-
-		txt := ""
-		if len(parameters) == 0 {
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Please specify a repository or 'list' command."), nil
-		} else if len(parameters) == 1 && parameters[0] == "list" {
-			subs, err := p.GetSubscriptionsByChannel(args.ChannelId)
-			if err != nil {
-				return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, err.Error()), nil
-			}
-
-			if len(subs) == 0 {
-				txt = "Currently there are no subscriptions in this channel"
-			} else {
-				txt = "### Subscriptions in this channel\n"
-			}
-			for _, sub := range subs {
-				txt += fmt.Sprintf("* `%s` - %s\n", sub.Repository, sub.Features)
-			}
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, txt), nil
-		} else if len(parameters) > 1 {
-			features = strings.Join(parameters[1:], " ")
-		}
-
-		_, owner, repo := parseOwnerAndRepo(parameters[0], config.EnterpriseBaseURL)
-		fmt.Printf("owner = %+v\n", owner)
-		fmt.Printf("repo = %+v\n", repo)
-		// if repo == "" {
-		// 	if err := p.SubscribeOrg(context.Background(), bitbucketClient, args.UserId, owner, args.ChannelId, features); err != nil {
-		// 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, err.Error()), nil
-		// 	}
-		//
-		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Successfully subscribed to organization %s.", owner)), nil
-		// }
-		//
-		if err := p.Subscribe(context.Background(), bitbucketClient, args.UserId, owner, repo, args.ChannelId, features); err != nil {
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, err.Error()), nil
-		}
-		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Successfully subscribed to %s.", repo)), nil
-
-	case "unsubscribe":
-		if len(parameters) == 0 {
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Please specify a repository."), nil
-		}
-
-		repo := parameters[0]
-
-		if err := p.Unsubscribe(args.ChannelId, repo); err != nil {
-			p.API.LogError(err.Error())
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error trying to unsubscribe. Please try again."), nil
-		}
-
-		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, fmt.Sprintf("Succesfully unsubscribed from %s.", repo)), nil
-	case "disconnect":
-		fmt.Println("----- BB command.ExecuteCommand action=disconnect")
-		p.disconnectBitbucketAccount(args.UserId)
-		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Disconnected your Bitbucket account."), nil
-	case "todo":
-		// text, err := p.GetToDo(ctx, info.BitbucketUsername, bitbucketClient)
-		// if err != nil {
-		// 	mlog.Error(err.Error())
-		// 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error getting your to do items."), nil
-		// }
-		// return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
-	case "me":
-		gitUser, _, err := bitbucketClient.UsersApi.UserGet(ctx)
-		avatar := gitUser.Links.Avatar.Href
-		html := gitUser.Links.Html.Href
-		username := gitUser.Username
-		if err != nil {
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Encountered an error getting your Bitbucket profile."), nil
-		}
-
-		text := fmt.Sprintf("You are connected to Bitbucket as:\n# [![image](%s =40x40)](%s) [%s](%s)", avatar, html, username, html)
-		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
-	case "help":
-		text := "###### Mattermost Bitbucket Plugin - Slash Command Help\n" + strings.Replace(COMMAND_HELP, "|", "`", -1)
-		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
-	case "":
-		text := "###### Mattermost Bitbucket Plugin - Slash Command Help\n" + strings.Replace(COMMAND_HELP, "|", "`", -1)
-		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
-	case "settings":
-		if len(parameters) < 2 {
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Please specify both a setting and value. Use `/bitbucket help` for more usage information."), nil
-		}
-
-		setting := parameters[0]
-		if setting != SETTING_NOTIFICATIONS && setting != SETTING_REMINDERS {
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Unknown setting."), nil
-		}
-
-		strValue := parameters[1]
-		value := false
-		if strValue == SETTING_ON {
-			value = true
-		} else if strValue != SETTING_OFF {
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Invalid value. Accepted values are: \"on\" or \"off\"."), nil
-		}
-
-		if setting == SETTING_NOTIFICATIONS {
-			if value {
-				p.storeBitbucketToUserIDMapping(info.BitbucketUsername, info.UserID)
-			} else {
-				p.API.KVDelete(info.BitbucketUsername + BITBUCKET_USERNAME_KEY)
-			}
-
-			info.Settings.Notifications = value
-		} else if setting == SETTING_REMINDERS {
-			info.Settings.DailyReminder = value
-		}
-
-		p.storeBitbucketUserInfo(info)
-
-		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "Settings updated."), nil
+	if f, ok := p.CommandHandlers[action]; ok {
+		message := f(c, args, parameters, info)
+		p.postCommandResponse(args, message)
+		return &model.CommandResponse{}, nil
 	}
 
+	p.postCommandResponse(args, fmt.Sprintf("Unknown action %v", action))
 	return &model.CommandResponse{}, nil
 }

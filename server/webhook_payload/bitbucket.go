@@ -74,7 +74,7 @@ func New(options ...Option) (*Webhook, error) {
 	hook := new(Webhook)
 	for _, opt := range options {
 		if err := opt(hook); err != nil {
-			return nil, errors.New("Error applying Option")
+			return nil, errors.New("error applying Option")
 		}
 	}
 	return hook, nil

@@ -3,24 +3,26 @@ import {Tooltip, OverlayTrigger} from 'react-bootstrap';
 import PropTypes from 'prop-types';
 import {makeStyleFromTheme, changeOpacity} from 'mattermost-redux/utils/theme_utils';
 
+import {id as pluginId} from '../../manifest';
+
+import {RHSStates} from '../../constants';
+
 export default class SidebarButtons extends React.PureComponent {
     static propTypes = {
         theme: PropTypes.object.isRequired,
         connected: PropTypes.bool,
-        username: PropTypes.string,
-        org: PropTypes.string,
-        clientId: PropTypes.string,
         enterpriseURL: PropTypes.string,
         reviews: PropTypes.arrayOf(PropTypes.object),
-        unreads: PropTypes.arrayOf(PropTypes.object),
         yourPrs: PropTypes.arrayOf(PropTypes.object),
         yourAssignments: PropTypes.arrayOf(PropTypes.object),
         isTeamSidebar: PropTypes.bool,
+        showRHSPlugin: PropTypes.func.isRequired,
         actions: PropTypes.shape({
+            getConnected: PropTypes.func.isRequired,
             getReviews: PropTypes.func.isRequired,
-            getUnreads: PropTypes.func.isRequired,
             getYourPrs: PropTypes.func.isRequired,
             getYourAssignments: PropTypes.func.isRequired,
+            updateRhsState: PropTypes.func.isRequired,
         }).isRequired,
     };
 
@@ -35,7 +37,10 @@ export default class SidebarButtons extends React.PureComponent {
     componentDidMount() {
         if (this.props.connected) {
             this.getData();
+            return;
         }
+
+        this.props.actions.getConnected(true);
     }
 
     componentDidUpdate(prevProps) {
@@ -56,7 +61,6 @@ export default class SidebarButtons extends React.PureComponent {
         this.setState({refreshing: true});
         await Promise.all([
             this.props.actions.getReviews(),
-            this.props.actions.getUnreads(),
             this.props.actions.getYourPrs(),
             this.props.actions.getYourAssignments(),
         ]);
@@ -65,7 +69,12 @@ export default class SidebarButtons extends React.PureComponent {
 
     openConnectWindow = (e) => {
         e.preventDefault();
-        window.open('/plugins/bitbucket/oauth/connect', 'Connect Mattermost to Bitbucket', 'height=570,width=520');
+        window.open('/plugins/' + pluginId + '/oauth/connect', 'Connect Mattermost to Bitbucket', 'height=570,width=520');
+    }
+
+    openRHS = (rhsState) => {
+        this.props.actions.updateRhsState(rhsState);
+        this.props.showRHSPlugin();
     }
 
     render() {
@@ -87,10 +96,10 @@ export default class SidebarButtons extends React.PureComponent {
                     <OverlayTrigger
                         key='bitbucketConnectLink'
                         placement={placement}
-                        overlay={<Tooltip id='reviewTooltip'>Connect to your Bitbucket</Tooltip>}
+                        overlay={<Tooltip id='reviewTooltip'>{'Connect to your Bitbucket'}</Tooltip>}
                     >
                         <a
-                            href='/plugins/bitbucket/oauth/connect'
+                            href={'/plugins/' + pluginId + '/oauth/connect'}
                             onClick={this.openConnectWindow}
                             style={button}
                         >
@@ -104,25 +113,19 @@ export default class SidebarButtons extends React.PureComponent {
 
         const reviews = this.props.reviews || [];
         const yourPrs = this.props.yourPrs || [];
-        const unreads = this.props.unreads || [];
         const yourAssignments = this.props.yourAssignments || [];
         const refreshClass = this.state.refreshing ? ' fa-spin' : '';
 
-        let baseURL = 'https://bitbucket.org';
+        let baseURL = 'https://bitbucket.com';
         if (this.props.enterpriseURL) {
             baseURL = this.props.enterpriseURL;
-        }
-
-        let orgQuery = '';
-        if (this.props.org) {
-            orgQuery = '+org%3A' + this.props.org;
         }
 
         return (
             <div style={container}>
                 <a
                     key='bitbucketHeader'
-                    href={baseURL + '/settings/connections/applications/' + this.props.clientId}
+                    href={baseURL}
                     target='_blank'
                     rel='noopener noreferrer'
                     style={button}
@@ -132,13 +135,11 @@ export default class SidebarButtons extends React.PureComponent {
                 <OverlayTrigger
                     key='bitbucketYourPrsLink'
                     placement={placement}
-                    overlay={<Tooltip id='yourPrsTooltip'>Your open pull requests</Tooltip>}
+                    overlay={<Tooltip id='yourPrsTooltip'>{'Your open pull requests'}</Tooltip>}
                 >
                     <a
-                        href={baseURL + '/pulls?q=is%3Aopen+is%3Apr+author%3A' + this.props.username + '+archived%3Afalse' + orgQuery}
-                        target='_blank'
-                        rel='noopener noreferrer'
                         style={button}
+                        onClick={() => this.openRHS(RHSStates.PRS)}
                     >
                         <i className='fa fa-compress'/>
                         {' ' + yourPrs.length}
@@ -147,12 +148,10 @@ export default class SidebarButtons extends React.PureComponent {
                 <OverlayTrigger
                     key='bitbucketReviewsLink'
                     placement={placement}
-                    overlay={<Tooltip id='reviewTooltip'>Pull requests needing review</Tooltip>}
+                    overlay={<Tooltip id='reviewTooltip'>{'Pull requests needing review'}</Tooltip>}
                 >
                     <a
-                        href={baseURL + '/pulls?q=is%3Aopen+is%3Apr+review-requested%3A' + this.props.username + '+archived%3Afalse' + orgQuery}
-                        target='_blank'
-                        rel='noopener noreferrer'
+                        onClick={() => this.openRHS(RHSStates.REVIEWS)}
                         style={button}
                     >
                         <i className='fa fa-code-fork'/>
@@ -162,12 +161,10 @@ export default class SidebarButtons extends React.PureComponent {
                 <OverlayTrigger
                     key='bitbucketAssignmentsLink'
                     placement={placement}
-                    overlay={<Tooltip id='reviewTooltip'>Your assignments</Tooltip>}
+                    overlay={<Tooltip id='reviewTooltip'>{'Your assignments'}</Tooltip>}
                 >
                     <a
-                        href={baseURL + '/pulls?q=is%3Aopen+archived%3Afalse+assignee%3A' + this.props.username + orgQuery}
-                        target='_blank'
-                        rel='noopener noreferrer'
+                        onClick={() => this.openRHS(RHSStates.ASSIGNMENTS)}
                         style={button}
                     >
                         <i className='fa fa-list-ol'/>
@@ -175,24 +172,9 @@ export default class SidebarButtons extends React.PureComponent {
                     </a>
                 </OverlayTrigger>
                 <OverlayTrigger
-                    key='bitbucketUnreadsLink'
-                    placement={placement}
-                    overlay={<Tooltip id='unreadsTooltip'>Unread messages</Tooltip>}
-                >
-                    <a
-                        href={baseURL + '/notifications'}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                        style={button}
-                    >
-                        <i className='fa fa-envelope'/>
-                        {' ' + unreads.length}
-                    </a>
-                </OverlayTrigger>
-                <OverlayTrigger
                     key='bitbucketRefreshButton'
                     placement={placement}
-                    overlay={<Tooltip id='refreshTooltip'>Refresh</Tooltip>}
+                    overlay={<Tooltip id='refreshTooltip'>{'Refresh'}</Tooltip>}
                 >
                     <a
                         href='#'
@@ -217,7 +199,6 @@ const getStyle = makeStyleFromTheme((theme) => {
         },
         buttonHeader: {
             color: changeOpacity(theme.sidebarText, 0.6),
-            flex: 1,
             textAlign: 'center',
             cursor: 'pointer',
         },
@@ -226,6 +207,8 @@ const getStyle = makeStyleFromTheme((theme) => {
             marginBottom: '5px',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-around',
+            padding: '0 10px',
         },
         containerTeam: {
         },
