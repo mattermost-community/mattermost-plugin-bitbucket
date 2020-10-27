@@ -1,4 +1,4 @@
-package webhook_payload
+package webhookpayload
 
 import "time"
 
@@ -233,7 +233,7 @@ type Owner struct {
 	Type        string `json:"type"`
 	NickName    string `json:"nickname"`
 	DisplayName string `json:"display_name"`
-	AccountId   string `json:"account_id"`
+	AccountID   string `json:"account_id"`
 	UUID        string `json:"uuid"`
 	Links       struct {
 		Self struct {

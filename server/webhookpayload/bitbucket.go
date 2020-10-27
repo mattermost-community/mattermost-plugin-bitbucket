@@ -1,4 +1,4 @@
-package webhook_payload
+package webhookpayload
 
 import (
 	"encoding/json"

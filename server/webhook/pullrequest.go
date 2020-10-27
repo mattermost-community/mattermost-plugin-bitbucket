@@ -1,11 +1,12 @@
 package webhook
 
 import (
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhook_payload"
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
+
 	"github.com/pkg/errors"
 )
 
-func (w *webhook) HandlePullRequestCreatedEvent(pl webhook_payload.PullRequestCreatedPayload) ([]*HandleWebhook, error) {
+func (w *webhook) HandlePullRequestCreatedEvent(pl webhookpayload.PullRequestCreatedPayload) ([]*HandleWebhook, error) {
 	var handlers []*HandleWebhook
 
 	handler1, err := w.createPullRequestCreatedEventNotificationForSubscribedChannels(pl)
@@ -21,7 +22,7 @@ func (w *webhook) HandlePullRequestCreatedEvent(pl webhook_payload.PullRequestCr
 	return cleanWebhookHandlers(append(handlers, handler1, handler2)), nil
 }
 
-func (w *webhook) HandlePullRequestApprovedEvent(pl webhook_payload.PullRequestApprovedPayload) ([]*HandleWebhook, error) {
+func (w *webhook) HandlePullRequestApprovedEvent(pl webhookpayload.PullRequestApprovedPayload) ([]*HandleWebhook, error) {
 	var handlers []*HandleWebhook
 
 	handler1, err := w.createPullRequestApprovedEventNotificationForSubscribedChannels(pl)
@@ -37,7 +38,7 @@ func (w *webhook) HandlePullRequestApprovedEvent(pl webhook_payload.PullRequestA
 	return cleanWebhookHandlers(append(handlers, handler1, handler2)), nil
 }
 
-func (w *webhook) HandlePullRequestDeclinedEvent(pl webhook_payload.PullRequestDeclinedPayload) ([]*HandleWebhook, error) {
+func (w *webhook) HandlePullRequestDeclinedEvent(pl webhookpayload.PullRequestDeclinedPayload) ([]*HandleWebhook, error) {
 	var handlers []*HandleWebhook
 
 	handler1, err := w.createPullRequestDeclinedEventNotificationForSubscribedChannels(pl)
@@ -53,7 +54,7 @@ func (w *webhook) HandlePullRequestDeclinedEvent(pl webhook_payload.PullRequestD
 	return cleanWebhookHandlers(append(handlers, handler1, handler2)), nil
 }
 
-func (w *webhook) HandlePullRequestUnapprovedEvent(pl webhook_payload.PullRequestUnapprovedPayload) ([]*HandleWebhook, error) {
+func (w *webhook) HandlePullRequestUnapprovedEvent(pl webhookpayload.PullRequestUnapprovedPayload) ([]*HandleWebhook, error) {
 	var handlers []*HandleWebhook
 
 	handler1, err := w.createPullRequestUnapprovedEventNotificationForSubscribedChannels(pl)
@@ -69,7 +70,7 @@ func (w *webhook) HandlePullRequestUnapprovedEvent(pl webhook_payload.PullReques
 	return cleanWebhookHandlers(append(handlers, handler1, handler2)), nil
 }
 
-func (w *webhook) HandlePullRequestMergedEvent(pl webhook_payload.PullRequestMergedPayload) ([]*HandleWebhook, error) {
+func (w *webhook) HandlePullRequestMergedEvent(pl webhookpayload.PullRequestMergedPayload) ([]*HandleWebhook, error) {
 	var handlers []*HandleWebhook
 
 	handler1, err := w.createPullRequestMergedEventNotificationForSubscribedChannels(pl)
@@ -85,7 +86,7 @@ func (w *webhook) HandlePullRequestMergedEvent(pl webhook_payload.PullRequestMer
 	return cleanWebhookHandlers(append(handlers, handler1, handler2)), nil
 }
 
-func (w *webhook) HandlePullRequestCommentCreatedEvent(pl webhook_payload.PullRequestCommentCreatedPayload) ([]*HandleWebhook, error) {
+func (w *webhook) HandlePullRequestCommentCreatedEvent(pl webhookpayload.PullRequestCommentCreatedPayload) ([]*HandleWebhook, error) {
 	var handlers []*HandleWebhook
 
 	handler1, err := w.createPullRequestCommentCreatedEventNotificationForSubscribedChannels(pl)
@@ -106,7 +107,7 @@ func (w *webhook) HandlePullRequestCommentCreatedEvent(pl webhook_payload.PullRe
 	return cleanWebhookHandlers(append(handlers, handler1, handler2, handler3)), nil
 }
 
-func (w *webhook) HandlePullRequestUpdatedEvent(pl webhook_payload.PullRequestUpdatedPayload) ([]*HandleWebhook, error) {
+func (w *webhook) HandlePullRequestUpdatedEvent(pl webhookpayload.PullRequestUpdatedPayload) ([]*HandleWebhook, error) {
 	// ignore if there are no reviewers
 	if len(pl.PullRequest.Reviewers) == 0 {
 		return []*HandleWebhook{}, nil
@@ -127,12 +128,12 @@ func (w *webhook) HandlePullRequestUpdatedEvent(pl webhook_payload.PullRequestUp
 	// if reviewers are not empty, send them notifications
 	for _, reviewer := range pl.PullRequest.Reviewers {
 		// check if the user had been already notified
-		if contains(thisPullRequestReviewers, reviewer.AccountId) {
+		if contains(thisPullRequestReviewers, reviewer.AccountID) {
 			continue
 		}
 
-		thisPullRequestReviewers = append(thisPullRequestReviewers, reviewer.AccountId)
-		handler.ToBitbucketUsers = append(handler.ToBitbucketUsers, reviewer.AccountId)
+		thisPullRequestReviewers = append(thisPullRequestReviewers, reviewer.AccountID)
+		handler.ToBitbucketUsers = append(handler.ToBitbucketUsers, reviewer.AccountID)
 	}
 
 	// save information about users that had been notified
@@ -141,7 +142,7 @@ func (w *webhook) HandlePullRequestUpdatedEvent(pl webhook_payload.PullRequestUp
 	return cleanWebhookHandlers([]*HandleWebhook{handler}), nil
 }
 
-func (w *webhook) createPullRequestCreatedEventNotificationForSubscribedChannels(pl webhook_payload.PullRequestCreatedPayload) (*HandleWebhook, error) {
+func (w *webhook) createPullRequestCreatedEventNotificationForSubscribedChannels(pl webhookpayload.PullRequestCreatedPayload) (*HandleWebhook, error) {
 	message, err := w.templateRenderer.RenderPullRequestCreatedEventNotificationForSubscribedChannels(pl)
 	if err != nil {
 		return nil, err
@@ -150,7 +151,7 @@ func (w *webhook) createPullRequestCreatedEventNotificationForSubscribedChannels
 	handler := &HandleWebhook{Message: message}
 
 	subs := w.subscriptionConfiguration.GetSubscribedChannelsForRepository(&pl)
-	if subs == nil || len(subs) == 0 {
+	if len(subs) == 0 {
 		return handler, nil
 	}
 
@@ -164,7 +165,7 @@ func (w *webhook) createPullRequestCreatedEventNotificationForSubscribedChannels
 	return handler, nil
 }
 
-func (w *webhook) createPullRequestApprovedEventNotificationForSubscribedChannels(pl webhook_payload.PullRequestApprovedPayload) (*HandleWebhook, error) {
+func (w *webhook) createPullRequestApprovedEventNotificationForSubscribedChannels(pl webhookpayload.PullRequestApprovedPayload) (*HandleWebhook, error) {
 	message, err := w.templateRenderer.RenderPullRequestApprovedEventNotificationForSubscribedChannels(pl)
 	if err != nil {
 		return nil, err
@@ -173,7 +174,7 @@ func (w *webhook) createPullRequestApprovedEventNotificationForSubscribedChannel
 	handler := &HandleWebhook{Message: message}
 
 	subs := w.subscriptionConfiguration.GetSubscribedChannelsForRepository(&pl)
-	if subs == nil || len(subs) == 0 {
+	if len(subs) == 0 {
 		return handler, nil
 	}
 
@@ -187,7 +188,7 @@ func (w *webhook) createPullRequestApprovedEventNotificationForSubscribedChannel
 	return handler, nil
 }
 
-func (w *webhook) createPullRequestDeclinedEventNotificationForSubscribedChannels(pl webhook_payload.PullRequestDeclinedPayload) (*HandleWebhook, error) {
+func (w *webhook) createPullRequestDeclinedEventNotificationForSubscribedChannels(pl webhookpayload.PullRequestDeclinedPayload) (*HandleWebhook, error) {
 	message, err := w.templateRenderer.RenderPullRequestDeclinedEventNotificationForSubscribedChannels(pl)
 	if err != nil {
 		return nil, err
@@ -196,7 +197,7 @@ func (w *webhook) createPullRequestDeclinedEventNotificationForSubscribedChannel
 	handler := &HandleWebhook{Message: message}
 
 	subs := w.subscriptionConfiguration.GetSubscribedChannelsForRepository(&pl)
-	if subs == nil || len(subs) == 0 {
+	if len(subs) == 0 {
 		return handler, nil
 	}
 
@@ -210,7 +211,7 @@ func (w *webhook) createPullRequestDeclinedEventNotificationForSubscribedChannel
 	return handler, nil
 }
 
-func (w *webhook) createPullRequestUnapprovedEventNotificationForSubscribedChannels(pl webhook_payload.PullRequestUnapprovedPayload) (*HandleWebhook, error) {
+func (w *webhook) createPullRequestUnapprovedEventNotificationForSubscribedChannels(pl webhookpayload.PullRequestUnapprovedPayload) (*HandleWebhook, error) {
 	message, err := w.templateRenderer.RenderPullRequestUnapprovedEventNotificationForSubscribedChannels(pl)
 	if err != nil {
 		return nil, err
@@ -219,7 +220,7 @@ func (w *webhook) createPullRequestUnapprovedEventNotificationForSubscribedChann
 	handler := &HandleWebhook{Message: message}
 
 	subs := w.subscriptionConfiguration.GetSubscribedChannelsForRepository(&pl)
-	if subs == nil || len(subs) == 0 {
+	if len(subs) == 0 {
 		return handler, nil
 	}
 
@@ -233,7 +234,7 @@ func (w *webhook) createPullRequestUnapprovedEventNotificationForSubscribedChann
 	return handler, nil
 }
 
-func (w *webhook) createPullRequestMergedEventNotificationForSubscribedChannels(pl webhook_payload.PullRequestMergedPayload) (*HandleWebhook, error) {
+func (w *webhook) createPullRequestMergedEventNotificationForSubscribedChannels(pl webhookpayload.PullRequestMergedPayload) (*HandleWebhook, error) {
 	message, err := w.templateRenderer.RenderPullRequestMergedEventNotificationForSubscribedChannels(pl)
 	if err != nil {
 		return nil, err
@@ -242,7 +243,7 @@ func (w *webhook) createPullRequestMergedEventNotificationForSubscribedChannels(
 	handler := &HandleWebhook{Message: message}
 
 	subs := w.subscriptionConfiguration.GetSubscribedChannelsForRepository(&pl)
-	if subs == nil || len(subs) == 0 {
+	if len(subs) == 0 {
 		return handler, nil
 	}
 
@@ -256,7 +257,7 @@ func (w *webhook) createPullRequestMergedEventNotificationForSubscribedChannels(
 	return handler, nil
 }
 
-func (w *webhook) createPullRequestCommentCreatedEventNotificationForSubscribedChannels(pl webhook_payload.PullRequestCommentCreatedPayload) (*HandleWebhook, error) {
+func (w *webhook) createPullRequestCommentCreatedEventNotificationForSubscribedChannels(pl webhookpayload.PullRequestCommentCreatedPayload) (*HandleWebhook, error) {
 	message, err := w.templateRenderer.RenderPullRequestCommentCreatedEventNotificationForSubscribedChannels(pl)
 	if err != nil {
 		return nil, err
@@ -265,7 +266,7 @@ func (w *webhook) createPullRequestCommentCreatedEventNotificationForSubscribedC
 	handler := &HandleWebhook{Message: message}
 
 	subs := w.subscriptionConfiguration.GetSubscribedChannelsForRepository(&pl)
-	if subs == nil || len(subs) == 0 {
+	if len(subs) == 0 {
 		return handler, nil
 	}
 
@@ -279,7 +280,7 @@ func (w *webhook) createPullRequestCommentCreatedEventNotificationForSubscribedC
 	return handler, nil
 }
 
-func (w *webhook) createPullRequestDescriptionMentionNotification(pl webhook_payload.PullRequestCreatedPayload) (*HandleWebhook, error) {
+func (w *webhook) createPullRequestDescriptionMentionNotification(pl webhookpayload.PullRequestCreatedPayload) (*HandleWebhook, error) {
 	mentionedAccountIDs := w.parseBitbucketAcountIDsFromHTML(pl.PullRequest.Rendered.Description.HTML)
 	message, err := w.templateRenderer.RenderPullRequestDescriptionMentionNotification(pl)
 	if err != nil {
@@ -289,7 +290,7 @@ func (w *webhook) createPullRequestDescriptionMentionNotification(pl webhook_pay
 	return w.createPrivateMessageHandleWebhook(&pl, message, mentionedAccountIDs), nil
 }
 
-func (w *webhook) createPullRequestCommentMentionNotification(pl webhook_payload.PullRequestCommentCreatedPayload) (*HandleWebhook, error) {
+func (w *webhook) createPullRequestCommentMentionNotification(pl webhookpayload.PullRequestCommentCreatedPayload) (*HandleWebhook, error) {
 	mentionedAccountIDs := w.parseBitbucketAcountIDsFromHTML(pl.Comment.Content.HTML)
 	message, err := w.templateRenderer.RenderPullRequestCommentMentionNotification(pl)
 	if err != nil {
@@ -299,49 +300,49 @@ func (w *webhook) createPullRequestCommentMentionNotification(pl webhook_payload
 	return w.createPrivateMessageHandleWebhook(&pl, message, mentionedAccountIDs), nil
 }
 
-func (w *webhook) createPullRequestCommentNotificationForPullRequestAuthor(pl webhook_payload.PullRequestCommentCreatedPayload) (*HandleWebhook, error) {
+func (w *webhook) createPullRequestCommentNotificationForPullRequestAuthor(pl webhookpayload.PullRequestCommentCreatedPayload) (*HandleWebhook, error) {
 	message, err := w.templateRenderer.RenderPullRequestCommentNotificationForPullRequestAuthor(pl)
 	if err != nil {
 		return nil, errors.Wrap(err, TemplateErrorText)
 	}
 
-	return w.createPrivateMessageHandleWebhook(&pl, message, []string{pl.PullRequest.Author.AccountId}), nil
+	return w.createPrivateMessageHandleWebhook(&pl, message, []string{pl.PullRequest.Author.AccountID}), nil
 }
 
-func (w *webhook) createPullRequestApprovedNotificationForPullRequestAuthor(pl webhook_payload.PullRequestApprovedPayload) (*HandleWebhook, error) {
+func (w *webhook) createPullRequestApprovedNotificationForPullRequestAuthor(pl webhookpayload.PullRequestApprovedPayload) (*HandleWebhook, error) {
 	message, err := w.templateRenderer.RenderPullRequestApprovedNotificationForPullRequestAuthor(pl)
 	if err != nil {
 		return nil, errors.Wrap(err, TemplateErrorText)
 	}
 
-	return w.createPrivateMessageHandleWebhook(&pl, message, []string{pl.PullRequest.Author.AccountId}), nil
+	return w.createPrivateMessageHandleWebhook(&pl, message, []string{pl.PullRequest.Author.AccountID}), nil
 }
 
-func (w *webhook) createPullRequestDeclinedNotificationForPullRequestAuthor(pl webhook_payload.PullRequestDeclinedPayload) (*HandleWebhook, error) {
+func (w *webhook) createPullRequestDeclinedNotificationForPullRequestAuthor(pl webhookpayload.PullRequestDeclinedPayload) (*HandleWebhook, error) {
 	message, err := w.templateRenderer.RenderPullRequestDeclinedNotificationForPullRequestAuthor(pl)
 	if err != nil {
 		return nil, errors.Wrap(err, TemplateErrorText)
 	}
 
-	return w.createPrivateMessageHandleWebhook(&pl, message, []string{pl.PullRequest.Author.AccountId}), nil
+	return w.createPrivateMessageHandleWebhook(&pl, message, []string{pl.PullRequest.Author.AccountID}), nil
 }
 
-func (w *webhook) createPullRequestUnapprovedNotificationForPullRequestAuthor(pl webhook_payload.PullRequestUnapprovedPayload) (*HandleWebhook, error) {
+func (w *webhook) createPullRequestUnapprovedNotificationForPullRequestAuthor(pl webhookpayload.PullRequestUnapprovedPayload) (*HandleWebhook, error) {
 	message, err := w.templateRenderer.RenderPullRequestUnapprovedNotificationForPullRequestAuthor(pl)
 	if err != nil {
 		return nil, errors.Wrap(err, TemplateErrorText)
 	}
 
-	return w.createPrivateMessageHandleWebhook(&pl, message, []string{pl.PullRequest.Author.AccountId}), nil
+	return w.createPrivateMessageHandleWebhook(&pl, message, []string{pl.PullRequest.Author.AccountID}), nil
 }
 
-func (w *webhook) createPullRequestMergedNotificationForPullRequestAuthor(pl webhook_payload.PullRequestMergedPayload) (*HandleWebhook, error) {
+func (w *webhook) createPullRequestMergedNotificationForPullRequestAuthor(pl webhookpayload.PullRequestMergedPayload) (*HandleWebhook, error) {
 	message, err := w.templateRenderer.RenderPullRequestMergedEventNotificationForPullRequestAuthor(pl)
 	if err != nil {
 		return nil, errors.Wrap(err, TemplateErrorText)
 	}
 
-	return w.createPrivateMessageHandleWebhook(&pl, message, []string{pl.PullRequest.Author.AccountId}), nil
+	return w.createPrivateMessageHandleWebhook(&pl, message, []string{pl.PullRequest.Author.AccountID}), nil
 }
 
 func contains(s []string, e string) bool {

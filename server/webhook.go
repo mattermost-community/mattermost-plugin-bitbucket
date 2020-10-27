@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"github.com/kosgrz/mattermost-plugin-bitbucket/server/subscription"
 	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhook"
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhook_payload"
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"net/http"
 	"strconv"
@@ -17,20 +17,19 @@ const (
 )
 
 func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
-
-	hook, _ := webhook_payload.New()
+	hook, _ := webhookpayload.New()
 	payload, err := hook.Parse(r,
-		webhook_payload.RepoPushEvent,
-		webhook_payload.IssueCreatedEvent,
-		webhook_payload.IssueUpdatedEvent,
-		webhook_payload.IssueCommentCreatedEvent,
-		webhook_payload.PullRequestCreatedEvent,
-		webhook_payload.PullRequestUpdatedEvent,
-		webhook_payload.PullRequestApprovedEvent,
-		webhook_payload.PullRequestUnapprovedEvent,
-		webhook_payload.PullRequestDeclinedEvent,
-		webhook_payload.PullRequestMergedEvent,
-		webhook_payload.PullRequestCommentCreatedEvent)
+		webhookpayload.RepoPushEvent,
+		webhookpayload.IssueCreatedEvent,
+		webhookpayload.IssueUpdatedEvent,
+		webhookpayload.IssueCommentCreatedEvent,
+		webhookpayload.PullRequestCreatedEvent,
+		webhookpayload.PullRequestUpdatedEvent,
+		webhookpayload.PullRequestApprovedEvent,
+		webhookpayload.PullRequestUnapprovedEvent,
+		webhookpayload.PullRequestDeclinedEvent,
+		webhookpayload.PullRequestMergedEvent,
+		webhookpayload.PullRequestCommentCreatedEvent)
 
 	if err != nil {
 		p.API.LogError(err.Error())
@@ -40,29 +39,29 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	var handlers []*webhook.HandleWebhook
 	var handlerError error
 
-	switch payload.(type) {
-	case webhook_payload.RepoPushPayload:
-		handlers, handlerError = p.webhookHandler.HandleRepoPushEvent(payload.(webhook_payload.RepoPushPayload))
-	case webhook_payload.IssueCreatedPayload:
-		handlers, handlerError = p.webhookHandler.HandleIssueCreatedEvent(payload.(webhook_payload.IssueCreatedPayload))
-	case webhook_payload.IssueUpdatedPayload:
-		handlers, handlerError = p.webhookHandler.HandleIssueUpdatedEvent(payload.(webhook_payload.IssueUpdatedPayload))
-	case webhook_payload.IssueCommentCreatedPayload:
-		handlers, handlerError = p.webhookHandler.HandleIssueCommentCreatedEvent(payload.(webhook_payload.IssueCommentCreatedPayload))
-	case webhook_payload.PullRequestCreatedPayload:
-		handlers, handlerError = p.webhookHandler.HandlePullRequestCreatedEvent(payload.(webhook_payload.PullRequestCreatedPayload))
-	case webhook_payload.PullRequestUpdatedPayload:
-		handlers, handlerError = p.webhookHandler.HandlePullRequestUpdatedEvent(payload.(webhook_payload.PullRequestUpdatedPayload))
-	case webhook_payload.PullRequestApprovedPayload:
-		handlers, handlerError = p.webhookHandler.HandlePullRequestApprovedEvent(payload.(webhook_payload.PullRequestApprovedPayload))
-	case webhook_payload.PullRequestCommentCreatedPayload:
-		handlers, handlerError = p.webhookHandler.HandlePullRequestCommentCreatedEvent(payload.(webhook_payload.PullRequestCommentCreatedPayload))
-	case webhook_payload.PullRequestDeclinedPayload:
-		handlers, handlerError = p.webhookHandler.HandlePullRequestDeclinedEvent(payload.(webhook_payload.PullRequestDeclinedPayload))
-	case webhook_payload.PullRequestUnapprovedPayload:
-		handlers, handlerError = p.webhookHandler.HandlePullRequestUnapprovedEvent(payload.(webhook_payload.PullRequestUnapprovedPayload))
-	case webhook_payload.PullRequestMergedPayload:
-		handlers, handlerError = p.webhookHandler.HandlePullRequestMergedEvent(payload.(webhook_payload.PullRequestMergedPayload))
+	switch typedPayload := payload.(type) {
+	case webhookpayload.RepoPushPayload:
+		handlers, handlerError = p.webhookHandler.HandleRepoPushEvent(typedPayload)
+	case webhookpayload.IssueCreatedPayload:
+		handlers, handlerError = p.webhookHandler.HandleIssueCreatedEvent(typedPayload)
+	case webhookpayload.IssueUpdatedPayload:
+		handlers, handlerError = p.webhookHandler.HandleIssueUpdatedEvent(typedPayload)
+	case webhookpayload.IssueCommentCreatedPayload:
+		handlers, handlerError = p.webhookHandler.HandleIssueCommentCreatedEvent(typedPayload)
+	case webhookpayload.PullRequestCreatedPayload:
+		handlers, handlerError = p.webhookHandler.HandlePullRequestCreatedEvent(typedPayload)
+	case webhookpayload.PullRequestUpdatedPayload:
+		handlers, handlerError = p.webhookHandler.HandlePullRequestUpdatedEvent(typedPayload)
+	case webhookpayload.PullRequestApprovedPayload:
+		handlers, handlerError = p.webhookHandler.HandlePullRequestApprovedEvent(typedPayload)
+	case webhookpayload.PullRequestCommentCreatedPayload:
+		handlers, handlerError = p.webhookHandler.HandlePullRequestCommentCreatedEvent(typedPayload)
+	case webhookpayload.PullRequestDeclinedPayload:
+		handlers, handlerError = p.webhookHandler.HandlePullRequestDeclinedEvent(typedPayload)
+	case webhookpayload.PullRequestUnapprovedPayload:
+		handlers, handlerError = p.webhookHandler.HandlePullRequestUnapprovedEvent(typedPayload)
+	case webhookpayload.PullRequestMergedPayload:
+		handlers, handlerError = p.webhookHandler.HandlePullRequestMergedEvent(typedPayload)
 	}
 
 	if handlerError != nil {
@@ -70,12 +69,11 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p.executeHandlers(handlers, payload.(webhook_payload.Payload))
+	p.executeHandlers(handlers, payload.(webhookpayload.Payload))
 }
 
-func (p *Plugin) executeHandlers(webhookHandlers []*webhook.HandleWebhook, pl webhook_payload.Payload) {
+func (p *Plugin) executeHandlers(webhookHandlers []*webhook.HandleWebhook, pl webhookpayload.Payload) {
 	for _, webhookHandler := range webhookHandlers {
-
 		post := &model.Post{
 			UserId:  p.BotUserID,
 			Message: webhookHandler.Message,
@@ -131,7 +129,10 @@ func (p *Plugin) permissionToRepo(userID string, ownerAndRepo string) bool {
 
 	bitbucketClient := p.bitbucketConnect(*info.Token)
 
-	if _, _, err := bitbucketClient.RepositoriesApi.RepositoriesUsernameRepoSlugGet(context.Background(), owner, repo); err != nil {
+	if _, httpResponse, err := bitbucketClient.RepositoriesApi.RepositoriesUsernameRepoSlugGet(context.Background(), owner, repo); err != nil {
+		if httpResponse != nil {
+			_ = httpResponse.Body.Close()
+		}
 		p.API.LogError("Couldn't fetch repositories info", "err", err)
 		return false
 	}
@@ -150,7 +151,7 @@ type subscriptionHandler struct {
 	p *Plugin
 }
 
-func (s subscriptionHandler) GetSubscribedChannelsForRepository(pl webhook_payload.Payload) []*subscription.Subscription {
+func (s subscriptionHandler) GetSubscribedChannelsForRepository(pl webhookpayload.Payload) []*subscription.Subscription {
 	return s.p.GetSubscribedChannelsForRepository(pl)
 }
 
@@ -165,15 +166,15 @@ func (r *pullRequestReviewHandler) GetAlreadyNotifiedUsers(pullRequestID int64) 
 		return []string{}, nil
 	}
 
-	var pullRequestReviewers pullRequestReviewers
-	appErr := json.Unmarshal(bytesThisPrReviewers, &pullRequestReviewers)
+	var prReviewers pullRequestReviewers
+	appErr := json.Unmarshal(bytesThisPrReviewers, &prReviewers)
 	if appErr != nil {
 		r.p.API.LogError("Couldn't read information about notified users",
 			"pl.PullRequest.ID", pullRequestID, "err", appErr)
 		return nil, appErr
 	}
 
-	return pullRequestReviewers.Users, nil
+	return prReviewers.Users, nil
 }
 
 func (r pullRequestReviewHandler) SaveNotifiedUsers(pullRequestID int64, notifiedUsers []string) {
@@ -186,10 +187,10 @@ func (r pullRequestReviewHandler) SaveNotifiedUsers(pullRequestID int64, notifie
 		return
 	}
 
-	err = r.p.API.KVSet(KeyAssignUserPr+strconv.FormatInt(pullRequestID, 10), bytesThisPrReviewers)
-	if err != nil {
+	apiErr := r.p.API.KVSet(KeyAssignUserPr+strconv.FormatInt(pullRequestID, 10), bytesThisPrReviewers)
+	if apiErr != nil {
 		//err is nil, but it's still going here don't know why todo
 		r.p.API.LogWarn("Couldn't save information about notified users for PR",
-			"thisPrReviewers", thisPrReviewers, "err", err)
+			"thisPrReviewers", thisPrReviewers, "apiErr", apiErr)
 	}
 }

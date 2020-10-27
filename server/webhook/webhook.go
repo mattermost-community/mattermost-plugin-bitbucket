@@ -3,8 +3,8 @@ package webhook
 import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/kosgrz/mattermost-plugin-bitbucket/server/subscription"
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/template_renderer"
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhook_payload"
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/templaterenderer"
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
 	"strings"
 )
 
@@ -19,7 +19,7 @@ type HandleWebhook struct {
 }
 
 type SubscriptionHandler interface {
-	GetSubscribedChannelsForRepository(webhook_payload.Payload) []*subscription.Subscription
+	GetSubscribedChannelsForRepository(webhookpayload.Payload) []*subscription.Subscription
 }
 
 type PullRequestReviewHandler interface {
@@ -28,34 +28,34 @@ type PullRequestReviewHandler interface {
 }
 
 type Webhook interface {
-	HandleRepoPushEvent(webhook_payload.RepoPushPayload) ([]*HandleWebhook, error)
-	HandleIssueCreatedEvent(webhook_payload.IssueCreatedPayload) ([]*HandleWebhook, error)
-	HandleIssueUpdatedEvent(webhook_payload.IssueUpdatedPayload) ([]*HandleWebhook, error)
-	HandleIssueCommentCreatedEvent(webhook_payload.IssueCommentCreatedPayload) ([]*HandleWebhook, error)
-	HandlePullRequestCreatedEvent(webhook_payload.PullRequestCreatedPayload) ([]*HandleWebhook, error)
-	HandlePullRequestApprovedEvent(webhook_payload.PullRequestApprovedPayload) ([]*HandleWebhook, error)
-	HandlePullRequestDeclinedEvent(webhook_payload.PullRequestDeclinedPayload) ([]*HandleWebhook, error)
-	HandlePullRequestUnapprovedEvent(webhook_payload.PullRequestUnapprovedPayload) ([]*HandleWebhook, error)
-	HandlePullRequestMergedEvent(webhook_payload.PullRequestMergedPayload) ([]*HandleWebhook, error)
-	HandlePullRequestCommentCreatedEvent(webhook_payload.PullRequestCommentCreatedPayload) ([]*HandleWebhook, error)
-	HandlePullRequestUpdatedEvent(webhook_payload.PullRequestUpdatedPayload) ([]*HandleWebhook, error)
+	HandleRepoPushEvent(webhookpayload.RepoPushPayload) ([]*HandleWebhook, error)
+	HandleIssueCreatedEvent(webhookpayload.IssueCreatedPayload) ([]*HandleWebhook, error)
+	HandleIssueUpdatedEvent(webhookpayload.IssueUpdatedPayload) ([]*HandleWebhook, error)
+	HandleIssueCommentCreatedEvent(webhookpayload.IssueCommentCreatedPayload) ([]*HandleWebhook, error)
+	HandlePullRequestCreatedEvent(webhookpayload.PullRequestCreatedPayload) ([]*HandleWebhook, error)
+	HandlePullRequestApprovedEvent(webhookpayload.PullRequestApprovedPayload) ([]*HandleWebhook, error)
+	HandlePullRequestDeclinedEvent(webhookpayload.PullRequestDeclinedPayload) ([]*HandleWebhook, error)
+	HandlePullRequestUnapprovedEvent(webhookpayload.PullRequestUnapprovedPayload) ([]*HandleWebhook, error)
+	HandlePullRequestMergedEvent(webhookpayload.PullRequestMergedPayload) ([]*HandleWebhook, error)
+	HandlePullRequestCommentCreatedEvent(webhookpayload.PullRequestCommentCreatedPayload) ([]*HandleWebhook, error)
+	HandlePullRequestUpdatedEvent(webhookpayload.PullRequestUpdatedPayload) ([]*HandleWebhook, error)
 }
 
 type webhook struct {
 	subscriptionConfiguration SubscriptionHandler
 	reviewConfiguration       PullRequestReviewHandler
-	templateRenderer          template_renderer.TemplateRenderer
+	templateRenderer          templaterenderer.TemplateRenderer
 }
 
-func NewWebhook(s SubscriptionHandler, r PullRequestReviewHandler, t template_renderer.TemplateRenderer) Webhook {
+func NewWebhook(s SubscriptionHandler, r PullRequestReviewHandler, t templaterenderer.TemplateRenderer) Webhook {
 	return &webhook{subscriptionConfiguration: s, reviewConfiguration: r, templateRenderer: t}
 }
 
-func (w *webhook) createPrivateMessageHandleWebhook(pl webhook_payload.Payload, message string, accountIDs []string) *HandleWebhook {
+func (w *webhook) createPrivateMessageHandleWebhook(pl webhookpayload.Payload, message string, accountIDs []string) *HandleWebhook {
 	handler := &HandleWebhook{Message: message}
 
 	for _, accountID := range accountIDs {
-		if accountID == pl.GetActor().AccountId {
+		if accountID == pl.GetActor().AccountID {
 			continue
 		}
 
@@ -63,11 +63,10 @@ func (w *webhook) createPrivateMessageHandleWebhook(pl webhook_payload.Payload, 
 	}
 
 	return handler
-
 }
 
 func (w *webhook) parseBitbucketAcountIDsFromHTML(html string) []string {
-	accountIdMap := map[string]bool{}
+	accountIDMap := map[string]bool{}
 	var accountIds []string
 
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
@@ -79,9 +78,9 @@ func (w *webhook) parseBitbucketAcountIDsFromHTML(html string) []string {
 	doc.Find("span[class=\"ap-mention\"]").Each(func(i int, selection *goquery.Selection) {
 		bitbucketUserAccountID := selection.AttrOr("data-atlassian-id", "")
 		//put the found accountID in the map if it doesn't exist there yet
-		if bitbucketUserAccountID != "" && !accountIdMap[bitbucketUserAccountID] {
+		if bitbucketUserAccountID != "" && !accountIDMap[bitbucketUserAccountID] {
 			accountIds = append(accountIds, bitbucketUserAccountID)
-			accountIdMap[bitbucketUserAccountID] = true
+			accountIDMap[bitbucketUserAccountID] = true
 		}
 	})
 

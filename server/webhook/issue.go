@@ -1,11 +1,12 @@
 package webhook
 
 import (
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhook_payload"
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
+
 	"github.com/pkg/errors"
 )
 
-func (w *webhook) HandleIssueCreatedEvent(pl webhook_payload.IssueCreatedPayload) ([]*HandleWebhook, error) {
+func (w *webhook) HandleIssueCreatedEvent(pl webhookpayload.IssueCreatedPayload) ([]*HandleWebhook, error) {
 	var handlers []*HandleWebhook
 
 	handler1, err := w.createIssueCreatedEventNotificationForSubscribedChannels(pl)
@@ -21,7 +22,7 @@ func (w *webhook) HandleIssueCreatedEvent(pl webhook_payload.IssueCreatedPayload
 	return cleanWebhookHandlers(append(handlers, handler1, handler2)), nil
 }
 
-func (w *webhook) HandleIssueUpdatedEvent(pl webhook_payload.IssueUpdatedPayload) ([]*HandleWebhook, error) {
+func (w *webhook) HandleIssueUpdatedEvent(pl webhookpayload.IssueUpdatedPayload) ([]*HandleWebhook, error) {
 	var handlers []*HandleWebhook
 
 	handler1, err := w.createIssueUpdatedEventNotificationForSubscribedChannels(pl)
@@ -42,7 +43,7 @@ func (w *webhook) HandleIssueUpdatedEvent(pl webhook_payload.IssueUpdatedPayload
 	return cleanWebhookHandlers(append(handlers, handler1, handler2, handler3)), nil
 }
 
-func (w *webhook) HandleIssueCommentCreatedEvent(pl webhook_payload.IssueCommentCreatedPayload) ([]*HandleWebhook, error) {
+func (w *webhook) HandleIssueCommentCreatedEvent(pl webhookpayload.IssueCommentCreatedPayload) ([]*HandleWebhook, error) {
 	var handlers []*HandleWebhook
 
 	handler1, err := w.createIssueCommentMentionNotification(pl)
@@ -63,7 +64,7 @@ func (w *webhook) HandleIssueCommentCreatedEvent(pl webhook_payload.IssueComment
 	return cleanWebhookHandlers(append(handlers, handler1, handler2, handler3)), nil
 }
 
-func (w *webhook) createIssueCommentCreatedEventNotificationForSubscribedChannels(pl webhook_payload.IssueCommentCreatedPayload) (*HandleWebhook, error) {
+func (w *webhook) createIssueCommentCreatedEventNotificationForSubscribedChannels(pl webhookpayload.IssueCommentCreatedPayload) (*HandleWebhook, error) {
 	message, err := w.templateRenderer.RenderIssueCommentCreatedEventNotificationForSubscribedChannels(pl)
 	if err != nil {
 		return nil, err
@@ -72,7 +73,7 @@ func (w *webhook) createIssueCommentCreatedEventNotificationForSubscribedChannel
 	handler := &HandleWebhook{Message: message}
 
 	subs := w.subscriptionConfiguration.GetSubscribedChannelsForRepository(&pl)
-	if subs == nil || len(subs) == 0 {
+	if len(subs) == 0 {
 		return handler, nil
 	}
 
@@ -86,7 +87,7 @@ func (w *webhook) createIssueCommentCreatedEventNotificationForSubscribedChannel
 	return handler, nil
 }
 
-func (w *webhook) createIssueUpdatedEventNotificationForSubscribedChannels(pl webhook_payload.IssueUpdatedPayload) (*HandleWebhook, error) {
+func (w *webhook) createIssueUpdatedEventNotificationForSubscribedChannels(pl webhookpayload.IssueUpdatedPayload) (*HandleWebhook, error) {
 	message, err := w.templateRenderer.RenderIssueUpdatedEventNotificationForSubscribedChannels(pl)
 	if err != nil {
 		return nil, err
@@ -95,7 +96,7 @@ func (w *webhook) createIssueUpdatedEventNotificationForSubscribedChannels(pl we
 	handler := &HandleWebhook{Message: message}
 
 	subs := w.subscriptionConfiguration.GetSubscribedChannelsForRepository(&pl)
-	if subs == nil || len(subs) == 0 {
+	if len(subs) == 0 {
 		return handler, nil
 	}
 
@@ -109,7 +110,7 @@ func (w *webhook) createIssueUpdatedEventNotificationForSubscribedChannels(pl we
 	return handler, nil
 }
 
-func (w *webhook) createIssueCreatedEventNotificationForSubscribedChannels(pl webhook_payload.IssueCreatedPayload) (*HandleWebhook, error) {
+func (w *webhook) createIssueCreatedEventNotificationForSubscribedChannels(pl webhookpayload.IssueCreatedPayload) (*HandleWebhook, error) {
 	message, err := w.templateRenderer.RenderIssueCreatedEventNotificationForSubscribedChannels(pl)
 	if err != nil {
 		return nil, err
@@ -118,7 +119,7 @@ func (w *webhook) createIssueCreatedEventNotificationForSubscribedChannels(pl we
 	handler := &HandleWebhook{Message: message}
 
 	subs := w.subscriptionConfiguration.GetSubscribedChannelsForRepository(&pl)
-	if subs == nil || len(subs) == 0 {
+	if len(subs) == 0 {
 		return handler, nil
 	}
 
@@ -132,7 +133,7 @@ func (w *webhook) createIssueCreatedEventNotificationForSubscribedChannels(pl we
 	return handler, nil
 }
 
-func (w *webhook) createIssueCommentMentionNotification(pl webhook_payload.IssueCommentCreatedPayload) (*HandleWebhook, error) {
+func (w *webhook) createIssueCommentMentionNotification(pl webhookpayload.IssueCommentCreatedPayload) (*HandleWebhook, error) {
 	mentionedAccountIDs := w.parseBitbucketAcountIDsFromHTML(pl.Comment.Content.HTML)
 	message, err := w.templateRenderer.RenderIssueCommentMentionNotification(pl)
 	if err != nil {
@@ -142,7 +143,7 @@ func (w *webhook) createIssueCommentMentionNotification(pl webhook_payload.Issue
 	return w.createPrivateMessageHandleWebhook(&pl, message, mentionedAccountIDs), nil
 }
 
-func (w *webhook) createIssueDescriptionMentionNotification(pl webhook_payload.IssueCreatedPayload) (*HandleWebhook, error) {
+func (w *webhook) createIssueDescriptionMentionNotification(pl webhookpayload.IssueCreatedPayload) (*HandleWebhook, error) {
 	mentionedAccountIDs := w.parseBitbucketAcountIDsFromHTML(pl.Issue.Content.HTML)
 	message, err := w.templateRenderer.RenderIssueDescriptionMentionNotification(pl)
 	if err != nil {
@@ -152,9 +153,9 @@ func (w *webhook) createIssueDescriptionMentionNotification(pl webhook_payload.I
 	return w.createPrivateMessageHandleWebhook(&pl, message, mentionedAccountIDs), nil
 }
 
-func (w *webhook) createIssueAssignmentNotificationForAssignedUser(pl webhook_payload.IssueUpdatedPayload) (*HandleWebhook, error) {
+func (w *webhook) createIssueAssignmentNotificationForAssignedUser(pl webhookpayload.IssueUpdatedPayload) (*HandleWebhook, error) {
 	// ignore if the event doesn't have assignee
-	newAssigneeID := pl.Changes.Assignee.New.AccountId
+	newAssigneeID := pl.Changes.Assignee.New.AccountID
 	if newAssigneeID == "" {
 		return nil, nil
 	}
@@ -167,7 +168,7 @@ func (w *webhook) createIssueAssignmentNotificationForAssignedUser(pl webhook_pa
 	return w.createPrivateMessageHandleWebhook(&pl, message, []string{newAssigneeID}), nil
 }
 
-func (w *webhook) createIssueStatusUpdateNotificationForIssueReporter(pl webhook_payload.IssueUpdatedPayload) (*HandleWebhook, error) {
+func (w *webhook) createIssueStatusUpdateNotificationForIssueReporter(pl webhookpayload.IssueUpdatedPayload) (*HandleWebhook, error) {
 	// ignore if the event doesn't have any status change
 	if pl.Changes.Status.New == "" {
 		return nil, nil
@@ -178,14 +179,14 @@ func (w *webhook) createIssueStatusUpdateNotificationForIssueReporter(pl webhook
 		return nil, errors.Wrap(err, TemplateErrorText)
 	}
 
-	return w.createPrivateMessageHandleWebhook(&pl, message, []string{pl.Issue.Reporter.AccountId}), nil
+	return w.createPrivateMessageHandleWebhook(&pl, message, []string{pl.Issue.Reporter.AccountID}), nil
 }
 
-func (w *webhook) createIssueCommentNotificationForIssueReporter(pl webhook_payload.IssueCommentCreatedPayload) (*HandleWebhook, error) {
+func (w *webhook) createIssueCommentNotificationForIssueReporter(pl webhookpayload.IssueCommentCreatedPayload) (*HandleWebhook, error) {
 	message, err := w.templateRenderer.RenderIssueCommentNotificationForIssueReporter(pl)
 	if err != nil {
 		return nil, errors.Wrap(err, TemplateErrorText)
 	}
 
-	return w.createPrivateMessageHandleWebhook(&pl, message, []string{pl.Issue.Reporter.AccountId}), nil
+	return w.createPrivateMessageHandleWebhook(&pl, message, []string{pl.Issue.Reporter.AccountID}), nil
 }

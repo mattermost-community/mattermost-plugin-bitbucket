@@ -117,7 +117,7 @@ func (p *Plugin) initializeAPI() {
 	apiRouter.HandleFunc("/repositories", p.extractUserMiddleWare(p.getRepositories, ResponseTypePlain)).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/settings", p.extractUserMiddleWare(p.updateSettings, ResponseTypePlain)).Methods(http.MethodPost)
 	apiRouter.HandleFunc("/user", p.extractUserMiddleWare(p.getBitbucketUser, ResponseTypeJSON)).Methods(http.MethodPost)
-	apiRouter.HandleFunc("/issue", p.extractUserMiddleWare(p.getIssueById, ResponseTypePlain)).Methods(http.MethodGet)
+	apiRouter.HandleFunc("/issue", p.extractUserMiddleWare(p.getIssueByID, ResponseTypePlain)).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/pr", p.extractUserMiddleWare(p.getPrByID, ResponseTypePlain)).Methods(http.MethodGet)
 
 	apiRouter.HandleFunc("/config", checkPluginRequest(p.getConfig)).Methods(http.MethodGet)
@@ -242,10 +242,11 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	var bitbucketClient *bitbucket.APIClient
-
-	bitbucketClient = p.bitbucketConnect(*tok)
-	bitbucketUser, _, err := bitbucketClient.UsersApi.UserGet(ctx)
+	bitbucketClient := p.bitbucketConnect(*tok)
+	bitbucketUser, httpResponse, err := bitbucketClient.UsersApi.UserGet(ctx)
+	if httpResponse != nil {
+		_ = httpResponse.Body.Close()
+	}
 	if err != nil {
 		p.API.LogError("Error converting authorization code int token", "err", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -265,13 +266,13 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 		},
 	}
 
-	if err := p.storeBitbucketUserInfo(userInfo); err != nil {
+	if err = p.storeBitbucketUserInfo(userInfo); err != nil {
 		p.API.LogError("Error connecting user to Bitbucket", "err", err.Error())
 		http.Error(w, "Unable to connect user to Bitbucket", http.StatusInternalServerError)
 		return
 	}
 
-	if err := p.storeBitbucketAccountIDToMattermostUserIDMapping(bitbucketUser.AccountId, state.UserID); err != nil {
+	if err = p.storeBitbucketAccountIDToMattermostUserIDMapping(bitbucketUser.AccountId, state.UserID); err != nil {
 		p.API.LogError("Error storing Bitbucket account ID to Mattermost user ID mapping", "err", err.Error())
 	}
 
@@ -292,7 +293,7 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 		"* The fourth will refresh the numbers.\n\n"+
 		"Click on them!\n\n"+
 		"##### Slash Commands\n"+
-		strings.Replace(CommandHelp, "|", "`", -1), bitbucketUser.Username, bitbucketUser.Links.Html.Href)
+		strings.Replace(commandHelp, "|", "`", -1), bitbucketUser.Username, bitbucketUser.Links.Html.Href)
 
 	p.CreateBotDMPost(state.UserID, message, "custom_bitbucket_welcome")
 
@@ -535,7 +536,10 @@ func (p *Plugin) getPrsDetails(w http.ResponseWriter, r *http.Request, userID st
 func (p *Plugin) fetchPRDetails(ctx context.Context, client *bitbucket.APIClient, prURL string, prID int) *PRDetails {
 	repoOwner, repoName := getRepoOwnerAndNameFromURL(prURL)
 
-	prInfo, _, err := client.PullrequestsApi.RepositoriesUsernameRepoSlugPullrequestsPullRequestIdGet(ctx, repoOwner, repoName, int32(prID))
+	prInfo, httpResponse, err := client.PullrequestsApi.RepositoriesUsernameRepoSlugPullrequestsPullRequestIdGet(ctx, repoOwner, repoName, int32(prID))
+	if httpResponse != nil {
+		_ = httpResponse.Body.Close()
+	}
 	if err != nil {
 		p.API.LogError("Error fetching pull request", "prID", prID, "err", err.Error())
 		return nil
@@ -670,28 +674,36 @@ func (p *Plugin) createIssueComment(w http.ResponseWriter, r *http.Request, user
 		Raw: req.Comment,
 	}
 
-	rawResponse, err := bitbucketClient.IssueTrackerApi.RepositoriesUsernameRepoSlugIssuesIssueIdCommentsPost(context.Background(), strconv.Itoa(req.Number), req.Owner, req.Repo, comment)
+	httpResponse, err := bitbucketClient.IssueTrackerApi.RepositoriesUsernameRepoSlugIssuesIssueIdCommentsPost(context.Background(), strconv.Itoa(req.Number), req.Owner, req.Repo, comment)
 	if err != nil {
-		if rawResponse != nil {
-			p.writeAPIError(w, &APIErrorResponse{ID: "", Message: "failed to create an issue comment" + getFailReason(rawResponse.StatusCode, req.Repo, currentUsername), StatusCode: rawResponse.StatusCode})
+		if httpResponse != nil {
+			p.writeAPIError(w, &APIErrorResponse{ID: "", Message: "failed to create an issue comment" + getFailReason(httpResponse.StatusCode, req.Repo, currentUsername), StatusCode: httpResponse.StatusCode})
+			_ = httpResponse.Body.Close()
 		} else {
 			p.writeAPIError(w, &APIErrorResponse{ID: "", Message: "failed to create an issue comment"})
 		}
 		return
 	}
+	if httpResponse != nil {
+		_ = httpResponse.Body.Close()
+	}
 
-	locationURL := rawResponse.Header.Get("Location")
+	locationURL := httpResponse.Header.Get("Location")
 	splittedLocationURL := strings.Split(locationURL, "/")
 	commentID := splittedLocationURL[len(splittedLocationURL)-1]
 
-	issueComment, rawResponse, err := bitbucketClient.IssueTrackerApi.RepositoriesUsernameRepoSlugIssuesIssueIdCommentsCommentIdGet(context.Background(), commentID, req.Owner, req.Repo, strconv.Itoa(req.Number))
+	issueComment, httpResponse, err := bitbucketClient.IssueTrackerApi.RepositoriesUsernameRepoSlugIssuesIssueIdCommentsCommentIdGet(context.Background(), commentID, req.Owner, req.Repo, strconv.Itoa(req.Number))
 	if err != nil {
-		if rawResponse != nil {
-			p.writeAPIError(w, &APIErrorResponse{ID: "", Message: "failed to fetch the newly created comment: " + getFailReason(rawResponse.StatusCode, req.Repo, currentUsername), StatusCode: rawResponse.StatusCode})
+		if httpResponse != nil {
+			p.writeAPIError(w, &APIErrorResponse{ID: "", Message: "failed to fetch the newly created comment: " + getFailReason(httpResponse.StatusCode, req.Repo, currentUsername), StatusCode: httpResponse.StatusCode})
+			_ = httpResponse.Body.Close()
 		} else {
 			p.writeAPIError(w, &APIErrorResponse{ID: "", Message: "failed to fetch the newly created comment"})
 		}
 		return
+	}
+	if httpResponse != nil {
+		_ = httpResponse.Body.Close()
 	}
 
 	permalinkReplyMessage := fmt.Sprintf("[Message](%v) attached to Bitbucket issue [#%v](%v)", permalink, req.Number, issueComment.Links.Html.Href)
@@ -789,7 +801,7 @@ func (p *Plugin) updateSettings(w http.ResponseWriter, r *http.Request, userID s
 	p.writeJSON(w, info.Settings)
 }
 
-func (p *Plugin) getIssueById(w http.ResponseWriter, r *http.Request, userID string) {
+func (p *Plugin) getIssueByID(w http.ResponseWriter, r *http.Request, userID string) {
 	owner := r.FormValue("owner")
 	repo := r.FormValue("repo")
 	issueID := r.FormValue("id")
@@ -806,7 +818,10 @@ func (p *Plugin) getIssueById(w http.ResponseWriter, r *http.Request, userID str
 	}
 	bitbucketClient := p.bitbucketConnect(*info.Token)
 
-	result, _, err := bitbucketClient.IssueTrackerApi.RepositoriesUsernameRepoSlugIssuesIssueIdGet(context.Background(), owner, issueID, repo)
+	result, httpResponse, err := bitbucketClient.IssueTrackerApi.RepositoriesUsernameRepoSlugIssuesIssueIdGet(context.Background(), owner, issueID, repo)
+	if httpResponse != nil {
+		_ = httpResponse.Body.Close()
+	}
 	if err != nil {
 		p.API.LogDebug("Could not get issue", "owner", owner, "repo", repo, "number", issueID, "error", err.Error())
 		p.writeAPIError(w, &APIErrorResponse{Message: "Could not get issue", StatusCode: http.StatusInternalServerError})
@@ -821,7 +836,7 @@ func (p *Plugin) getPrByID(w http.ResponseWriter, r *http.Request, userID string
 	repo := r.FormValue("repo")
 	prID := r.FormValue("id")
 
-	prIDInt, err := strconv.Atoi(prID)
+	prIDInt, err := strconv.ParseInt(prID, 10, 64)
 	if err != nil {
 		p.writeAPIError(w, &APIErrorResponse{Message: "Invalid param 'id'.", StatusCode: http.StatusBadRequest})
 		return
@@ -834,7 +849,10 @@ func (p *Plugin) getPrByID(w http.ResponseWriter, r *http.Request, userID string
 	}
 	bitbucketClient := p.bitbucketConnect(*info.Token)
 
-	result, _, err := bitbucketClient.PullrequestsApi.RepositoriesUsernameRepoSlugPullrequestsPullRequestIdGet(context.Background(), owner, repo, int32(prIDInt))
+	result, httpResponse, err := bitbucketClient.PullrequestsApi.RepositoriesUsernameRepoSlugPullrequestsPullRequestIdGet(context.Background(), owner, repo, int32(prIDInt))
+	if httpResponse != nil {
+		_ = httpResponse.Body.Close()
+	}
 	if err != nil {
 		p.API.LogDebug("Could not get pull request", "owner", owner, "repo", repo, "ID", prID, "error", err.Error())
 		p.writeAPIError(w, &APIErrorResponse{Message: "Could not get pull request", StatusCode: http.StatusInternalServerError})
@@ -942,7 +960,7 @@ func (p *Plugin) createIssue(w http.ResponseWriter, r *http.Request, userID stri
 	if bbIssue.Content.Raw != "" {
 		mmMessage = "\n\n" + mmMessage
 	}
-	bbIssue.Content.Raw = bbIssue.Content.Raw + mmMessage
+	bbIssue.Content.Raw += mmMessage
 
 	currentUser, appErr := p.API.GetUser(userID)
 	if appErr != nil {
@@ -965,6 +983,7 @@ func (p *Plugin) createIssue(w http.ResponseWriter, r *http.Request, userID stri
 						currentUser.Username),
 					StatusCode: issuePostResponse.StatusCode,
 				})
+			_ = issuePostResponse.Body.Close()
 		} else {
 			p.writeAPIError(w,
 				&APIErrorResponse{
@@ -973,6 +992,9 @@ func (p *Plugin) createIssue(w http.ResponseWriter, r *http.Request, userID stri
 				})
 		}
 		return
+	}
+	if issuePostResponse != nil {
+		_ = issuePostResponse.Body.Close()
 	}
 
 	rootID := issue.PostID
@@ -986,6 +1008,7 @@ func (p *Plugin) createIssue(w http.ResponseWriter, r *http.Request, userID stri
 		var statusCode int
 		if issueGetResponse != nil {
 			statusCode = issueGetResponse.StatusCode
+			_ = issueGetResponse.Body.Close()
 		}
 		p.writeAPIError(w,
 			&APIErrorResponse{
@@ -995,6 +1018,9 @@ func (p *Plugin) createIssue(w http.ResponseWriter, r *http.Request, userID stri
 			},
 		)
 		return
+	}
+	if issueGetResponse != nil {
+		_ = issueGetResponse.Body.Close()
 	}
 
 	message := fmt.Sprintf("Created Bitbucket issue [#%v](%v) from a [message](%s)", issuePostResult.Id, issueGetResult.Links.Html.Href, permalink)

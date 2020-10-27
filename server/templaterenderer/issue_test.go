@@ -1,4 +1,4 @@
-package template_renderer
+package templaterenderer
 
 import (
 	"github.com/stretchr/testify/require"
@@ -7,7 +7,6 @@ import (
 )
 
 func TestIssueTemplates(t *testing.T) {
-
 	tr := MakeTemplateRenderer()
 	tr.RegisterBitBucketAccountIDToUsernameMappingCallback(bitBucketAccountIDToUsernameMappingTestCallback)
 

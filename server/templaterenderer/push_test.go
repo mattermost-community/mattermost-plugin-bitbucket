@@ -1,17 +1,16 @@
-package template_renderer
+package templaterenderer
 
 import (
 	"github.com/stretchr/testify/require"
+
 	"testing"
 )
 
 func TestPushTemplates(t *testing.T) {
-
 	tr := MakeTemplateRenderer()
 	tr.RegisterBitBucketAccountIDToUsernameMappingCallback(bitBucketAccountIDToUsernameMappingTestCallback)
 
 	t.Run("pushed", func(t *testing.T) {
-
 		t.Run("single commit", func(t *testing.T) {
 			expected := `
 User @testMmUser pushed [1 new commit](https://bitbucket.org/mattermost/mattermost-plugin-bitbucket/branches/compare/dca5546b6b1419ff71adcada81b457caf3dcbdcd..54ec7b7ec732bc97278ec82e2c50cfc260918f3e) to [\[mattermost/mattermost-plugin-bitbucket:master\]](https://bitbucket.org/mattermost/mattermost-plugin-bitbucket/branch/master):

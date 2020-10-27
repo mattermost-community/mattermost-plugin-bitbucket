@@ -10,7 +10,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-const CommandHelp = `* |/bitbucket connect| - Connect your Mattermost account to your Bitbucket account
+const commandHelp = `* |/bitbucket connect| - Connect your Mattermost account to your Bitbucket account
 * |/bitbucket disconnect| - Disconnect your Mattermost account from your * Bitbucket account
 * |/bitbucket todo| - Get a list of unread messages and pull requests awaiting your review
 * |/bitbucket subscribe list| - Will list the current channel subscriptions
@@ -125,10 +125,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 		return txt
 	case len(parameters) > 1:
 		var optionList []string
-
-		for _, element := range parameters[1:] {
-			optionList = append(optionList, element)
-		}
+		optionList = append(optionList, parameters[1:]...)
 
 		if len(optionList) > 1 {
 			return "Just one list of features is allowed"
@@ -149,7 +146,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 	ctx := context.Background()
 	bitbucketClient := p.bitbucketConnect(*userInfo.Token)
 
-	owner, repo := parseOwnerAndRepo(parameters[0], p.getBaseURL())
+	owner, repo := parseOwnerAndRepo(parameters[0], BitbucketBaseURL)
 	if repo == "" {
 		if err := p.SubscribeOrg(ctx, bitbucketClient, args.UserId, owner, args.ChannelId, features); err != nil {
 			return err.Error()
@@ -200,6 +197,7 @@ func (p *Plugin) handleMe(_ *plugin.Context, _ *model.CommandArgs, _ []string, u
 	bitbucketClient := p.bitbucketConnect(*userInfo.Token)
 	bitbucketUser, _, err := bitbucketClient.UsersApi.UserGet(context.Background())
 	if err != nil {
+		p.API.LogError("Encountered an error getting your Bitbucket profile", "err", err.Error())
 		return "Encountered an error getting your Bitbucket profile."
 	}
 
@@ -212,7 +210,7 @@ func (p *Plugin) handleHelp(_ *plugin.Context, _ *model.CommandArgs, _ []string,
 	bitbucketClient := p.bitbucketConnect(*userInfo.Token)
 	bitbucketUser, _, err := bitbucketClient.UsersApi.UserGet(context.Background())
 	if err != nil {
-		return "Encountered an error getting your Bitbucket profile."
+		return "Encountered an error getting your Bitbucket profile info."
 	}
 
 	message := fmt.Sprintf("#### Welcome to the Mattermost Bitbucket Plugin!\n"+
@@ -231,7 +229,7 @@ func (p *Plugin) handleHelp(_ *plugin.Context, _ *model.CommandArgs, _ []string,
 		"* The fourth will refresh the numbers.\n\n"+
 		"Click on them!\n\n"+
 		"##### Slash Commands\n"+
-		strings.Replace(CommandHelp, "|", "`", -1), bitbucketUser.Username, bitbucketUser.Links.Html.Href)
+		strings.Replace(commandHelp, "|", "`", -1), bitbucketUser.Username, bitbucketUser.Links.Html.Href)
 
 	return message
 }
@@ -261,7 +259,7 @@ func (p *Plugin) handleSettings(_ *plugin.Context, _ *model.CommandArgs, paramet
 				p.API.LogError("Encountered an error storing Bitbucket account ID to Mattermost user ID mapping", "err", err.Error())
 			}
 		} else {
-			err := p.API.KVDelete(userInfo.BitbucketUsername + BitbucketAccountIdKey)
+			err := p.API.KVDelete(userInfo.BitbucketUsername + BitbucketAccountIDKey)
 			if err != nil {
 				p.API.LogError("Encountered an error deleting Bitbucket account ID to Mattermost user ID mapping", "err", err.Error())
 			}
@@ -281,8 +279,9 @@ func (p *Plugin) handleSettings(_ *plugin.Context, _ *model.CommandArgs, paramet
 	return "Settings updated."
 }
 
-type CommandHandleFunc func(c *plugin.Context, args *model.CommandArgs, parameters []string, userInfo *BitbucketUserInfo) string
+type commandHandleFunc func(c *plugin.Context, args *model.CommandArgs, parameters []string, userInfo *BitbucketUserInfo) string
 
+// ExecuteCommand executes a command that has been previously registered via the RegisterCommand API.
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
 	split := strings.Fields(args.Command)
 	command := split[0]

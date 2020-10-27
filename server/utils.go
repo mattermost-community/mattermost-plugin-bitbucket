@@ -13,35 +13,35 @@ import (
 	"strings"
 )
 
-func getBaseUrl() string {
+func getBaseURL() string {
 	return "https://api.bitbucket.org/2.0"
 }
 
 func getYourOrgReposSearchQuery(organizationName string) string {
-	return getBaseUrl() + "/repositories/" + organizationName + "?role=member"
+	return getBaseURL() + "/repositories/" + organizationName + "?role=member"
 }
 
 func getYourAllReposSearchQuery() string {
-	return getBaseUrl() + "/repositories?role=member"
+	return getBaseURL() + "/repositories?role=member"
 }
 
 func getYourAssigneeIssuesSearchQuery(userAccountID, repoFullName string) string {
-	return getBaseUrl() + "/repositories/" + repoFullName + "/issues?q=" +
+	return getBaseURL() + "/repositories/" + repoFullName + "/issues?q=" +
 		utils.UrlEncode("assignee.account_id=\""+userAccountID+"\" AND state!=\"closed\"")
 }
 
 func getYourAssigneePRsSearchQuery(userAccountID, repoFullName string) string {
-	return getBaseUrl() + "/repositories/" + repoFullName + "/pullrequests?q=" +
+	return getBaseURL() + "/repositories/" + repoFullName + "/pullrequests?q=" +
 		utils.UrlEncode("reviewers.account_id=\""+userAccountID+"\" AND state=\"open\"")
 }
 
 func getYourOpenPRsSearchQuery(userAccountID, repoFullName string) string {
-	return getBaseUrl() + "/repositories/" + repoFullName + "/pullrequests?q=" +
+	return getBaseURL() + "/repositories/" + repoFullName + "/pullrequests?q=" +
 		utils.UrlEncode("author.account_id=\""+userAccountID+"\" AND state=\"open\"")
 }
 
 func getSearchIssuesQuery(repoFullName, searchTerm string) string {
-	return getBaseUrl() + "/repositories/" + repoFullName + "/issues?q=" +
+	return getBaseURL() + "/repositories/" + repoFullName + "/issues?q=" +
 		utils.UrlEncode("title ~ \""+searchTerm+"\"") + "&sort=-updated_on"
 }
 
@@ -93,7 +93,7 @@ func decrypt(key []byte, text string) (string, error) {
 	}
 
 	if (len(decodedMsg) % aes.BlockSize) != 0 {
-		return "", errors.New("blocksize must be multipe of decoded message length")
+		return "", errors.New("blocksize must be multiple of decoded message length")
 	}
 
 	iv := decodedMsg[:aes.BlockSize]
@@ -112,14 +112,14 @@ func decrypt(key []byte, text string) (string, error) {
 
 func parseOwnerAndRepoAndReturnFullAlso(full, baseURL string) (string, string, string) {
 	if baseURL == "" {
-		baseURL = "https://bitbucket.org/"
+		baseURL = BitbucketBaseURL
 	}
 	full = strings.TrimSuffix(strings.TrimSpace(strings.Replace(full, baseURL, "", 1)), "/")
 	splitStr := strings.Split(full, "/")
 
 	if len(splitStr) == 1 {
 		owner := splitStr[0]
-		return fmt.Sprintf("%s", owner), owner, ""
+		return owner, owner, ""
 	} else if len(splitStr) != 2 {
 		return "", "", ""
 	}
@@ -131,7 +131,7 @@ func parseOwnerAndRepoAndReturnFullAlso(full, baseURL string) (string, string, s
 
 func parseOwnerAndRepo(full, baseURL string) (string, string) {
 	if baseURL == "" {
-		baseURL = "https://bitbucket.org/"
+		baseURL = BitbucketBaseURL
 	}
 	full = strings.TrimSuffix(strings.TrimSpace(strings.Replace(full, baseURL, "", 1)), "/")
 	splitStr := strings.Split(full, "/")

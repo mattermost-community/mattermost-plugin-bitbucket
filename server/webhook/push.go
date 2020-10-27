@@ -1,8 +1,8 @@
 package webhook
 
-import "github.com/kosgrz/mattermost-plugin-bitbucket/server/webhook_payload"
+import "github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
 
-func (w *webhook) HandleRepoPushEvent(pl webhook_payload.RepoPushPayload) ([]*HandleWebhook, error) {
+func (w *webhook) HandleRepoPushEvent(pl webhookpayload.RepoPushPayload) ([]*HandleWebhook, error) {
 	var handlers []*HandleWebhook
 
 	handler1, err := w.createRepoPushEventNotificationForSubscribedChannels(pl)
@@ -23,7 +23,7 @@ func (w *webhook) HandleRepoPushEvent(pl webhook_payload.RepoPushPayload) ([]*Ha
 	return cleanWebhookHandlers(append(handlers, handler1, handler2, handler3)), nil
 }
 
-func (w *webhook) createRepoPushEventNotificationForSubscribedChannels(pl webhook_payload.RepoPushPayload) (*HandleWebhook, error) {
+func (w *webhook) createRepoPushEventNotificationForSubscribedChannels(pl webhookpayload.RepoPushPayload) (*HandleWebhook, error) {
 	message, err := w.templateRenderer.RenderRepoPushEventNotificationForSubscribedChannels(pl)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func (w *webhook) createRepoPushEventNotificationForSubscribedChannels(pl webhoo
 	handler := &HandleWebhook{Message: message}
 
 	subs := w.subscriptionConfiguration.GetSubscribedChannelsForRepository(&pl)
-	if subs == nil || len(subs) == 0 {
+	if len(subs) == 0 {
 		return handler, nil
 	}
 
@@ -46,7 +46,7 @@ func (w *webhook) createRepoPushEventNotificationForSubscribedChannels(pl webhoo
 	return handler, nil
 }
 
-func (w *webhook) createBranchOrTagCreatedEventNotificationForSubscribedChannels(pl webhook_payload.RepoPushPayload) (*HandleWebhook, error) {
+func (w *webhook) createBranchOrTagCreatedEventNotificationForSubscribedChannels(pl webhookpayload.RepoPushPayload) (*HandleWebhook, error) {
 	if len(pl.Push.Changes) == 0 {
 		return nil, nil
 	}
@@ -63,7 +63,7 @@ func (w *webhook) createBranchOrTagCreatedEventNotificationForSubscribedChannels
 	handler := &HandleWebhook{Message: message}
 
 	subs := w.subscriptionConfiguration.GetSubscribedChannelsForRepository(&pl)
-	if subs == nil || len(subs) == 0 {
+	if len(subs) == 0 {
 		return handler, nil
 	}
 
@@ -77,7 +77,7 @@ func (w *webhook) createBranchOrTagCreatedEventNotificationForSubscribedChannels
 	return handler, nil
 }
 
-func (w *webhook) createBranchOrTagDeletedEventNotificationForSubscribedChannels(pl webhook_payload.RepoPushPayload) (*HandleWebhook, error) {
+func (w *webhook) createBranchOrTagDeletedEventNotificationForSubscribedChannels(pl webhookpayload.RepoPushPayload) (*HandleWebhook, error) {
 	if len(pl.Push.Changes) == 0 {
 		return nil, nil
 	}
@@ -94,7 +94,7 @@ func (w *webhook) createBranchOrTagDeletedEventNotificationForSubscribedChannels
 	handler := &HandleWebhook{Message: message}
 
 	subs := w.subscriptionConfiguration.GetSubscribedChannelsForRepository(&pl)
-	if subs == nil || len(subs) == 0 {
+	if len(subs) == 0 {
 		return handler, nil
 	}
 

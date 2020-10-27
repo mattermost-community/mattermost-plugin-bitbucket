@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kosgrz/mattermost-plugin-bitbucket/server/subscription"
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhook_payload"
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
 	"github.com/pkg/errors"
 	"github.com/wbrefvem/go-bitbucket"
 	"sort"
@@ -157,7 +157,7 @@ func (p *Plugin) StoreSubscriptions(s *subscription.Subscriptions) error {
 	return nil
 }
 
-func (p *Plugin) GetSubscribedChannelsForRepository(pl webhook_payload.Payload) []*subscription.Subscription {
+func (p *Plugin) GetSubscribedChannelsForRepository(pl webhookpayload.Payload) []*subscription.Subscription {
 	name := pl.GetRepository().FullName
 	org := strings.Split(name, "/")[0]
 	subs, err := p.GetSubscriptions()

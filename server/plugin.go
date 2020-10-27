@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/gorilla/mux"
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/template_renderer"
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/templaterenderer"
 	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhook"
 	"github.com/pkg/errors"
+
 	"net/http"
 	"net/url"
 	"path"
@@ -18,13 +20,16 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/wbrefvem/go-bitbucket"
+
 	"golang.org/x/oauth2"
 )
 
 const (
 	BitbucketTokenKey       = "_bitbuckettoken"
-	BitbucketAccountIdKey   = "_bitbucketaccountid"
+	BitbucketAccountIDKey   = "_bitbucketaccountid"
 	BitbucketPrivateRepoKey = "_bitbucketprivate"
+
+	BitbucketBaseURL = "https://bitbucket.org/"
 
 	WsEventConnect    = "connect"
 	WsEventDisconnect = "disconnect"
@@ -40,11 +45,9 @@ const (
 type Plugin struct {
 	plugin.MattermostPlugin
 
-	bitbucketClient *bitbucket.APIClient
-
 	BotUserID string
 
-	CommandHandlers map[string]CommandHandleFunc
+	CommandHandlers map[string]commandHandleFunc
 
 	// configurationLock synchronizes access to the configuration.
 	configurationLock sync.RWMutex
@@ -63,7 +66,7 @@ type Plugin struct {
 func NewPlugin() *Plugin {
 	p := &Plugin{}
 
-	p.CommandHandlers = map[string]CommandHandleFunc{
+	p.CommandHandlers = map[string]commandHandleFunc{
 		"subscribe":   p.handleSubscribe,
 		"unsubscribe": p.handleUnsubscribe,
 		"disconnect":  p.handleDisconnect,
@@ -78,14 +81,13 @@ func NewPlugin() *Plugin {
 }
 
 func (p *Plugin) initializeWebhookHandler() {
-	templateRenderer := template_renderer.MakeTemplateRenderer()
+	templateRenderer := templaterenderer.MakeTemplateRenderer()
 	templateRenderer.RegisterBitBucketAccountIDToUsernameMappingCallback(
 		p.getBitBucketAccountIDToMattermostUsernameMapping)
 	p.webhookHandler = webhook.NewWebhook(&subscriptionHandler{p}, &pullRequestReviewHandler{p}, templateRenderer)
 }
 
 func (p *Plugin) bitbucketConnect(token oauth2.Token) *bitbucket.APIClient {
-
 	// get Oauth token source and client
 	ts := p.getOAuthConfig().TokenSource(context.Background(), &token)
 
@@ -136,11 +138,10 @@ func (p *Plugin) OnActivate() error {
 }
 
 func (p *Plugin) getOAuthConfig() *oauth2.Config {
-
 	config := p.getConfiguration()
 
-	authURL, _ := url.Parse("https://bitbucket.org/")
-	tokenURL, _ := url.Parse("https://bitbucket.org/")
+	authURL, _ := url.Parse(BitbucketBaseURL)
+	tokenURL, _ := url.Parse(BitbucketBaseURL)
 	authURL.Path = path.Join(authURL.Path, "site", "oauth2", "authorize")
 	tokenURL.Path = path.Join(tokenURL.Path, "site", "oauth2", "access_token")
 
@@ -217,14 +218,14 @@ func (p *Plugin) getBitbucketUserInfo(userID string) (*BitbucketUserInfo, *APIEr
 }
 
 func (p *Plugin) storeBitbucketAccountIDToMattermostUserIDMapping(bitbucketAccountID, userID string) error {
-	if err := p.API.KVSet(bitbucketAccountID+BitbucketAccountIdKey, []byte(userID)); err != nil {
+	if err := p.API.KVSet(bitbucketAccountID+BitbucketAccountIDKey, []byte(userID)); err != nil {
 		return errors.New("encountered error saving BitBucket account ID mapping")
 	}
 	return nil
 }
 
 func (p *Plugin) getBitbucketAccountIDToMattermostUserIDMapping(bitbucketAccountID string) string {
-	userID, _ := p.API.KVGet(bitbucketAccountID + BitbucketAccountIdKey)
+	userID, _ := p.API.KVGet(bitbucketAccountID + BitbucketAccountIDKey)
 	return string(userID)
 }
 
@@ -238,7 +239,7 @@ func (p *Plugin) disconnectBitbucketAccount(userID string) {
 		p.API.LogWarn("Failed to delete bitbucket token from KV store", "userID", userID, "error", appErr.Error())
 	}
 
-	if appErr := p.API.KVDelete(userInfo.BitbucketAccountID + BitbucketAccountIdKey); appErr != nil {
+	if appErr := p.API.KVDelete(userInfo.BitbucketAccountID + BitbucketAccountIDKey); appErr != nil {
 		p.API.LogWarn("Failed to delete bitbucket account ID from KV store", "userID", userID,
 			"userInfo.BitbucketAccountID", userInfo.BitbucketAccountID, "error", appErr.Error())
 	}
@@ -283,13 +284,10 @@ func (p *Plugin) PostToDo(info *BitbucketUserInfo) {
 }
 
 func (p *Plugin) GetToDo(ctx context.Context, userInfo *BitbucketUserInfo, bitbucketClient *bitbucket.APIClient) (string, error) {
-
 	userRepos, err := p.getUserRepositories(ctx, bitbucketClient)
 	if err != nil {
 		return "", errors.Wrap(err, "error occurred while searching for repositories")
 	}
-
-	baseURL := p.getBaseURL()
 
 	yourAssignments, err := p.getAssignedIssues(ctx, userInfo, bitbucketClient, userRepos)
 	if err != nil {
@@ -316,7 +314,7 @@ func (p *Plugin) GetToDo(ctx context.Context, userInfo *BitbucketUserInfo, bitbu
 		text += fmt.Sprintf("You have %v assignments:\n", len(yourAssignments))
 
 		for _, assign := range yourAssignments {
-			text += getToDoDisplayText(baseURL, assign.Title, assign.Links.Html.Href, "")
+			text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
 		}
 	}
 
@@ -328,7 +326,7 @@ func (p *Plugin) GetToDo(ctx context.Context, userInfo *BitbucketUserInfo, bitbu
 		text += fmt.Sprintf("You have %v pull requests awaiting your review:\n", len(assignedPRs))
 
 		for _, assign := range assignedPRs {
-			text += getToDoDisplayText(baseURL, assign.Title, assign.Links.Html.Href, "")
+			text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
 		}
 	}
 
@@ -340,7 +338,7 @@ func (p *Plugin) GetToDo(ctx context.Context, userInfo *BitbucketUserInfo, bitbu
 		text += fmt.Sprintf("You have %v open pull requests:\n", len(yourOpenPrs))
 
 		for _, assign := range yourOpenPrs {
-			text += getToDoDisplayText(baseURL, assign.Title, assign.Links.Html.Href, "")
+			text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
 		}
 	}
 
@@ -359,7 +357,7 @@ func (p *Plugin) getUserRepositories(ctx context.Context, bitbucketClient *bitbu
 		urlForRepos = getYourAllReposSearchQuery()
 	}
 
-	userRepos, err := p.fetchRepositoriesWithNextPagesIfAny(urlForRepos, ctx, bitbucketClient)
+	userRepos, err := p.fetchRepositoriesWithNextPagesIfAny(ctx, urlForRepos, bitbucketClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "error occurred while fetching repositories")
 	}
@@ -367,18 +365,24 @@ func (p *Plugin) getUserRepositories(ctx context.Context, bitbucketClient *bitbu
 	return userRepos, nil
 }
 
-func (p *Plugin) fetchRepositoriesWithNextPagesIfAny(urlToFetch string, ctx context.Context, bitbucketClient *bitbucket.APIClient) ([]bitbucket.Repository, error) {
+func (p *Plugin) fetchRepositoriesWithNextPagesIfAny(ctx context.Context, urlToFetch string, bitbucketClient *bitbucket.APIClient) ([]bitbucket.Repository, error) {
 	var result []bitbucket.Repository
 
-	paginatedRepositories, _, err := bitbucketClient.PagingApi.RepositoriesPageGet(ctx, urlToFetch)
+	paginatedRepositories, httpResponse, err := bitbucketClient.PagingApi.RepositoriesPageGet(ctx, urlToFetch)
 	if err != nil {
+		if httpResponse != nil {
+			_ = httpResponse.Body.Close()
+		}
 		return nil, errors.Wrap(err, "error occurred while fetching repositories")
+	}
+	if httpResponse != nil {
+		_ = httpResponse.Body.Close()
 	}
 
 	result = append(result, paginatedRepositories.Values...)
 
 	if paginatedRepositories.Next != "" {
-		nextPaginatedRepositories, err := p.fetchRepositoriesWithNextPagesIfAny(paginatedRepositories.Next, ctx, bitbucketClient)
+		nextPaginatedRepositories, err := p.fetchRepositoriesWithNextPagesIfAny(ctx, paginatedRepositories.Next, bitbucketClient)
 		if err != nil {
 			return nil, errors.Wrap(err, "error occurred while fetching repositories")
 		}
@@ -397,7 +401,10 @@ func (p *Plugin) getIssuesWithTerm(bitbucketClient *bitbucket.APIClient, searchT
 
 	var foundIssues []bitbucket.Issue
 	for _, repo := range userRepos {
-		paginatedIssues, _, err := bitbucketClient.PagingApi.IssuesPageGet(context.Background(), getSearchIssuesQuery(repo.FullName, searchTerm))
+		paginatedIssues, httpResponse, err := bitbucketClient.PagingApi.IssuesPageGet(context.Background(), getSearchIssuesQuery(repo.FullName, searchTerm))
+		if httpResponse != nil {
+			_ = httpResponse.Body.Close()
+		}
 		if err != nil {
 			return nil, errors.Wrap(err, "error occurred while fetching issues")
 		}
@@ -406,7 +413,10 @@ func (p *Plugin) getIssuesWithTerm(bitbucketClient *bitbucket.APIClient, searchT
 
 		if paginatedIssues.Next != "" {
 			for {
-				paginatedIssues, _, err = bitbucketClient.PagingApi.IssuesPageGet(context.Background(), paginatedIssues.Next)
+				paginatedIssues, httpResponse, err = bitbucketClient.PagingApi.IssuesPageGet(context.Background(), paginatedIssues.Next)
+				if httpResponse != nil {
+					_ = httpResponse.Body.Close()
+				}
 				if err != nil {
 					return nil, errors.Wrap(err, "error occurred while fetching issues")
 				}
@@ -423,11 +433,14 @@ func (p *Plugin) getIssuesWithTerm(bitbucketClient *bitbucket.APIClient, searchT
 	return foundIssues, nil
 }
 
-func (p *Plugin) fetchIssuesWithNextPagesIfAny(urlToFetch string, ctx context.Context, bitbucketClient *bitbucket.APIClient) ([]bitbucket.Issue, error) {
+func (p *Plugin) fetchIssuesWithNextPagesIfAny(ctx context.Context, urlToFetch string, bitbucketClient *bitbucket.APIClient) ([]bitbucket.Issue, error) {
 	var result []bitbucket.Issue
 
-	paginatedIssues, _, err := bitbucketClient.PagingApi.IssuesPageGet(ctx, urlToFetch)
+	paginatedIssues, httpResponse, err := bitbucketClient.PagingApi.IssuesPageGet(ctx, urlToFetch)
 	if err != nil {
+		if httpResponse != nil {
+			_ = httpResponse.Body.Close()
+		}
 		return nil, errors.Wrap(err, "error occurred while fetching issues")
 	}
 
@@ -435,8 +448,11 @@ func (p *Plugin) fetchIssuesWithNextPagesIfAny(urlToFetch string, ctx context.Co
 
 	if paginatedIssues.Next != "" {
 		for {
-			paginatedIssues, _, err = bitbucketClient.PagingApi.IssuesPageGet(context.Background(), paginatedIssues.Next)
+			paginatedIssues, httpResponse, err = bitbucketClient.PagingApi.IssuesPageGet(context.Background(), paginatedIssues.Next)
 			if err != nil {
+				if httpResponse != nil {
+					_ = httpResponse.Body.Close()
+				}
 				return nil, errors.Wrap(err, "error occurred while fetching issues")
 			}
 
@@ -451,10 +467,13 @@ func (p *Plugin) fetchIssuesWithNextPagesIfAny(urlToFetch string, ctx context.Co
 	return result, nil
 }
 
-func (p *Plugin) fetchPRsWithNextPagesIfAny(urlToFetch string, ctx context.Context, bitbucketClient *bitbucket.APIClient) ([]bitbucket.Pullrequest, error) {
+func (p *Plugin) fetchPRsWithNextPagesIfAny(ctx context.Context, urlToFetch string, bitbucketClient *bitbucket.APIClient) ([]bitbucket.Pullrequest, error) {
 	var result []bitbucket.Pullrequest
 
-	paginatedPrs, _, err := bitbucketClient.PagingApi.PullrequestsPageGet(ctx, urlToFetch)
+	paginatedPrs, httpResponse, err := bitbucketClient.PagingApi.PullrequestsPageGet(ctx, urlToFetch)
+	if httpResponse != nil {
+		_ = httpResponse.Body.Close()
+	}
 	if err != nil {
 		return nil, errors.Wrap(err, "error occurred while fetching pull requests")
 	}
@@ -463,7 +482,10 @@ func (p *Plugin) fetchPRsWithNextPagesIfAny(urlToFetch string, ctx context.Conte
 
 	if paginatedPrs.Next != "" {
 		for {
-			paginatedPrs, _, err = bitbucketClient.PagingApi.PullrequestsPageGet(ctx, paginatedPrs.Next)
+			paginatedPrs, httpResponse, err = bitbucketClient.PagingApi.PullrequestsPageGet(ctx, paginatedPrs.Next)
+			if httpResponse != nil {
+				_ = httpResponse.Body.Close()
+			}
 			if err != nil {
 				return nil, errors.Wrap(err, "error occurred while fetching PRs")
 			}
@@ -485,7 +507,7 @@ func (p *Plugin) getAssignedIssues(ctx context.Context, userInfo *BitbucketUserI
 	for _, repo := range userRepos {
 		urlForIssues := getYourAssigneeIssuesSearchQuery(userInfo.BitbucketAccountID, repo.FullName)
 
-		paginatedIssuesInRepo, err := p.fetchIssuesWithNextPagesIfAny(urlForIssues, ctx, bitbucketClient)
+		paginatedIssuesInRepo, err := p.fetchIssuesWithNextPagesIfAny(ctx, urlForIssues, bitbucketClient)
 		if err != nil {
 			return nil, errors.Wrap(err, "error occurred while fetching issues")
 		}
@@ -501,7 +523,7 @@ func (p *Plugin) getAssignedPRs(ctx context.Context, userInfo *BitbucketUserInfo
 	for _, repo := range userRepos {
 		urlForPRs := getYourAssigneePRsSearchQuery(userInfo.BitbucketAccountID, repo.FullName)
 
-		paginatedIssuesInRepo, err := p.fetchPRsWithNextPagesIfAny(urlForPRs, ctx, bitbucketClient)
+		paginatedIssuesInRepo, err := p.fetchPRsWithNextPagesIfAny(ctx, urlForPRs, bitbucketClient)
 		if err != nil {
 			return nil, errors.Wrap(err, "error occurred while fetching pull requests")
 		}
@@ -518,7 +540,7 @@ func (p *Plugin) getOpenPRs(ctx context.Context, userInfo *BitbucketUserInfo, bi
 	for _, repo := range userRepos {
 		urlForPRs := getYourOpenPRsSearchQuery(userInfo.BitbucketAccountID, repo.FullName)
 
-		paginatedIssuesInRepo, err := p.fetchPRsWithNextPagesIfAny(urlForPRs, ctx, bitbucketClient)
+		paginatedIssuesInRepo, err := p.fetchPRsWithNextPagesIfAny(ctx, urlForPRs, bitbucketClient)
 		if err != nil {
 			return nil, errors.Wrap(err, "error occurred while fetching pull requests")
 		}
