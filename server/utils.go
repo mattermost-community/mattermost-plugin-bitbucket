@@ -139,7 +139,7 @@ func parseOwnerAndRepo(full, baseURL string) (string, string) {
 	if len(splitStr) == 1 {
 		owner := splitStr[0]
 		return owner, ""
-	} else if len(splitStr) != 2 {
+	} else if len(splitStr) != 2 && splitStr[2] != "pull-requests" && splitStr[2] != "issues" {
 		return "", ""
 	}
 	owner := splitStr[0]
