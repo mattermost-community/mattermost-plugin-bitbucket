@@ -1,28 +1,15 @@
 # Mattermost Bitbucket Plugin
 
-A Bitbucket plugin for Mattermost. The plugin is currently in beta. Based on the [mattermost-plugin-bitbucket](https://github.com/jfrerich/mattermost-plugin-bitbucket) developed by [jfrerich](https://github.com/jfrerich).
+A Bitbucket plugin for Mattermost. Based on the [mattermost-plugin-bitbucket](https://github.com/jfrerich/mattermost-plugin-bitbucket) developed by [jfrerich](https://github.com/jfrerich).
 
-## Current Features
+![image](https://user-images.githubusercontent.com/45372453/97643091-114a1500-1a47-11eb-9863-2e0e308706ea.png)
 
-* Slash commands
-  * /bitbucket connect
-  * /bitbucket disconnect
-  * /bitbucket me
-  * /bitbucket subscribe owner/repo
-  * /bitbucket unsubscribe owner/repo
-* Webhook triggering events
-  * Issues:
-    * Created
-    * Updated
-    * Comment created
+## Features
 
-## Future Enhancement Features
-
-* __Daily reminders__ - the first time you log in to Mattermost each day, get a post letting you know what issues and pull requests need your attention
-* __Notifications__ - get a direct message in Mattermost when someone mentions
-  you, requests your review, comments on or modifies one of your pull
-  requests/issues, or assigns you on Bitbucket 
-* __Sidebar buttons__ - stay up-to-date with how many reviews, unread messages, assignments and open pull requests you have with buttons in the Mattermost sidebar
+* __Daily reminders__ - the first time you log in to Mattermost each day, get a post letting you know what issues and pull requests need your attention.
+* __Notifications__ - get a direct message in Mattermost when someone mentions you, requests your review, comments on or modifies one of your pull
+  requests/issues, or assigns you on Bitbucket.
+* __Sidebar buttons__ - stay up-to-date with how many reviews, assignments and open pull requests you have with buttons in the Mattermost sidebar.
 * __Slash commands__ - interact with the Bitbucket plugin using the `/bitbucket` slash command
     * __Subscribe to a respository__ - Use `/bitbucket subscribe` to subscribe a
       Mattermost channel to receive posts for new pull requests and/or issues
