@@ -321,9 +321,7 @@ func (p *Plugin) GetToDo(ctx context.Context, userInfo *BitbucketUserInfo, bitbu
 		return "", errors.Wrap(err, "error occurred while searching for assigned PRs")
 	}
 
-	text := "##### Unread Messages\n"
-
-	text += "##### Your Assignments\n"
+	text := "##### Your Assignments\n"
 
 	if len(yourAssignments) == 0 {
 		text += "You don't have any assignments.\n"
