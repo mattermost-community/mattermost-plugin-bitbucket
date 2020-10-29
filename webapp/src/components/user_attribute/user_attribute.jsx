@@ -1,6 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
+import BitbucketIcon from '../icon';
+
 export default class UserAttribute extends React.PureComponent {
     static propTypes = {
         id: PropTypes.string.isRequired,
@@ -34,7 +36,7 @@ export default class UserAttribute extends React.PureComponent {
                     target='_blank'
                     rel='noopener noreferrer'
                 >
-                    <i className='fa fa-bitbucket'/>{' ' + username}
+                    <BitbucketIcon/>{' ' + username}
                 </a>
             </div>
         );

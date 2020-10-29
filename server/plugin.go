@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 
 	"github.com/gorilla/mux"
 	"github.com/kosgrz/mattermost-plugin-bitbucket/server/templaterenderer"
@@ -133,6 +135,21 @@ func (p *Plugin) OnActivate() error {
 	}
 
 	p.BotUserID = botID
+
+	bundlePath, err := p.API.GetBundlePath()
+	if err != nil {
+		return errors.Wrap(err, "couldn't get bundle path")
+	}
+
+	profileImage, err := ioutil.ReadFile(filepath.Join(bundlePath, "assets", "profile.png"))
+	if err != nil {
+		return errors.Wrap(err, "couldn't read profile image")
+	}
+
+	appErr := p.API.SetProfileImage(botID, profileImage)
+	if appErr != nil {
+		return errors.Wrap(appErr, "couldn't set profile image")
+	}
 
 	return nil
 }

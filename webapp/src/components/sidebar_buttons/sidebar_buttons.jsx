@@ -6,6 +6,7 @@ import {makeStyleFromTheme, changeOpacity} from 'mattermost-redux/utils/theme_ut
 import {id as pluginId} from '../../manifest';
 
 import {RHSStates} from '../../constants';
+import BitbucketIcon from '../icon';
 
 export default class SidebarButtons extends React.PureComponent {
     static propTypes = {
@@ -103,7 +104,7 @@ export default class SidebarButtons extends React.PureComponent {
                             onClick={this.openConnectWindow}
                             style={button}
                         >
-                            <i className='fa fa-bitbucket fa-2x'/>
+                            <BitbucketIcon/>
                         </a>
                     </OverlayTrigger>
                 );
@@ -130,7 +131,7 @@ export default class SidebarButtons extends React.PureComponent {
                     rel='noopener noreferrer'
                     style={button}
                 >
-                    <i className='fa fa-bitbucket fa-lg'/>
+                    <BitbucketIcon/>
                 </a>
                 <OverlayTrigger
                     key='bitbucketYourPrsLink'
