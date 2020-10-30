@@ -8,9 +8,10 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/mattermost/mattermost-server/v5/utils"
 	"io"
 	"strings"
+
+	"github.com/mattermost/mattermost-server/v5/utils"
 )
 
 func getBaseURL() string {

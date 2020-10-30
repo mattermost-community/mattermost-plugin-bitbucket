@@ -2,10 +2,12 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/subscription"
+	"testing"
+
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 	"github.com/stretchr/testify/assert"
-	"testing"
+
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/subscription"
 )
 
 func CheckError(t *testing.T, wantErr bool, err error) {

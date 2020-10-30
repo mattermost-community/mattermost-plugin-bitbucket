@@ -8,9 +8,10 @@ import (
 	"path/filepath"
 
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
+
 	"github.com/kosgrz/mattermost-plugin-bitbucket/server/templaterenderer"
 	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhook"
-	"github.com/pkg/errors"
 
 	"net/http"
 	"net/url"

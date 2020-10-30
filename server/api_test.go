@@ -1,12 +1,14 @@
 package main
 
 import (
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/testutils"
-	"github.com/mattermost/mattermost-server/v5/plugin"
-	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/mattermost/mattermost-server/v5/plugin"
+	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
+
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/testutils"
 )
 
 func TestPlugin_ServeHTTP(t *testing.T) {

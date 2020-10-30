@@ -1,11 +1,13 @@
 package webhook
 
 import (
+	"strings"
+
 	"github.com/PuerkitoBio/goquery"
+
 	"github.com/kosgrz/mattermost-plugin-bitbucket/server/subscription"
 	"github.com/kosgrz/mattermost-plugin-bitbucket/server/templaterenderer"
 	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
-	"strings"
 )
 
 const (

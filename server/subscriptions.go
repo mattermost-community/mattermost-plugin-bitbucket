@@ -5,12 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/subscription"
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
-	"github.com/pkg/errors"
-	"github.com/wbrefvem/go-bitbucket"
 	"sort"
 	"strings"
+
+	"github.com/pkg/errors"
+	"github.com/wbrefvem/go-bitbucket"
+
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/subscription"
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
 )
 
 const (

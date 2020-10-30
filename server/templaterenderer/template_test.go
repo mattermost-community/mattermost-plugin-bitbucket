@@ -1,8 +1,9 @@
 package templaterenderer
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestCommonTemplates(t *testing.T) {
