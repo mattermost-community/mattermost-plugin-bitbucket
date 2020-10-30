@@ -6,20 +6,17 @@ A Bitbucket plugin for Mattermost. Based on the [mattermost-plugin-bitbucket](ht
 
 ## Features
 
-* __Daily reminders__ - the first time you log in to Mattermost each day, get a post letting you know what issues and pull requests need your attention.
-* __Notifications__ - get a direct message in Mattermost when someone mentions you, requests your review, comments on or modifies one of your pull
+* __Daily reminders__ - The first time you log in to Mattermost each day, get a post letting you know what issues and pull requests need your attention.
+* __Notifications__ - Receive a direct message in Mattermost when someone mentions you, requests your review, comments on or modifies one of your pull
   requests/issues, or assigns you on Bitbucket.
-* __Sidebar buttons__ - stay up-to-date with how many reviews, assignments and open pull requests you have with buttons in the Mattermost sidebar.
-* __Slash commands__ - interact with the Bitbucket plugin using the `/bitbucket` slash command
-    * __Subscribe to a respository__ - Use `/bitbucket subscribe` to subscribe a
-      Mattermost channel to receive posts for new pull requests and/or issues
-      in a Bitbucket repository
+* __Sidebar buttons__ - Stay up-to-date with how many reviews, assignments and open pull requests you have with buttons in the Mattermost sidebar.
+* __Slash commands__ - Interact with the Bitbucket plugin using the `/bitbucket` slash command.
+    * __Subscribe to a respository__ - Use `/bitbucket subscribe` to subscribe a Mattermost channel to receive posts for new pull requests and/or issues
+      in a Bitbucket repository.
     * __Get to do items__ - Use `/bitbucket todo` to get an ephemeral message with
-      items to do in Bitbucket
-    * __Update settings__ - Use `/bitbucket settings` to update your settings for the plugin
-    * __And more!__ - Run `/bitbucket help` to see what else the slash command can do
-* __Supports Bitbucket Enterprise__ - Works with SaaS and Enterprise versions
-  of Bitbucket (Enterprise support added in version 0.6.0)
+      items to do in Bitbucket.
+    * __Update settings__ - Use `/bitbucket settings` to update your settings for the plugin.
+    * __And more!__ - Run `/bitbucket help` to see what else the slash command can do.
 
 ## Installation - Bitbucket
 
