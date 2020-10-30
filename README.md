@@ -1,130 +1,154 @@
 # Mattermost Bitbucket Plugin
 
-A Bitbucket plugin for Mattermost. The plugin is currently in beta. Based on the [mattermost-plugin-bitbucket](https://github.com/jfrerich/mattermost-plugin-bitbucket) developed by [jfrerich](https://github.com/jfrerich).
+A Bitbucket plugin for Mattermost. Based on the [mattermost-plugin-bitbucket](https://github.com/jfrerich/mattermost-plugin-bitbucket) developed by [jfrerich](https://github.com/jfrerich).
 
-## Current Features
+## Table of Contents
 
-* Slash commands
-  * /bitbucket connect
-  * /bitbucket disconnect
-  * /bitbucket me
-  * /bitbucket subscribe owner/repo
-  * /bitbucket unsubscribe owner/repo
-* Webhook triggering events
-  * Issues:
-    * Created
-    * Updated
-    * Comment created
+ - [Audience](#audience)
+ - [License](#license)
+ - [About the Bitbucket Plugin](#about-the-bitbucket-plugin)
+ - [Before You Start](#before-you-start)
+ - [Configuration](#configuration)
+ - [Using the Plugin](#using-the-plugin)
+ - [Onboarding Your Users](#onboarding-your-users)
+ - [Slash Commands](#slash-commands)
+ - [Frequently Asked Questions](#frequently-asked-questions)
+ - [Development](#development)
+ 
+![Bitbucket plugin screenshot](https://user-images.githubusercontent.com/45372453/97643091-114a1500-1a47-11eb-9863-2e0e308706ea.png)
 
-## Future Enhancement Features
+## Audience
 
-* __Daily reminders__ - the first time you log in to Mattermost each day, get a post letting you know what issues and pull requests need your attention
-* __Notifications__ - get a direct message in Mattermost when someone mentions
-  you, requests your review, comments on or modifies one of your pull
-  requests/issues, or assigns you on Bitbucket 
-* __Sidebar buttons__ - stay up-to-date with how many reviews, unread messages, assignments and open pull requests you have with buttons in the Mattermost sidebar
-* __Slash commands__ - interact with the Bitbucket plugin using the `/bitbucket` slash command
-    * __Subscribe to a respository__ - Use `/bitbucket subscribe` to subscribe a
-      Mattermost channel to receive posts for new pull requests and/or issues
-      in a Bitbucket repository
-    * __Get to do items__ - Use `/bitbucket todo` to get an ephemeral message with
-      items to do in Bitbucket
-    * __Update settings__ - Use `/bitbucket settings` to update your settings for the plugin
-    * __And more!__ - Run `/bitbucket help` to see what else the slash command can do
-* __Supports Bitbucket Enterprise__ - Works with SaaS and Enterprise versions
-  of Bitbucket (Enterprise support added in version 0.6.0)
+This guide is intended for Mattermost System Admins setting up the Bitbucket plugin and Mattermost users who want information about the plugin functionality. For more information about contributing to this plugin, visit the [Development section](#development).
 
-## Installation - Bitbucket
+## License
 
-__Requires Mattermost 5.2 or higher. If you're running Mattermost 5.6+, it is strongly recommended to use plugin version 0.7.1+__
+This repository is licensed under the [Apache 2.0 License](https://github.com/mattermost/mattermost-plugin-bitbucket/blob/master/LICENSE).
 
-1. Install the plugin
-    1. Download the latest version of the plugin from the Bitbucket releases page
-    2. In Mattermost, go the System Console -> Plugins -> Management
-    3. Upload the plugin
-2. Register a Bitbucket OAuth app
-    1. Go to https://bitbucket.org
-    2. Click Avatar -> Bitbucket settings -> Settings -> Access Management (OAuth) -> Add consumer
-        1. Use "Mattermost Bitbucket Plugin - &#060;your company name>" as the name
-        2. Use "https://github.com/mattermost/mattermost-plugin-bitbucket" as the URL
-        3. Use "https://your-mattermost-url.com/plugins/bitbucket/oauth/complete" as the callback URL, replacing `https://your-mattermost-url.com` with your Mattermost URL. 
-        4. Set `Read` permissions on Issues, Repositories and Account for this OAuth consumer account 
-        5. Save and copy the Key and Secret
-    3. In Mattermost, go to System Console -> Plugins -> Bitbucket 
-        1. Fill in the Client ID (Key) and Client Secret and save the settings
-3. Create a Bitbucket webhook
-    1. In Mattermost, go to the System Console -> Plugins -> Bitbucket -> Regenerate 
-        1. Copy the "Webhook Secret"
-    2. Go to the settings page of your Bitbucket repository and click on "Webhooks" in the sidebar
-        1. Click "Add webhook"
-        2. Use "Mattermost Bitbucket Webhook - &#060;repository_name>" as the title, where &#060;repository_name is the name of your repository 
-        3. Use "https://your-mattermost-url.com/plugins/bitbucket/webhook" as the URL, replacing `https://your-mattermost-url.com` with your Mattermost URL 
-        4. Select "Choose from a full list of trigger" as your trigger
-        5. Select Issues: "Created", "Updated", and "Comment Created" 
-    3. Save the webhook
-    4. __Note for each organization you want to receive notifications for or subscribe to, you must create a webhook__
-4. Generate an at rest encryption key
-    1. Go to the System Console -> Plugins -> Bitbucket and click "Regenerate" under "At Rest Encryption Key"
-    2. Save the settings
-5. (Optional) Lock the plugin to a Bitbucket organization
-    1. Go to System Console -> Plugins -> Bitbucket and set the Bitbucket
-      Organization field to the name of your Bitbucket organization
-6. (Optional) Enable private repositories
-    1. Go to System Console -> Plugins -> Bitbucket and set Enable Private Repositories to true
-    2. Note that if you do this after users have already connected their
-      accounts to Bitbucket they will need to disconnect and reconnect their accounts to be able to use private repositories
-7. (Not yet supported) Set your Enterprise URLs
-    1. Go to System Console -> Plugins -> Bitbucket and set the Enterprise Base
-      URL and Enterprise Upload URL fields to your Bitbucket Enterprise URLs, ex: `https://bitbucket.example.com`
-    2. The Base and Upload URLs are often the same
-8. Enable the plugin 
-    1. Go to System Console -> Plugins -> Management and click "Enable" underneath the Bitbucket plugin
-9. Test it out
-    2. In Mattermost, run the slash command `/bitbucket connect`
+## About the Bitbucket Plugin
 
-## NOTES : bitbucket does not user a webhook secret
+The Mattermost Bitbucket plugin uses a webhook to connect your Bitbucket account to Mattermost to listen for incoming Bitbucket events. Events notifications are via DM in Mattermost. The Events don’t need separate configuration. 
 
-## Developing 
+After your System Admin has [configured the Bitbucket plugin](#configuration), run `/bitbucket connect` in a Mattermost channel to connect your Mattermost and Bitbucket accounts.
 
-This plugin contains both a server and web app portion.
+Once connected, you'll have access to the following features:
 
-Run `ngrok` command to expose localhost to the internet 
-* User Forwarding Address as &#060;your-mattermost-url.com>
+* __Daily reminders__ - The first time you log in to Mattermost each day, get a post letting you know what issues and pull requests need your attention.
+* __Notifications__ - Get a direct message in Mattermost when someone mentions you, requests your review, comments on or modifies one of your pull requests/issues, or assigns you on Bitbucket.
+* __Post actions__ - Create a Bitbucket issue from a post or attach a post message to an issue. Hover over a post to reveal the post actions menu and click **More Actions (...)**.
+* __Sidebar buttons__ - Stay up-to-date with how many reviews, assignments, and open pull requests you have with buttons in the Mattermost sidebar.
+* __Slash commands__ - Interact with the Bitbucket plugin using the `/bitbucket` slash command. Read more about slash commands [here](#slash-commands).
 
-Use `make dist` to build distributions of the plugin that you can upload to a Mattermost server.
+## Before You Start
 
-Use `make check-style` to check the style.
+This guide assumes:
 
-Use `make deploy` to deploy the plugin to your local server. Before running `make deploy` you need to enable [local mode](https://docs.mattermost.com/administration/mmctl-cli-tool.html#local-mode). Edit your server configuration as follows:
-                                                                                                      
-```json
-{
-  "ServiceSettings": {
-      ...
-      "EnableLocalMode": true,
-      "LocalModeSocketLocation": "/var/tmp/mattermost_local.socket"
-  }
-}
-```
+- You have a Bitbucket account.
+- You're a Mattermost System Admin.
+- You're running Mattermost v5.25 or higher.
 
-Alternatively, you can authenticate with the server's API with credentials:
+## Configuration
 
-```
-export MM_SERVICESETTINGS_SITEURL=http://localhost:8065
-export MM_ADMIN_USERNAME=sysadmin
-export MM_ADMIN_PASSWORD=sysadmin
-```
+Configuration is started in Bitbucket and completed in Mattermost. 
+
+### Step 1: Register an OAuth Application in Bitbucket
+
+1. Go to https://bitbucket.org and log in.
+2. Visit the **Settings** page for your organization.
+3. Click the **OAuth** tab under **Access Management**.
+3. Click the **Add consumer** button and set the following values:
+   - **Name:** `Mattermost Bitbucket Plugin - <your company name>`.
+   - **Callback URL:** `https://your-mattermost-url.com/plugins/bitbucket/oauth/complete`, replacing `https://your-mattermost-url.com` with your Mattermost URL.
+   - **URL:** `https://github.com/kosgrz/mattermost-plugin-bitbucket`.
+4. Set:
+   - **Account:** `Email` and `Read` permissions.
+   - **Projects:** `Read` permission.
+   - **Repositories:** `Read` and `Write` permissions.
+   - **Pull requests:** `Read` permission.
+   - **Issues:** `Read` and `write` permissions.
+`Read` and `Write` permissions on Issues and Pull requests and `Read` on Repositories and Account for this OAuth consumer account. 
+5. Save.
+6. the **Key** and **Secret** in the resulting screen.
+7. Go to **System Console > Plugins > Bitbucket** and enter the **Bitbucket OAuth Client ID** and **Bitbucket OAuth Client Secret** you copied in a previous step.
+8. Hit **Save**.
+
+### Step 2: Create a Webhook in Bitbucket
+
+You must create a webhook for each repository you want to receive notifications for or subscribe to.
+
+1. Go to the **Repository settings** page of your Bitbucket organization you want to send notifications from, then select **Webhooks** in the sidebar.
+2. Click **Add Webhook**.
+3. Set the following values:
+   - **Title:** `Mattermost Bitbucket Webhook - <repository_name>`, replacing `repository_name` with the name of your repository.
+   - **URL:** `https://your-mattermost-url.com/plugins/bitbucket/webhook`, replacing `https://your-mattermost-url.com` with your Mattermost URL.
+4. Select **Choose from a full list of triggers**.
+5. Select:
+   - **Repository:** `Push`.
+   - **Pull Request:** `Created`, `Updated`, `Approved`, `Approval removed`, `Merged`, `Declined`, `Comment created`.
+   - **Issue:** `Created`, `Updated`, `Comment created`.
+6. Hit **Save**.
+
+If you have multiple repositories, repeat the process to create a webhook for each repository.
+
+### Step 3: Configure the Plugin in Mattermost
+
+If you have an existing Mattermost user account with the name `bitbucket`, the plugin will post using the `bitbucket` account but without a `BOT` tag.
+
+To prevent this, either:
+
+- Convert the `bitbucket` user to a bot account by running `mattermost user convert bitbucket --bot` in the CLI.
+
+or
+
+- If the user is an existing user account you want to preserve, change its username and restart the Mattermost server. Once restarted, the plugin will create a bot 
+account with the name `bitbucket`.
+
+#### Generate a Key
+  
+Open **System Console > Plugins > Bitbucket** and do the following:
+
+1. Generate a new value for **At Rest Encryption Key**.
+2. (Optional) **Bitbucket Organization:** Lock the plugin to a single Bitbucket organization by setting this field to the name of your Bitbucket organization.
+3. (Optional) **Enable Private Repositories:** Allow the plugin to receive notifications from private repositories by setting this value to `true`.
+4. Hit **Save**.
+5. Go to **System Console > Plugins > Management** and click **Enable** to enable the Bitbucket plugin.
+
+You're all set!
+
+## Using the Plugin
+
+Once configuration is complete, run the `/bitbucket connect` slash command from any channel within Mattermost to connect your Mattermost account with Bitbucket.
+
+## Onboarding Your Users
+
+When you’ve tested the plugin and confirmed it’s working, notify your team so they can connect their Bitbucket account to Mattermost and get started. Copy and paste the text below, edit it to suit your requirements, and send it out.
+
+> Hi team, 
+
+> We've set up the Mattermost Bitbucket plugin, so you can get notifications from Bitbucket in Mattermost. To get started, run the `/bitbucket connect` slash command from any channel within Mattermost to connect your Mattermost account with Bitbucket. Then, take a look at the [slash commands](#slash-commands) section for details about how to use the plugin.
+
+## Slash Commands
+
+* __Subscribe to a respository__ - Use `/bitbucket subscriptions add` to subscribe a Mattermost channel to receive notifications for new pull requests, issues, branch creation, and more in a Bitbucket repository.
+
+   - For instance, to post notifications for issues, issue comments, and pull requests from `mattermost/mattermost-server`, use:
+   ```
+   /bitbucket subscribe mattermost/mattermost-server issues,pulls,issue_comments
+   ```   
+* __Get to do items__ - Use `/bitbucket todo` to get an ephemeral message with items to do in Bitbucket, including a list of assigned issues and pull requests awaiting your review.
+* __Update settings__ - Use `/bitbucket settings` to update your settings for notifications and daily reminders.
+* __And more!__ - Run `/bitbucket help` to see what else the slash command can do.
 
 ## Frequently Asked Questions
 
-### How do I connect a repository instead of an organization?
+### How do I share feedback on this plugin?
 
-Set up your Bitbucket webhook from the repository instead of the organization. Notifications and subscriptions will then be sent only for repositories you create webhooks for.
+Feel free to create a GitHub issue or [join the Bitbucket Plugin channel on our community Mattermost instance](https://community-release.mattermost.com/core/channels/plugin-bitbucket) to discuss.
 
-The reminder and `/bitbucket todo` will still search the whole organization, but only list items assigned to you.
+### How does the plugin save user data for each connected Bitbucket user?
 
-## Feedback and Feature Requests
+Bitbucket user tokens are AES encrypted with an At Rest Encryption Key configured in the plugin's settings page. Once encrypted, the tokens are saved in the `PluginKeyValueStore` table in your Mattermost database.
 
-Feel free to create a Bitbucket issue or [join the Bitbucket Plugin channel on
-our community Mattermost
-instance](https://pre-release.mattermost.com/core/channels/plugin-bitbucket) to discuss.
+## Development
+
+This plugin contains both a server and web app portion. Read our documentation about the [Developer Workflow](https://developers.mattermost.com/extend/plugins/developer-workflow/) and [Developer Setup](https://developers.mattermost.com/extend/plugins/developer-setup/) for more information about developing and extending plugins.
