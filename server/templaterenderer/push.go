@@ -17,12 +17,12 @@ User {{template "user" .Actor}} {{if (index .Push.Changes 0).Forced}}force-{{end
 
 func (tr *templateRenderer) RenderBranchOrTagCreatedEventNotificationForSubscribedChannels(pl webhookpayload.RepoPushPayload) (string, error) {
 	return tr.renderTemplate(pl, "branchOrTagCreatedEventNotificationForSubscribedChannels", `
-{{template "repo" .Repository}} {{if eq (index .Push.Changes 0).New.Type "tag"}}Tag{{else}}Branch{{end}} [{{(index .Push.Changes 0).New.Name}}]({{(index .Push.Changes 0).New.Links.HTML.Href}}) was created by {{template "user" .Actor}}
+{{template "repo" .Repository}} {{if eq (index .Push.Changes 0).New.Type "tag"}}Tag{{else}}Branch{{end}} [{{(index .Push.Changes 0).New.Name}}]({{(index .Push.Changes 0).New.Links.HTML.Href}}) was created by {{template "bitbucketUser" .Actor}}
 `)
 }
 
 func (tr *templateRenderer) RenderBranchOrTagDeletedEventNotificationForSubscribedChannels(pl webhookpayload.RepoPushPayload) (string, error) {
 	return tr.renderTemplate(pl, "dranchOrTagDeletedEventNotificationForSubscribedChannels", `
-{{template "repo" .Repository}} {{if eq (index .Push.Changes 0).Old.Type "tag"}}Tag{{else}}Branch{{end}} [{{(index .Push.Changes 0).Old.Name}}]({{(index .Push.Changes 0).Old.Links.HTML.Href}}) was deleted by {{template "user" .Actor}}
+{{template "repo" .Repository}} {{if eq (index .Push.Changes 0).Old.Type "tag"}}Tag{{else}}Branch{{end}} [{{(index .Push.Changes 0).Old.Name}}]({{(index .Push.Changes 0).Old.Links.HTML.Href}}) was deleted by {{template "bitbucketUser" .Actor}}
 `)
 }
