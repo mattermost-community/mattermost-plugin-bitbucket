@@ -439,6 +439,9 @@ func (p *Plugin) fetchIssuesWithNextPagesIfAny(ctx context.Context, urlToFetch s
 	if err != nil {
 		if httpResponse != nil {
 			_ = httpResponse.Body.Close()
+			if httpResponse.StatusCode == 404 {
+				return nil, nil
+			}
 		}
 		return nil, errors.Wrap(err, "error occurred while fetching issues")
 	}
