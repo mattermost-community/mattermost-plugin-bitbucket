@@ -35,7 +35,7 @@ function mapStateToProps(state) {
     return {
         reviews: mapPrsToDetails(state[`plugins-${pluginId}`].reviews, state[`plugins-${pluginId}`].reviewsDetails),
         yourPrs: mapPrsToDetails(state[`plugins-${pluginId}`].yourPrs, state[`plugins-${pluginId}`].yourPrsDetails),
-        yourAssignments: state[`plugins-${pluginId}`].yourAssignments,
+        yourAssignments: state[`plugins-${pluginId}`].yourAssignments || [],
         enterpriseURL: state[`plugins-${pluginId}`].enterpriseURL,
         rhsState: state[`plugins-${pluginId}`].rhsState,
     };
