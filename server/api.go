@@ -731,7 +731,7 @@ func (p *Plugin) getYourAssignments(w http.ResponseWriter, _ *http.Request, user
 
 	bitbucketClient := p.bitbucketConnect(*userInfo.Token)
 
-	userRepos, err := p.getUserRepositories(context.Background(), bitbucketClient)
+	userRepos, err := p.getUserRepositoriesWithIssueTracker(context.Background(), bitbucketClient)
 	if err != nil {
 		p.API.LogError("Error occurred while searching for repositories", "err", err)
 		return
@@ -873,7 +873,7 @@ func (p *Plugin) getRepositories(w http.ResponseWriter, _ *http.Request, userID 
 
 	ctx := context.Background()
 
-	repos, err := p.getUserRepositories(ctx, bitbucketClient)
+	repos, err := p.getUserRepositoriesWithIssueTracker(ctx, bitbucketClient)
 	if err != nil {
 		p.API.LogError("Failed to fetch repositories", "err", err.Error())
 		p.writeAPIError(w, &APIErrorResponse{Message: "Failed to fetch repositories", StatusCode: http.StatusInternalServerError})
@@ -975,6 +975,7 @@ func (p *Plugin) createIssue(w http.ResponseWriter, r *http.Request, userID stri
 	issuePostResult, issuePostResponse, err := bitbucketClient.IssueTrackerApi.RepositoriesUsernameRepoSlugIssuesPost(context.Background(), owner, repoName, bbIssue)
 	if err != nil {
 		if issuePostResponse != nil {
+			p.API.LogError("failed to create issue: " + err.Error())
 			p.writeAPIError(w,
 				&APIErrorResponse{
 					ID: "",

@@ -364,6 +364,22 @@ func (p *Plugin) getUserRepositories(ctx context.Context, bitbucketClient *bitbu
 	return userRepos, nil
 }
 
+func (p *Plugin) getUserRepositoriesWithIssueTracker(ctx context.Context, bitbucketClient *bitbucket.APIClient) ([]bitbucket.Repository, error) {
+	userRepos, err := p.getUserRepositories(ctx, bitbucketClient)
+	if err != nil {
+		return nil, err
+	}
+
+	var userReposWithIssueTracker []bitbucket.Repository
+	for _, repo := range userRepos {
+		if repo.HasIssues {
+			userReposWithIssueTracker = append(userReposWithIssueTracker, repo)
+		}
+	}
+
+	return userReposWithIssueTracker, nil
+}
+
 func (p *Plugin) fetchRepositoriesWithNextPagesIfAny(ctx context.Context, urlToFetch string, bitbucketClient *bitbucket.APIClient) ([]bitbucket.Repository, error) {
 	var result []bitbucket.Repository
 
@@ -393,7 +409,7 @@ func (p *Plugin) fetchRepositoriesWithNextPagesIfAny(ctx context.Context, urlToF
 }
 
 func (p *Plugin) getIssuesWithTerm(bitbucketClient *bitbucket.APIClient, searchTerm string) ([]bitbucket.Issue, error) {
-	userRepos, err := p.getUserRepositories(context.Background(), bitbucketClient)
+	userRepos, err := p.getUserRepositoriesWithIssueTracker(context.Background(), bitbucketClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "error occurred while fetching repositories")
 	}
