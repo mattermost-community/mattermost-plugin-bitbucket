@@ -91,7 +91,7 @@ export function getRepos() {
         try {
             data = await Client.getRepositories();
         } catch (error) {
-            return {error: data};
+            return {error};
         }
 
         const connected = await checkAndHandleNotConnected(data)(dispatch, getState);

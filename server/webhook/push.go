@@ -7,12 +7,12 @@ import (
 func (w *webhook) HandleRepoPushEvent(pl webhookpayload.RepoPushPayload) ([]*HandleWebhook, error) {
 	var handlers []*HandleWebhook
 
-	handler1, err := w.createRepoPushEventNotificationForSubscribedChannels(pl)
+	handler1, err := w.createBranchOrTagCreatedEventNotificationForSubscribedChannels(pl)
 	if err != nil {
 		return nil, err
 	}
 
-	handler2, err := w.createBranchOrTagCreatedEventNotificationForSubscribedChannels(pl)
+	handler2, err := w.createRepoPushEventNotificationForSubscribedChannels(pl)
 	if err != nil {
 		return nil, err
 	}
@@ -26,6 +26,10 @@ func (w *webhook) HandleRepoPushEvent(pl webhookpayload.RepoPushPayload) ([]*Han
 }
 
 func (w *webhook) createRepoPushEventNotificationForSubscribedChannels(pl webhookpayload.RepoPushPayload) (*HandleWebhook, error) {
+	if len(pl.Push.Changes) == 1 && len(pl.Push.Changes[0].Commits) == 0 {
+		return nil, nil
+	}
+
 	message, err := w.templateRenderer.RenderRepoPushEventNotificationForSubscribedChannels(pl)
 	if err != nil {
 		return nil, err
@@ -57,6 +61,10 @@ func (w *webhook) createBranchOrTagCreatedEventNotificationForSubscribedChannels
 		return nil, nil
 	}
 
+	if len(pl.Push.Changes) == 1 && pl.Push.Changes[0].New.Name == pl.Push.Changes[0].Old.Name {
+		return nil, nil
+	}
+
 	message, err := w.templateRenderer.RenderBranchOrTagCreatedEventNotificationForSubscribedChannels(pl)
 	if err != nil {
 		return nil, err
@@ -85,6 +93,10 @@ func (w *webhook) createBranchOrTagDeletedEventNotificationForSubscribedChannels
 	}
 
 	if pl.Push.Changes[0].Old.Type == "" {
+		return nil, nil
+	}
+
+	if len(pl.Push.Changes) == 1 && pl.Push.Changes[0].New.Name == pl.Push.Changes[0].Old.Name {
 		return nil, nil
 	}
 

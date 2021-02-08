@@ -27,7 +27,13 @@ export default class BitbucketRepoSelector extends PureComponent {
     }
 
     componentDidMount() {
-        this.props.actions.getRepos();
+        this.props.actions.getRepos().then((result) => {
+            if (result.error) {
+                this.setState({
+                    error: result.error.message,
+                });
+            }
+        });
     }
 
     onChange = (name, newValue) => {
@@ -36,6 +42,16 @@ export default class BitbucketRepoSelector extends PureComponent {
 
     render() {
         const repoOptions = this.props.yourRepos.map((item) => ({value: item.name, label: item.full_name}));
+        const {error} = this.state;
+
+        let fetchingReposError = null;
+        if (error) {
+            fetchingReposError = (
+                <p className='help-text error-text'>
+                    <span>{error}</span>
+                </p>
+            );
+        }
 
         return (
             <div className={'form-group margin-bottom x3'}>
@@ -53,6 +69,7 @@ export default class BitbucketRepoSelector extends PureComponent {
                     removeValidate={this.props.removeValidate}
                     value={repoOptions.find((option) => option.label === this.props.value)}
                 />
+                {fetchingReposError}
                 <div className={'help-text'}>
                     {'Returns Bitbucket repositories connected to the user account'} <br/>
                 </div>
