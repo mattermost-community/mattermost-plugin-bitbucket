@@ -347,6 +347,7 @@ func (p *Plugin) GetToDo(ctx context.Context, userInfo *BitbucketUserInfo, bitbu
 func (p *Plugin) getUserRepositories(ctx context.Context, bitbucketClient *bitbucket.APIClient) ([]bitbucket.Repository, error) {
 	options := make(map[string]interface{})
 	options["role"] = "member"
+	options["pagelen"] = 100
 
 	var urlForRepos string
 	org := p.getConfiguration().BitbucketOrg
