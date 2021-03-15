@@ -2,6 +2,8 @@
 
 A Bitbucket plugin for Mattermost. Based on the mattermost-plugin-bitbucket developed by jfrerich.
 
+![Bitbucket plugin screenshot](https://user-images.githubusercontent.com/45372453/97643091-114a1500-1a47-11eb-9863-2e0e308706ea.png)
+
 This guide is intended for Mattermost System Admins setting up the Bitbucket plugin and Mattermost users who want information about the plugin functionality. For more information about contributing to this plugin, visit the Development section.
 
 The Mattermost Bitbucket plugin uses a webhook to connect your Bitbucket account to Mattermost to listen for incoming Bitbucket events. Events notifications are via DM in Mattermost. The Events don’t need separate configuration.
