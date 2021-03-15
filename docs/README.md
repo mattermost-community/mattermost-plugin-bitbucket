@@ -12,6 +12,6 @@ Once connected, you'll have access to the following features:
 
 * **Daily reminders:** The first time you log in to Mattermost each day, get a post letting you know what issues and pull requests need your attention.
 * **Notifications:** Get a direct message in Mattermost when someone mentions you, requests your review, comments on, or modifies one of your pull requests/issues, or assigns you on Bitbucket.
-* **Post actions:** Create a Bitbucket issue from a post or attach a post message to an issue. Hover over a post to reveal the post actions menu and click More Actions (...).
+* **Post actions:** Create a Bitbucket issue from a post or attach a post message to an issue. Hover over a post to reveal the post actions menu and click **More Actions (...)**.
 * **Sidebar buttons:** Stay up-to-date with how many reviews, assignments, and open pull requests you have with buttons in the Mattermost sidebar.
-* **Slash commands:** Interact with the Bitbucket plugin using the /bitbucket slash command. Read more about slash commands here.
+* **Slash commands:** Interact with the Bitbucket plugin using the `/bitbucket` slash command.
