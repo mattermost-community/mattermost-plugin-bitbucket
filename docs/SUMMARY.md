@@ -24,4 +24,3 @@
 ## Contributing
 
 * [Development](development.md)
-* 
