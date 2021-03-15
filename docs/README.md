@@ -1,6 +1,6 @@
 # Mattermost Bitbucket Plugin
 
-A Bitbucket plugin for Mattermost. Based on the mattermost-plugin-bitbucket developed by jfrerich.
+A Bitbucket plugin for Mattermost. Based on the [mattermost-plugin-bitbucket](https://github.com/jfrerich/mattermost-plugin-bitbucket) developed by [jfrerich](https://github.com/jfrerich).
 
 ![Bitbucket plugin screenshot](https://user-images.githubusercontent.com/45372453/97643091-114a1500-1a47-11eb-9863-2e0e308706ea.png)
 
