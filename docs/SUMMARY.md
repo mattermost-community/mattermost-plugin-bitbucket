@@ -20,3 +20,8 @@
 ## Help and Support
 
 * [Help and Support](help-and-support.md)
+
+## Contributing
+
+* [Development](development.md)
+* 
