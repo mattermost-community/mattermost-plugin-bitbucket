@@ -1,6 +1,8 @@
 package webhook
 
-import "github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
+import (
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
+)
 
 func (w *webhook) HandleRepoPushEvent(pl webhookpayload.RepoPushPayload) ([]*HandleWebhook, error) {
 	var handlers []*HandleWebhook

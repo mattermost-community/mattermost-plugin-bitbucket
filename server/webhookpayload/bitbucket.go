@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-//This is a copy of gopkg.in/go-playground/webhooks.v5/bitbucket with some necessary modifications
+// This is a copy of gopkg.in/go-playground/webhooks.v5/bitbucket with some necessary modifications
 
 // parse errors
 var (

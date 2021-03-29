@@ -293,7 +293,7 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 		"* The fourth will refresh the numbers.\n\n"+
 		"Click on them!\n\n"+
 		"##### Slash Commands\n"+
-		strings.Replace(commandHelp, "|", "`", -1), bitbucketUser.Username, bitbucketUser.Links.Html.Href)
+		strings.ReplaceAll(commandHelp, "|", "`"), bitbucketUser.Username, bitbucketUser.Links.Html.Href)
 
 	p.CreateBotDMPost(state.UserID, message, "custom_bitbucket_welcome")
 

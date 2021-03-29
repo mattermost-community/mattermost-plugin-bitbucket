@@ -56,10 +56,10 @@ func MakeTemplateRenderer() TemplateRenderer {
 }
 
 func (tr *templateRenderer) renderTemplate(payload interface{}, templateName string, text string) (string, error) {
-	//checks whether a template with this name is already defined
+	// checks whether a template with this name is already defined
 	t := tr.masterTemplate.Lookup(templateName)
 	if t == nil {
-		//if the template is not defined, it will be defined now
+		// if the template is not defined, it will be defined now
 		t = template.Must(tr.masterTemplate.New(templateName).Parse(text))
 	}
 
@@ -110,7 +110,7 @@ func (tr *templateRenderer) init() {
 			selection.SetText(bitbucketNickname)
 		})
 
-		//Text() returns only text, without HTML attributes or tags
+		// Text() returns only text, without HTML attributes or tags
 		return doc.Text()
 	}
 
@@ -134,7 +134,7 @@ func (tr *templateRenderer) init() {
 		`[\[{{.Repository.FullName}}#{{.Issue.ID}}\]]({{.Issue.Links.HTML.Href}})`,
 	))
 
-	//The user template links to the corresponding user in Mattermost or in BitBucket.
+	// The user template links to the corresponding user in Mattermost or in BitBucket.
 	template.Must(tr.masterTemplate.New("user").Parse(`
 {{- $mattermostUsername := .AccountID | lookupMattermostUsername}}
 {{- if $mattermostUsername }}@{{$mattermostUsername}}

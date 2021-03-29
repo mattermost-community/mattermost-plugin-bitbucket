@@ -1,6 +1,8 @@
 package templaterenderer
 
-import "github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
+import (
+	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
+)
 
 var mmUserBitbucketAccountID = "123"
 
