@@ -229,7 +229,7 @@ func (p *Plugin) handleHelp(_ *plugin.Context, _ *model.CommandArgs, _ []string,
 		"* The fourth will refresh the numbers.\n\n"+
 		"Click on them!\n\n"+
 		"##### Slash Commands\n"+
-		strings.Replace(commandHelp, "|", "`", -1), bitbucketUser.Username, bitbucketUser.Links.Html.Href)
+		strings.ReplaceAll(commandHelp, "|", "`"), bitbucketUser.Username, bitbucketUser.Links.Html.Href)
 
 	return message
 }

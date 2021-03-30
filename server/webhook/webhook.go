@@ -76,10 +76,10 @@ func (w *webhook) parseBitbucketAcountIDsFromHTML(html string) []string {
 		return accountIds
 	}
 
-	//looking for span tags in the HTML with user account IDs
+	// looking for span tags in the HTML with user account IDs
 	doc.Find("span[class=\"ap-mention\"]").Each(func(i int, selection *goquery.Selection) {
 		bitbucketUserAccountID := selection.AttrOr("data-atlassian-id", "")
-		//put the found accountID in the map if it doesn't exist there yet
+		// put the found accountID in the map if it doesn't exist there yet
 		if bitbucketUserAccountID != "" && !accountIDMap[bitbucketUserAccountID] {
 			accountIds = append(accountIds, bitbucketUserAccountID)
 			accountIDMap[bitbucketUserAccountID] = true
@@ -92,7 +92,7 @@ func (w *webhook) parseBitbucketAcountIDsFromHTML(html string) []string {
 func cleanWebhookHandlers(handlers []*HandleWebhook) []*HandleWebhook {
 	res := make([]*HandleWebhook, 0)
 	for _, handler := range handlers {
-		//don't pass nil handlers
+		// don't pass nil handlers
 		if handler == nil {
 			continue
 		}

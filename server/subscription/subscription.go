@@ -1,6 +1,8 @@
 package subscription
 
-import "strings"
+import (
+	"strings"
+)
 
 type Subscription struct {
 	ChannelID  string

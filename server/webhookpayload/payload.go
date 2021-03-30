@@ -1,8 +1,10 @@
 package webhookpayload
 
-import "time"
+import (
+	"time"
+)
 
-//This is a copy of gopkg.in/go-playground/webhooks.v5/bitbucket with some necessary modifications
+// This is a copy of gopkg.in/go-playground/webhooks.v5/bitbucket with some necessary modifications
 
 // RepoPushPayload is the Bitbucket repo:push payload
 type RepoPushPayload struct {

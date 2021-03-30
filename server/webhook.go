@@ -163,7 +163,7 @@ func (r *pullRequestReviewHandler) GetAlreadyNotifiedUsers(pullRequestID int64) 
 		return nil, err
 	}
 
-	//if nil, then return empty list
+	// if nil, then return empty list
 	if bytesThisPrReviewers == nil {
 		return []string{}, nil
 	}
@@ -191,7 +191,7 @@ func (r pullRequestReviewHandler) SaveNotifiedUsers(pullRequestID int64, notifie
 
 	apiErr := r.p.API.KVSet(KeyAssignUserPr+strconv.FormatInt(pullRequestID, 10), bytesThisPrReviewers)
 	if apiErr != nil {
-		//err is nil, but it's still going here don't know why todo
+		// err is nil, but it's still going here don't know why todo
 		r.p.API.LogWarn("Couldn't save information about notified users for PR",
 			"thisPrReviewers", thisPrReviewers, "apiErr", apiErr)
 	}
