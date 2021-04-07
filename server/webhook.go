@@ -99,6 +99,15 @@ func (p *Plugin) executeHandlers(webhookHandlers []*webhook.HandleWebhook, pl we
 				continue
 			}
 
+			userInfo, userInfoErr := p.getBitbucketUserInfo(userID)
+			if userInfoErr != nil {
+				continue
+			}
+
+			if !userInfo.Settings.Notifications {
+				continue
+			}
+
 			channel, err := p.API.GetDirectChannel(userID, p.BotUserID)
 			if err != nil {
 				continue
