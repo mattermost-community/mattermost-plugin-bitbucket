@@ -44,7 +44,7 @@ User @testMmUser pushed [2 new commits](https://bitbucket.org/mattermost/matterm
 	t.Run("RenderBranchOrTagCreatedEventNotificationForSubscribedChannels branch", func(t *testing.T) {
 		expected := "\n[\\[mattermost-plugin-bitbucket\\]](https://bitbucket.org/mattermost/mattermost-plugin-bitbucket) " +
 			"Branch [test-new-branch](https://bitbucket.org/mattermost/mattermost-plugin-bitbucket/branch/test-new-branch) " +
-			"was created by @testMmUser\n"
+			"was created by [mmUserBitbucketNickName](https://bitbucket.org/test-mmUserBitbucketNickName-url/)\n"
 
 		pl := getTestRepoPushBranchCreated()
 
@@ -57,7 +57,7 @@ User @testMmUser pushed [2 new commits](https://bitbucket.org/mattermost/matterm
 	t.Run("RenderBranchOrTagCreatedEventNotificationForSubscribedChannels tag", func(t *testing.T) {
 		expected := "\n[\\[mattermost-plugin-bitbucket\\]](https://bitbucket.org/mattermost/mattermost-plugin-bitbucket) " +
 			"Tag [test-new-tag](https://bitbucket.org/mattermost/mattermost-plugin-bitbucket/tag/test-new-tag) " +
-			"was created by @testMmUser\n"
+			"was created by [mmUserBitbucketNickName](https://bitbucket.org/test-mmUserBitbucketNickName-url/)\n"
 
 		pl := getTestRepoPushTagCreated()
 
@@ -70,7 +70,7 @@ User @testMmUser pushed [2 new commits](https://bitbucket.org/mattermost/matterm
 	t.Run("RenderBranchOrTagDeletedEventNotificationForSubscribedChannels branch", func(t *testing.T) {
 		expected := "\n[\\[mattermost-plugin-bitbucket\\]](https://bitbucket.org/mattermost/mattermost-plugin-bitbucket) " +
 			"Branch [test-old-branch](https://bitbucket.org/mattermost/mattermost-plugin-bitbucket/branch/test-old-branch) " +
-			"was deleted by @testMmUser\n"
+			"was deleted by [mmUserBitbucketNickName](https://bitbucket.org/test-mmUserBitbucketNickName-url/)\n"
 
 		pl := getTestRepoPushBranchDeleted()
 
@@ -83,7 +83,7 @@ User @testMmUser pushed [2 new commits](https://bitbucket.org/mattermost/matterm
 	t.Run("RenderBranchOrTagDeletedEventNotificationForSubscribedChannels tag", func(t *testing.T) {
 		expected := "\n[\\[mattermost-plugin-bitbucket\\]](https://bitbucket.org/mattermost/mattermost-plugin-bitbucket) " +
 			"Tag [test-old-tag](https://bitbucket.org/mattermost/mattermost-plugin-bitbucket/tag/test-old-tag) " +
-			"was deleted by @testMmUser\n"
+			"was deleted by [mmUserBitbucketNickName](https://bitbucket.org/test-mmUserBitbucketNickName-url/)\n"
 
 		pl := getTestRepoPushTagDeleted()
 
