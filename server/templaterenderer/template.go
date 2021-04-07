@@ -142,7 +142,7 @@ func (tr *templateRenderer) init() {
 {{- end -}}
 `))
 
-	//The user template links to the corresponding user in BitBucket.
+	// The user template links to the corresponding user in BitBucket.
 	template.Must(tr.masterTemplate.New("bitbucketUser").Parse(`[{{.NickName}}]({{.Links.HTML.Href}})`))
 }
 
