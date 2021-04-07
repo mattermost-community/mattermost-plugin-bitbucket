@@ -297,6 +297,9 @@ func (w *webhook) createPullRequestCommentMentionNotification(pl webhookpayload.
 		return nil, errors.Wrap(err, TemplateErrorText)
 	}
 
+	// remove the PR author from the list as they will be notified in another message
+	mentionedAccountIDs = removeFromSlice(mentionedAccountIDs, pl.PullRequest.Author.AccountID)
+
 	return w.createPrivateMessageHandleWebhook(&pl, message, mentionedAccountIDs), nil
 }
 

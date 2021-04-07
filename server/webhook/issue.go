@@ -140,6 +140,9 @@ func (w *webhook) createIssueCommentMentionNotification(pl webhookpayload.IssueC
 		return nil, errors.Wrap(err, TemplateErrorText)
 	}
 
+	// remove the issue author from the list as they will be notified in another message
+	mentionedAccountIDs = removeFromSlice(mentionedAccountIDs, pl.Issue.Reporter.AccountID)
+
 	return w.createPrivateMessageHandleWebhook(&pl, message, mentionedAccountIDs), nil
 }
 
