@@ -1,26 +1,27 @@
 # Table of contents
 
-* [Mattermost/Bitcucket Plugin](README.md)
+* [Mattermost/Bitbucket Plugin](README.md)
 
 ## Getting Started
 
-* [Prerequisites](prerequisites.md)
+* [Prerequisites](getting-started/prerequisites.md)
 
 ## Admin Guide
 
-* [Installation](installation.md)
-* [Configuration](configuration.md)
-* [Onboarding Users](onboarding.md)
+* [Installation](admin-guide/installation.md)
+* [Configuration](admin-guide/configuration.md)
+* [Onboarding Users](admin-guide/onboarding.md)
 
 ## User Guide
 
-* [Slash Commands](slash-commands.md)
-* [FAQs](faqs.md)
+* [Slash Commands](user-guide/slash-commands.md)
+* [FAQs](user-guide/faqs.md)
 
 ## Help and Support
 
-* [Help and Support](help-and-support.md)
+* [Help and Support](help-and-support/help-and-support.md)
 
 ## Contributing
 
-* [Development](development.md)
+* [Development](contributing/development.md)
+

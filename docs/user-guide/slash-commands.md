@@ -1,4 +1,4 @@
-## Slash Commands
+# Slash Commands
 
 * **Subscribe to a respository:** Use `/bitbucket subscriptions add` to subscribe a Mattermost channel to receive notifications for new pull requests, issues, branch creation, and more in a Bitbucket repository.
   * For instance, to post notifications for issues, issue comments, and pull requests from mattermost/mattermost-server, use: `/bitbucket subscribe mattermost/mattermost-server issues,pulls,issue_comments`
@@ -6,3 +6,4 @@
 * **Update settings:** Use `/bitbucket settings` to update your settings for notifications and daily reminders.
 
 Run `/bitbucket help` to see what else the slash command can do.
+
