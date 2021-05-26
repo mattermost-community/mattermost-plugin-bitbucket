@@ -10,7 +10,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/webhookpayload"
 )
 
 type BitBucketAccountIDToUsernameMappingCallbackType func(string) string
