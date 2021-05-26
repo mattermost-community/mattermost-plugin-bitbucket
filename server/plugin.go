@@ -1,11 +1,11 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"path/filepath"
+
+	"context"
+
+	"encoding/json"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -126,31 +126,20 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to register command")
 	}
 
-	botID, err := p.Helpers.EnsureBot(&model.Bot{
+	bot := &model.Bot{
 		Username:    "bitbucket",
 		DisplayName: "BitBucket",
 		Description: "Created by the BitBucket plugin.",
-	})
+	}
+	options := []plugin.EnsureBotOption{
+		plugin.ProfileImagePath("assets/profile.png"),
+	}
+
+	botID, err := p.Helpers.EnsureBot(bot, options...)
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure BitBucket bot")
 	}
-
 	p.BotUserID = botID
-
-	bundlePath, err := p.API.GetBundlePath()
-	if err != nil {
-		return errors.Wrap(err, "couldn't get bundle path")
-	}
-
-	profileImage, err := ioutil.ReadFile(filepath.Join(bundlePath, "assets", "profile.png"))
-	if err != nil {
-		return errors.Wrap(err, "couldn't read profile image")
-	}
-
-	appErr := p.API.SetProfileImage(botID, profileImage)
-	if appErr != nil {
-		return errors.Wrap(appErr, "couldn't set profile image")
-	}
 
 	return nil
 }
@@ -323,40 +312,34 @@ func (p *Plugin) GetToDo(ctx context.Context, userInfo *BitbucketUserInfo, bitbu
 	}
 
 	text := "##### Your Assignments\n"
-
-	if len(yourAssignments) == 0 {
-		text += "You don't have any assignments.\n"
-	} else {
-		text += fmt.Sprintf("You have %v assignments:\n", len(yourAssignments))
-
+	textAssignments := "You don't have any assignments.\n"
+	if len(yourAssignments) != 0 {
+		textAssignments = fmt.Sprintf("You have %v assignments:\n", len(yourAssignments))
 		for _, assign := range yourAssignments {
-			text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
+			textAssignments += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
 		}
 	}
+	text += textAssignments
 
 	text += "##### Review Requests\n"
-
-	if len(assignedPRs) == 0 {
-		text += "You don't have any pull requests awaiting your review.\n"
-	} else {
-		text += fmt.Sprintf("You have %v pull requests awaiting your review:\n", len(assignedPRs))
-
+	textReviews := "You don't have any pull requests awaiting your review.\n"
+	if len(assignedPRs) != 0 {
+		textReviews = fmt.Sprintf("You have %v pull requests awaiting your review:\n", len(assignedPRs))
 		for _, assign := range assignedPRs {
-			text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
+			textReviews += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
 		}
 	}
+	text += textReviews
 
 	text += "##### Your Open Pull Requests\n"
-
-	if len(yourOpenPrs) == 0 {
-		text += "You don't have any open pull requests.\n"
-	} else {
-		text += fmt.Sprintf("You have %v open pull requests:\n", len(yourOpenPrs))
-
+	textYourOpenPrs := "You don't have any open pull requests.\n"
+	if len(yourOpenPrs) != 0 {
+		textYourOpenPrs = fmt.Sprintf("You have %v open pull requests:\n", len(yourOpenPrs))
 		for _, assign := range yourOpenPrs {
-			text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
+			textYourOpenPrs += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
 		}
 	}
+	text += textYourOpenPrs
 
 	return text, nil
 }

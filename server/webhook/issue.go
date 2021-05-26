@@ -9,7 +9,7 @@ import (
 func (w *webhook) HandleIssueCreatedEvent(pl webhookpayload.IssueCreatedPayload) ([]*HandleWebhook, error) {
 	var handlers []*HandleWebhook
 
-	handler1, err := w.createIssueCreatedEventNotificationForSubscribedChannels(pl)
+	handler1, err := w.createIssueEventNotificationForSubscribedChannels(w.templateRenderer.RenderIssueCreatedEventNotificationForSubscribedChannels, pl)
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +25,7 @@ func (w *webhook) HandleIssueCreatedEvent(pl webhookpayload.IssueCreatedPayload)
 func (w *webhook) HandleIssueUpdatedEvent(pl webhookpayload.IssueUpdatedPayload) ([]*HandleWebhook, error) {
 	var handlers []*HandleWebhook
 
-	handler1, err := w.createIssueUpdatedEventNotificationForSubscribedChannels(pl)
+	handler1, err := w.createIssueEventNotificationForSubscribedChannels(w.templateRenderer.RenderIssueUpdatedEventNotificationForSubscribedChannels, pl)
 	if err != nil {
 		return nil, err
 	}
@@ -87,38 +87,17 @@ func (w *webhook) createIssueCommentCreatedEventNotificationForSubscribedChannel
 	return handler, nil
 }
 
-func (w *webhook) createIssueUpdatedEventNotificationForSubscribedChannels(pl webhookpayload.IssueUpdatedPayload) (*HandleWebhook, error) {
-	message, err := w.templateRenderer.RenderIssueUpdatedEventNotificationForSubscribedChannels(pl)
+type templateMethod func(webhookpayload.Payload) (string, error)
+
+func (w *webhook) createIssueEventNotificationForSubscribedChannels(method templateMethod, pl webhookpayload.Payload) (*HandleWebhook, error) {
+	message, err := method(pl)
 	if err != nil {
 		return nil, err
 	}
 
 	handler := &HandleWebhook{Message: message}
 
-	subs := w.subscriptionConfiguration.GetSubscribedChannelsForRepository(&pl)
-	if len(subs) == 0 {
-		return handler, nil
-	}
-
-	for _, sub := range subs {
-		if !sub.Issues() {
-			continue
-		}
-		handler.ToChannels = append(handler.ToChannels, sub.ChannelID)
-	}
-
-	return handler, nil
-}
-
-func (w *webhook) createIssueCreatedEventNotificationForSubscribedChannels(pl webhookpayload.IssueCreatedPayload) (*HandleWebhook, error) {
-	message, err := w.templateRenderer.RenderIssueCreatedEventNotificationForSubscribedChannels(pl)
-	if err != nil {
-		return nil, err
-	}
-
-	handler := &HandleWebhook{Message: message}
-
-	subs := w.subscriptionConfiguration.GetSubscribedChannelsForRepository(&pl)
+	subs := w.subscriptionConfiguration.GetSubscribedChannelsForRepository(pl)
 	if len(subs) == 0 {
 		return handler, nil
 	}

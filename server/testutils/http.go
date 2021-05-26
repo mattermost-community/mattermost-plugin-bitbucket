@@ -56,7 +56,7 @@ func EncodeJSON(data interface{}) ([]byte, error) {
 	return b, nil
 }
 
-// EncodeJSON encodes json data in bytes
+// EncodeString encodes json data in bytes
 func EncodeString(data interface{}) ([]byte, error) {
 	if data == nil {
 		return []byte{}, nil

@@ -1,11 +1,17 @@
 package templaterenderer
 
 import (
+	"errors"
+
 	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
 )
 
-func (tr *templateRenderer) RenderIssueCreatedEventNotificationForSubscribedChannels(pl webhookpayload.IssueCreatedPayload) (string, error) {
-	return tr.renderTemplate(pl, "issueCreatedEventNotificationForSubscribedChannels", `
+func (tr *templateRenderer) RenderIssueCreatedEventNotificationForSubscribedChannels(pl webhookpayload.Payload) (string, error) {
+	typedPayload, ok := pl.(webhookpayload.IssueCreatedPayload)
+	if !ok {
+		return "", errors.New("invalid type")
+	}
+	return tr.renderTemplate(typedPayload, "issueCreatedEventNotificationForSubscribedChannels", `
 #### {{.Issue.Title}}
 ##### {{template "issue" .}}
 #new-issue by {{template "user" .Actor}}:
@@ -13,8 +19,12 @@ func (tr *templateRenderer) RenderIssueCreatedEventNotificationForSubscribedChan
 `)
 }
 
-func (tr *templateRenderer) RenderIssueUpdatedEventNotificationForSubscribedChannels(pl webhookpayload.IssueUpdatedPayload) (string, error) {
-	return tr.renderTemplate(pl, "issueUpdatedEventNotificationForSubscribedChannels", `
+func (tr *templateRenderer) RenderIssueUpdatedEventNotificationForSubscribedChannels(pl webhookpayload.Payload) (string, error) {
+	typedPayload, ok := pl.(webhookpayload.IssueUpdatedPayload)
+	if !ok {
+		return "", errors.New("invalid type")
+	}
+	return tr.renderTemplate(typedPayload, "issueUpdatedEventNotificationForSubscribedChannels", `
 #### {{.Issue.Title}}
 ##### {{template "issue" .}}
 #updated-issue by {{template "user" .Actor}}:
