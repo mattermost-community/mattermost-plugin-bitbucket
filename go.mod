@@ -1,4 +1,4 @@
-module github.com/kosgrz/mattermost-plugin-bitbucket
+module github.com/mattermost/mattermost-plugin-bitbucket
 
 go 1.12
 

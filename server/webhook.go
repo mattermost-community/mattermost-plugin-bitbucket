@@ -8,9 +8,9 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/subscription"
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhook"
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/subscription"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/webhook"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/webhookpayload"
 )
 
 const (

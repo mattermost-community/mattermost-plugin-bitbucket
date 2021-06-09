@@ -1,7 +1,7 @@
 package webhook
 
 import (
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/webhookpayload"
 
 	"github.com/pkg/errors"
 )

@@ -42,7 +42,7 @@ Configuration is started in Bitbucket and completed in Mattermost.
 3. Click the **Add consumer** button and set the following values:
    - **Name:** `Mattermost Bitbucket Plugin - <your company name>`.
    - **Callback URL:** `https://your-mattermost-url.com/plugins/bitbucket/oauth/complete`, replacing `https://your-mattermost-url.com` with your Mattermost URL.
-   - **URL:** `https://github.com/kosgrz/mattermost-plugin-bitbucket`.
+   - **URL:** `https://github.com/mattermost/mattermost-plugin-bitbucket`.
 4. Set:
    - **Account:** `Email` and `Read` permissions.
    - **Projects:** `Read` permission.
