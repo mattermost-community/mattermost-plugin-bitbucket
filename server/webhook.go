@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/kosgrz/mattermost-plugin-bitbucket/server/subscription"
@@ -19,6 +20,12 @@ const (
 )
 
 func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	if p.configuration.WebhookSecret != params["webhooksecret"] {
+		http.Error(w, "Not authorized", http.StatusUnauthorized)
+		return
+	}
 	hook, _ := webhookpayload.New()
 	payload, err := hook.Parse(r,
 		webhookpayload.RepoPushEvent,

@@ -100,7 +100,7 @@ func (p *Plugin) initializeAPI() {
 	oauthRouter := p.router.PathPrefix("/oauth").Subrouter()
 	apiRouter := p.router.PathPrefix("/api/v1").Subrouter()
 
-	p.router.HandleFunc("/webhook", p.handleWebhook).Methods(http.MethodPost)
+	p.router.HandleFunc("/webhook/{webhooksecret}", p.handleWebhook).Methods(http.MethodPost)
 
 	oauthRouter.HandleFunc("/connect", p.extractUserMiddleWare(p.connectUserToBitbucket, ResponseTypePlain)).Methods(http.MethodGet)
 	oauthRouter.HandleFunc("/complete", p.extractUserMiddleWare(p.completeConnectUserToBitbucket, ResponseTypePlain)).Methods(http.MethodGet)
