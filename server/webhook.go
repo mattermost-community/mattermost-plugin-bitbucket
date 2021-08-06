@@ -30,7 +30,6 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Webhook not found in config", http.StatusInternalServerError)
 		return
 	}
-	p.API.LogWarn("log ", "webhooksecret", config.WebhookSecret, "secret", secret)
 	if subtle.ConstantTimeCompare([]byte(config.WebhookSecret), []byte(secret)) == 0 {
 		http.Error(w, "Not authorized", http.StatusUnauthorized)
 		return
