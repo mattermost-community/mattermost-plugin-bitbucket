@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/kosgrz/mattermost-plugin-bitbucket/server/subscription"
@@ -21,9 +20,18 @@ const (
 )
 
 func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-
-	if subtle.ConstantTimeCompare([]byte(p.configuration.WebhookSecret), []byte(params["webhooksecret"])) == 0 {
+	secret := r.URL.Query().Get("secret")
+	config := p.getConfiguration()
+	if err := config.IsValid(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if config.WebhookSecret == "" {
+		http.Error(w, "Webhook not found in config", http.StatusInternalServerError)
+		return
+	}
+	p.API.LogWarn("log ", "webhooksecret", config.WebhookSecret, "secret", secret)
+	if subtle.ConstantTimeCompare([]byte(config.WebhookSecret), []byte(secret)) == 0 {
 		http.Error(w, "Not authorized", http.StatusUnauthorized)
 		return
 	}
