@@ -12,7 +12,10 @@
     "@primer/octicons-react": "^9.6.0",
     "core-js": "3.1.4",
     "debounce-promise": "3.1.2",
+    "elliptic": "6.5.4",
+    "ini": "2.0.0",
     "mattermost-redux": "github:mattermost/mattermost-redux#b56e7e3a6f7f5de281fd3541eefec9345a8bbc89",
+    "node-fetch": "2.6.1",
     "prop-types": "15.7.2",
     "react": "16.8.6",
     "react-bootstrap": "0.32.4",
@@ -21,7 +24,9 @@
     "react-redux": "7.0.3",
     "react-select": "3.0.4",
     "redux": "4.0.1",
-    "superagent": "5.0.5"
+    "superagent": "5.0.5",
+    "y18n": "5.0.5",
+    "yargs-parser": "18.1.1"
   },
   "devDependencies": {
     "@babel/cli": "7.4.4",
