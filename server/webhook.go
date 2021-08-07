@@ -22,12 +22,9 @@ const (
 func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	secret := r.URL.Query().Get("secret")
 	config := p.getConfiguration()
-	if err := config.IsValid(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+
 	if config.WebhookSecret == "" {
-		http.Error(w, "Webhook not found in config", http.StatusInternalServerError)
+		http.Error(w, "Not authorized", http.StatusUnauthorized)
 		return
 	}
 	if subtle.ConstantTimeCompare([]byte(config.WebhookSecret), []byte(secret)) == 0 {
