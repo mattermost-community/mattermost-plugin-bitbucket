@@ -7,3 +7,4 @@ Visit the [Bitbucket documentation](https://mattermost.gitbook.io/bitbucket-plug
 ## License
 
 This repository is licensed under the [Apache 2.0 License](https://github.com/mattermost/mattermost-plugin-bitbucket/blob/master/LICENSE).
+test
