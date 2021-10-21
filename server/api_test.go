@@ -63,7 +63,7 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 					BitbucketOrg:               "mockOrg",
 					BitbucketOAuthClientID:     "mockID",
 					BitbucketOAuthClientSecret: "mockSecret",
-					WebhookSecret:              "",
+					WebhookSecret:              "mockSecret",
 					EnablePrivateRepo:          false,
 					EncryptionKey:              "mockKey",
 				})
@@ -113,6 +113,8 @@ func TestGetToken(t *testing.T) {
 					BitbucketOrg:               "mockOrg",
 					BitbucketOAuthClientID:     "mockID",
 					BitbucketOAuthClientSecret: "mockSecret",
+					WebhookSecret:              "mockSecret",
+					EnablePrivateRepo:          false,
 					EncryptionKey:              "mockKey",
 				})
 			p.initializeAPI()
