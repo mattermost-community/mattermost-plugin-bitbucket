@@ -75,14 +75,6 @@ const manifestStr = `
         "help_text": "(Optional) Set to lock the plugin to a single Bitbucket organization.",
         "placeholder": "",
         "default": null
-      },
-      {
-        "key": "EnablePrivateRepo",
-        "display_name": "Enable Private Repositories",
-        "type": "bool",
-        "help_text": "(Optional) Allow the plugin to work with private repositories. Enabling private repositories will require existing users to reconnect their accounts to gain access to private repositories. A message will be automatically be sent to affected users next time they load Mattermost alerting them of this.",
-        "placeholder": "",
-        "default": null
       }
     ]
   }
