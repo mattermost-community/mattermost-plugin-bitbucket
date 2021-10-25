@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -19,6 +20,17 @@ const (
 )
 
 func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
+	secret := r.URL.Query().Get("secret")
+	config := p.getConfiguration()
+
+	if config.WebhookSecret == "" {
+		http.Error(w, "Not authorized", http.StatusUnauthorized)
+		return
+	}
+	if subtle.ConstantTimeCompare([]byte(config.WebhookSecret), []byte(secret)) == 0 {
+		http.Error(w, "Not authorized", http.StatusUnauthorized)
+		return
+	}
 	hook, _ := webhookpayload.New()
 	payload, err := hook.Parse(r,
 		webhookpayload.RepoPushEvent,
