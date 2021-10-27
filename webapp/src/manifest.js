@@ -7,9 +7,9 @@ const manifest = JSON.parse(`
     "description": "Bitbucket plugin for Mattermost.",
     "homepage_url": "https://github.com/kosgrz/mattermost-plugin-bitbucket",
     "support_url": "https://github.com/kosgrz/mattermost-plugin-bitbucket/issues",
-    "release_notes_url": "https://github.com/mattermost/mattermost-plugin-bitbucket/releases/tag/v1.1.0",
+    "release_notes_url": "https://github.com/mattermost/mattermost-plugin-bitbucket/releases/tag/v1.1.1",
     "icon_path": "assets/icon.svg",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "min_server_version": "5.25.0",
     "server": {
         "executables": {
