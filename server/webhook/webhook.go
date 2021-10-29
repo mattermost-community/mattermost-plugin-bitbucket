@@ -5,9 +5,9 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/subscription"
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/templaterenderer"
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/subscription"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/templaterenderer"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/webhookpayload"
 )
 
 const (

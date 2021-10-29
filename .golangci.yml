@@ -9,12 +9,14 @@ linters-settings:
   gofmt:
     simplify: true
   goimports:
-    local-prefixes: github.com/kosgrz/mattermost-plugin-bitbucket
+    local-prefixes: github.com/mattermost/mattermost-plugin-bitbucket
   golint:
     min-confidence: 0
   govet:
     check-shadowing: true
     enable-all: true
+    disable:
+      - fieldalignment
   misspell:
     locale: US
 

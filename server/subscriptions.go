@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/wbrefvem/go-bitbucket"
 
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/subscription"
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/subscription"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/webhookpayload"
 )
 
 const (

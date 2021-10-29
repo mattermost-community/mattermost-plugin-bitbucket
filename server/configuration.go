@@ -22,7 +22,6 @@ type Configuration struct {
 	BitbucketOAuthClientID     string
 	BitbucketOAuthClientSecret string
 	WebhookSecret              string
-	EnablePrivateRepo          bool
 	EncryptionKey              string
 }
 
