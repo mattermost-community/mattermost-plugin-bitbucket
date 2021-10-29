@@ -1,7 +1,7 @@
 package templaterenderer
 
 import (
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/webhookpayload"
 )
 
 func (tr *templateRenderer) RenderPullRequestCreatedEventNotificationForSubscribedChannels(pl webhookpayload.PullRequestCreatedPayload) (string, error) {
