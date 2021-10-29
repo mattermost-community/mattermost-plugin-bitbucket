@@ -62,9 +62,8 @@ Open **System Console &gt; Plugins &gt; Bitbucket** and do the following:
 
 1. Generate a new value for **At Rest Encryption Key**.
 2. \(Optional\) **Bitbucket Organization:** Lock the plugin to a single Bitbucket organization by setting this field to the name of your Bitbucket organization.
-3. \(Optional\) **Enable Private Repositories:** Allow the plugin to receive notifications from private repositories by setting this value to true.
-4. Select **Save**.
-5. Go to **System Console &gt; Plugins &gt; Management** and select **Enable** to enable the Bitbucket plugin.
+3. Select **Save**.
+4. Go to **System Console &gt; Plugins &gt; Management** and select **Enable** to enable the Bitbucket plugin.
 
 You're all set!
 

@@ -28,9 +28,8 @@ import (
 )
 
 const (
-	BitbucketTokenKey       = "_bitbuckettoken"
-	BitbucketAccountIDKey   = "_bitbucketaccountid"
-	BitbucketPrivateRepoKey = "_bitbucketprivate"
+	BitbucketTokenKey     = "_bitbuckettoken"
+	BitbucketAccountIDKey = "_bitbucketaccountid"
 
 	BitbucketBaseURL = "https://bitbucket.org/"
 
@@ -176,13 +175,12 @@ func (p *Plugin) getOAuthConfig() *oauth2.Config {
 }
 
 type BitbucketUserInfo struct {
-	UserID              string
-	Token               *oauth2.Token
-	BitbucketUsername   string
-	BitbucketAccountID  string
-	LastToDoPostAt      int64
-	Settings            *UserSettings
-	AllowedPrivateRepos bool
+	UserID             string
+	Token              *oauth2.Token
+	BitbucketUsername  string
+	BitbucketAccountID string
+	LastToDoPostAt     int64
+	Settings           *UserSettings
 }
 
 type UserSettings struct {
