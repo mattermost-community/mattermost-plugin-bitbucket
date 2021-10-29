@@ -24,7 +24,7 @@ const manifest = JSON.parse(`
     },
     "settings_schema": {
         "header": "To set up the Bitbucket plugin, you need to register a Bitbucket OAuth consumer here https://bitbucket.org/YOURWORKSPACE/workspace/settings/oauth-consumers/new.",
-        "footer": "* To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/kosgrz/mattermost-plugin-bitbucket).",
+        "footer": "* To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/mattermost/mattermost-plugin-bitbucket).",
         "settings": [
             {
                 "key": "BitbucketOAuthClientID",
