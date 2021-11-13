@@ -22,7 +22,6 @@ type Configuration struct {
 	BitbucketOAuthClientID     string
 	BitbucketOAuthClientSecret string
 	WebhookSecret              string
-	EnablePrivateRepo          bool
 	EncryptionKey              string
 }
 
@@ -47,6 +46,9 @@ func (c *Configuration) IsValid() error {
 		return errors.New("must have an encryption key")
 	}
 
+	if c.WebhookSecret == "" {
+		return errors.New("must have a webhook secret")
+	}
 	return nil
 }
 

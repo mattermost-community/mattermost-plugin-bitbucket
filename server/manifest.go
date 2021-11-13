@@ -15,10 +15,11 @@ const manifestStr = `
   "id": "bitbucket",
   "name": "Bitbucket",
   "description": "Bitbucket plugin for Mattermost.",
-  "homepage_url": "https://github.com/kosgrz/mattermost-plugin-bitbucket",
-  "support_url": "https://github.com/kosgrz/mattermost-plugin-bitbucket/issues",
+  "homepage_url": "https://github.com/mattermost/mattermost-plugin-bitbucket",
+  "support_url": "https://github.com/mattermost/mattermost-plugin-bitbucket/issues",
+  "release_notes_url": "https://github.com/mattermost/mattermost-plugin-bitbucket/releases/tag/v1.1.0",
   "icon_path": "assets/icon.svg",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "min_server_version": "5.25.0",
   "server": {
     "executables": {
@@ -33,7 +34,7 @@ const manifestStr = `
   },
   "settings_schema": {
     "header": "To set up the Bitbucket plugin, you need to register a Bitbucket OAuth consumer here https://bitbucket.org/YOURWORKSPACE/workspace/settings/oauth-consumers/new.",
-    "footer": "* To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/kosgrz/mattermost-plugin-bitbucket).",
+    "footer": "* To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/mattermost/mattermost-plugin-bitbucket).",
     "settings": [
       {
         "key": "BitbucketOAuthClientID",
@@ -72,14 +73,6 @@ const manifestStr = `
         "display_name": "Bitbucket Organization",
         "type": "text",
         "help_text": "(Optional) Set to lock the plugin to a single Bitbucket organization.",
-        "placeholder": "",
-        "default": null
-      },
-      {
-        "key": "EnablePrivateRepo",
-        "display_name": "Enable Private Repositories",
-        "type": "bool",
-        "help_text": "(Optional) Allow the plugin to work with private repositories. Enabling private repositories will require existing users to reconnect their accounts to gain access to private repositories. A message will be automatically be sent to affected users next time they load Mattermost alerting them of this.",
         "placeholder": "",
         "default": null
       }

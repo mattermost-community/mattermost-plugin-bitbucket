@@ -8,7 +8,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/testutils"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/testutils"
 )
 
 func TestPlugin_ServeHTTP(t *testing.T) {
@@ -63,8 +63,7 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 					BitbucketOrg:               "mockOrg",
 					BitbucketOAuthClientID:     "mockID",
 					BitbucketOAuthClientSecret: "mockSecret",
-					WebhookSecret:              "",
-					EnablePrivateRepo:          false,
+					WebhookSecret:              "mockSecret",
 					EncryptionKey:              "mockKey",
 				})
 			p.initializeAPI()
@@ -113,6 +112,7 @@ func TestGetToken(t *testing.T) {
 					BitbucketOrg:               "mockOrg",
 					BitbucketOAuthClientID:     "mockID",
 					BitbucketOAuthClientSecret: "mockSecret",
+					WebhookSecret:              "mockSecret",
 					EncryptionKey:              "mockKey",
 				})
 			p.initializeAPI()

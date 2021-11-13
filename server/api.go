@@ -429,25 +429,6 @@ func (p *Plugin) getConnected(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	privateRepoStoreKey := info.UserID + BitbucketPrivateRepoKey
-	if config.EnablePrivateRepo && !info.AllowedPrivateRepos {
-		val, err := p.API.KVGet(privateRepoStoreKey)
-		if err != nil {
-			p.API.LogError("Unable to get private repo key value", "err", err.Error())
-			return
-		}
-
-		// Inform the user once that private repositories enabled
-		if val == nil {
-			p.CreateBotDMPost(info.UserID, "Private repositories have been enabled for this plugin. To be able to use them you must disconnect and reconnect your BitBucket account. To reconnect your account, use the following slash commands: `/bitbucket disconnect` followed by `/bitbucket connect private`.", "")
-
-			err := p.API.KVSet(privateRepoStoreKey, []byte("1"))
-			if err != nil {
-				p.API.LogError("Unable to set private repo key value", "err", err.Error())
-			}
-		}
-	}
-
 	p.writeJSON(w, resp)
 }
 

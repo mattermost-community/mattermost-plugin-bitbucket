@@ -2,15 +2,16 @@ package main
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/subscription"
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhook"
-	"github.com/kosgrz/mattermost-plugin-bitbucket/server/webhookpayload"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/subscription"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/webhook"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/webhookpayload"
 )
 
 const (
@@ -19,6 +20,17 @@ const (
 )
 
 func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
+	secret := r.URL.Query().Get("secret")
+	config := p.getConfiguration()
+
+	if config.WebhookSecret == "" {
+		http.Error(w, "Not authorized", http.StatusUnauthorized)
+		return
+	}
+	if subtle.ConstantTimeCompare([]byte(config.WebhookSecret), []byte(secret)) == 0 {
+		http.Error(w, "Not authorized", http.StatusUnauthorized)
+		return
+	}
 	hook, _ := webhookpayload.New()
 	payload, err := hook.Parse(r,
 		webhookpayload.RepoPushEvent,

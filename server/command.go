@@ -305,26 +305,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 			return &model.CommandResponse{}, nil
 		}
 
-		privateAllowed := false
-		if len(parameters) > 0 {
-			if len(parameters) != 1 || parameters[0] != "private" {
-				p.postCommandResponse(args, fmt.Sprintf("Unknown command `%v`. Do you meant `/bitbucket connect private`?", args.Command))
-				return &model.CommandResponse{}, nil
-			}
-
-			privateAllowed = true
-		}
-
-		qparams := ""
-		if privateAllowed {
-			if !p.getConfiguration().EnablePrivateRepo {
-				p.postCommandResponse(args, "Private repositories are disabled. Please ask a System Admin to enabled them.")
-				return &model.CommandResponse{}, nil
-			}
-			qparams = "?private=true"
-		}
-
-		msg := fmt.Sprintf("[Click here to link your Bitbucket account.](%s/plugins/bitbucket/oauth/connect%s)", *siteURL, qparams)
+		msg := fmt.Sprintf("[Click here to link your Bitbucket account.](%s/plugins/bitbucket/oauth/connect)", *siteURL)
 		p.postCommandResponse(args, msg)
 		return &model.CommandResponse{}, nil
 	}
