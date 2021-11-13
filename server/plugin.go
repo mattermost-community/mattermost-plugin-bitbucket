@@ -29,6 +29,7 @@ import (
 
 const (
 	BitbucketTokenKey       = "_bitbuckettoken"
+	BitbucketOauthKey       = "_bitbucketoauthkey"
 	BitbucketAccountIDKey   = "_bitbucketaccountid"
 	BitbucketPrivateRepoKey = "_bitbucketprivate"
 

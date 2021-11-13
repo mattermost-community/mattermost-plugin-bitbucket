@@ -184,7 +184,7 @@ func (p *Plugin) connectUserToBitbucket(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	appErr := p.API.KVSetWithExpiry(state.Token, stateBytes, TokenTTL)
+	appErr := p.API.KVSetWithExpiry(state.Token+BitbucketOauthKey, stateBytes, TokenTTL)
 	if appErr != nil {
 		http.Error(w, "error setting stored state", http.StatusBadRequest)
 		return
@@ -204,22 +204,23 @@ func (p *Plugin) completeConnectUserToBitbucket(w http.ResponseWriter, r *http.R
 
 	stateToken := r.URL.Query().Get("state")
 
-	storedState, appErr := p.API.KVGet(stateToken)
+	storedState, appErr := p.API.KVGet(stateToken + BitbucketOauthKey)
 	if appErr != nil {
 		p.API.LogError("Missing stored state", "appErr", appErr.Error())
 		http.Error(w, "missing stored state", http.StatusBadRequest)
-		return
-	}
-	appErr = p.API.KVDelete(stateToken)
-	if appErr != nil {
-		p.API.LogError("Error deleting stored state", "appErr", appErr.Error())
-		http.Error(w, "error deleting stored state", http.StatusBadRequest)
 		return
 	}
 
 	var state OAuthState
 	if err := json.Unmarshal(storedState, &state); err != nil {
 		http.Error(w, "json unmarshal failed", http.StatusBadRequest)
+		return
+	}
+
+	appErr = p.API.KVDelete(stateToken + BitbucketOauthKey)
+	if appErr != nil {
+		p.API.LogError("Error deleting stored state", "appErr", appErr.Error())
+		http.Error(w, "error deleting stored state", http.StatusBadRequest)
 		return
 	}
 
