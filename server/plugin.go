@@ -29,6 +29,7 @@ import (
 
 const (
 	BitbucketTokenKey     = "_bitbuckettoken"
+	BitbucketOauthKey     = "bitbucketoauthkey_"
 	BitbucketAccountIDKey = "_bitbucketaccountid"
 
 	BitbucketBaseURL = "https://bitbucket.org/"
