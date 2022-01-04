@@ -12,8 +12,8 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
 	"github.com/wbrefvem/go-bitbucket"
 
 	"golang.org/x/oauth2"
@@ -164,7 +164,6 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	r.Header.Set("Mattermost-Plugin-ID", c.SourcePluginId)
 	w.Header().Set("Content-Type", "application/json")
 
 	p.router.ServeHTTP(w, r)
@@ -1010,7 +1009,6 @@ func (p *Plugin) createIssue(w http.ResponseWriter, r *http.Request, userID stri
 		Message:   message,
 		ChannelId: post.ChannelId,
 		RootId:    rootID,
-		ParentId:  rootID,
 		UserId:    userID,
 	}
 
