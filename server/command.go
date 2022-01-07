@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/v6/plugin"
-
 	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
 )
 
 const commandHelp = `* |/bitbucket connect| - Connect your Mattermost account to your Bitbucket account

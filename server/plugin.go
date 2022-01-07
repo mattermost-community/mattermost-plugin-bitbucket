@@ -5,27 +5,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"path/filepath"
-
-	"github.com/gorilla/mux"
-	"github.com/pkg/errors"
-
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-plugin-bitbucket/server/templaterenderer"
-	"github.com/mattermost/mattermost-plugin-bitbucket/server/webhook"
-
 	"net/http"
 	"net/url"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 
+	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
+	"github.com/wbrefvem/go-bitbucket"
+	"golang.org/x/oauth2"
+
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
-	"github.com/wbrefvem/go-bitbucket"
-
-	"golang.org/x/oauth2"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/templaterenderer"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/webhook"
 )
 
 const (
