@@ -10,7 +10,7 @@ const manifest = JSON.parse(`
     "release_notes_url": "https://github.com/mattermost/mattermost-plugin-bitbucket/releases/tag/v1.1.0",
     "icon_path": "assets/icon.svg",
     "version": "1.1.0",
-    "min_server_version": "5.25.0",
+    "min_server_version": "5.37.0",
     "server": {
         "executables": {
             "darwin-amd64": "server/dist/plugin-darwin-amd64",
