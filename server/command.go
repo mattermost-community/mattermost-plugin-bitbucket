@@ -201,8 +201,8 @@ func (p *Plugin) handleMe(_ *plugin.Context, _ *model.CommandArgs, _ []string, u
 		return "Encountered an error getting your Bitbucket profile."
 	}
 
-	text := fmt.Sprintf("You are connected to Bitbucket as:\n# [![image](%s =40x40)](%s) [%s](%s)",
-		bitbucketUser.Links.Avatar.Href, bitbucketUser.Links.Html.Href, bitbucketUser.Username, bitbucketUser.Links.Html.Href)
+	text := fmt.Sprintf("You are connected to Bitbucket as:\n# [%s](%s)",
+		bitbucketUser.Username, bitbucketUser.Links.Html.Href)
 	return text
 }
 
