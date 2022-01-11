@@ -7,7 +7,7 @@ Configuration is started in Bitbucket and completed in Mattermost.
 1. Go to [https://bitbucket.org](https://bitbucket.org) and log in.
 2. From your profile avatar in the bottom left, select the workspace in the **Recent workspaces** list or select **All workspaces** for a full list.
    * Select **Settings** in the left sidebar to open the workspace settings.
-   * Click **OAuth consumers** under **Apps and features** on the left navigation.
+   * Under **Apps and features**, select **OAuth consumers**.
 3. Select **Add consumer** and set the following values:
    * **Name:** `Mattermost Bitbucket Plugin - <your company name>`.
    * **Callback URL:** `https://your-mattermost-url.com/plugins/bitbucket/oauth/complete`, replacing `https://your-mattermost-url.com` with your Mattermost deployment's Site URL.
