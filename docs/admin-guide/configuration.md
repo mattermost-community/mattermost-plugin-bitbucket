@@ -5,7 +5,7 @@ Configuration is started in Bitbucket and completed in Mattermost.
 ## Step 1: Register an OAuth Application in Bitbucket
 
 1. Go to [https://bitbucket.org](https://bitbucket.org) and log in.
-2. From your profile avatar in the bottom left, click on the workspace in the **Recent workspaces** list or click **All workspaces** to open an entire list from which to choose.
+2. From your profile avatar in the bottom left, select the workspace in the **Recent workspaces** list or select **All workspaces** for a full list.
    * Click **Settings** on the left sidebar to open the Workspace settings.
    * Click **OAuth consumers** under **Apps and features** on the left navigation.
 3. Select **Add consumer** and set the following values:
