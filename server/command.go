@@ -11,7 +11,7 @@ import (
 )
 
 const commandHelp = `* |/bitbucket connect| - Connect your Mattermost account to your Bitbucket account
-* |/bitbucket disconnect| - Disconnect your Mattermost account from your * Bitbucket account
+* |/bitbucket disconnect| - Disconnect your Mattermost account from your Bitbucket account
 * |/bitbucket todo| - Get a list of unread messages and pull requests awaiting your review
 * |/bitbucket subscribe list| - Will list the current channel subscriptions
 * |/bitbucket subscribe owner [features]| - Subscribe the current channel to all available repositories within an organization and receive notifications about opened pull requests and issues
