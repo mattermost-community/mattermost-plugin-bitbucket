@@ -78,7 +78,7 @@ func (tr *templateRenderer) init() {
 	// Quote the body
 	funcMap["quote"] = func(body string) string {
 		if body == "" {
-			return body
+			return ""
 		}
 		return ">" + strings.ReplaceAll(body, "\n", "\n>")
 	}
