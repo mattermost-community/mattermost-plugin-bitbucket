@@ -2,7 +2,7 @@ import React, {PureComponent} from 'react';
 import PropTypes from 'prop-types';
 import {Modal} from 'react-bootstrap';
 
-import {getErrorMessage} from 'utils/user_utils';
+import {getErrorMessage} from 'utils/utils';
 
 import FormButton from 'components/form_button';
 import BitbucketRepoSelector from 'components/bitbucket_repo_selector';
