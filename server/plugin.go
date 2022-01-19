@@ -5,26 +5,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"path/filepath"
-
-	"github.com/gorilla/mux"
-	"github.com/pkg/errors"
-
-	"github.com/mattermost/mattermost-plugin-bitbucket/server/templaterenderer"
-	"github.com/mattermost/mattermost-plugin-bitbucket/server/webhook"
-
 	"net/http"
 	"net/url"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin"
-
+	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 	"github.com/wbrefvem/go-bitbucket"
-
 	"golang.org/x/oauth2"
+
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
+
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/templaterenderer"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/webhook"
 )
 
 const (
@@ -126,7 +124,8 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to register command")
 	}
 
-	botID, err := p.Helpers.EnsureBot(&model.Bot{
+	client := pluginapi.NewClient(p.API, p.Driver)
+	botID, err := client.Bot.EnsureBot(&model.Bot{
 		Username:    "bitbucket",
 		DisplayName: "BitBucket",
 		Description: "Created by the BitBucket plugin.",
