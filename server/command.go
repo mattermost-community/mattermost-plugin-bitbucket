@@ -85,9 +85,59 @@ func getCommand() *model.Command {
 		DisplayName:      "Bitbucket",
 		Description:      "Integration with Bitbucket.",
 		AutoComplete:     true,
+		AutocompleteData: getAutocompleteData(),
 		AutoCompleteDesc: "Available commands: connect, disconnect, todo, me, settings, subscribe, unsubscribe, help",
 		AutoCompleteHint: "[command]",
 	}
+}
+
+func getAutocompleteData() *model.AutocompleteData {
+	bitbucket := model.NewAutocompleteData("bitbucket", "[command]", "Available commands: connect, disconnect, todo, me, settings, subscribe, unsubscribe, help")
+
+	connect := model.NewAutocompleteData("connect", "", "Connect your Mattermost account to your bitbucket account")
+
+	bitbucket.AddCommand(connect)
+
+	disconnect := model.NewAutocompleteData("disconnect", "", "Disconnect your Bitbucket account from your bitbucket account")
+	bitbucket.AddCommand(disconnect)
+
+	help := model.NewAutocompleteData("help", "", "Display Slash Command help text")
+	bitbucket.AddCommand(help)
+
+	todo := model.NewAutocompleteData("todo", "", "Get a list of unread messages and pull requests awaiting your review")
+	bitbucket.AddCommand(todo)
+
+	me := model.NewAutocompleteData("me", "", "Display the connected Bitbucket account")
+	bitbucket.AddCommand(me)
+
+	settings := model.NewAutocompleteData("settings", "[setting] [value]", "Update your user settings")
+
+	settingNotifications := model.NewAutocompleteData("notifications", "", "Turn notifications on/off")
+	settingValue := []model.AutocompleteListItem{{
+		HelpText: "Turn notifications on",
+		Item:     "on",
+	}, {
+		HelpText: "Turn notifications off",
+		Item:     "off",
+	}}
+	settingNotifications.AddStaticListArgument("", true, settingValue)
+	settings.AddCommand(settingNotifications)
+	bitbucket.AddCommand(settings)
+
+	subscribe := model.NewAutocompleteData("subscribe", "[subscribe] [list]/[/owner/repo] features", "subscribe to org/[repo]")
+	subscribeList := model.NewAutocompleteData("list", "", "List the Subscription")
+	subscribe.AddCommand(subscribeList)
+	bitbucket.AddCommand(subscribe)
+
+	subscribe1 := model.NewAutocompleteData("subscribe", "[subscribe] [list]/[/owner/repo] features", "subscribe to org/[repo]")
+	subscribe1.AddTextArgument("Owner/repo to subscribe to", "[owner/repo]", "")
+	subscribe1.AddTextArgument("Comma-delimited list of one or more of: issues, pulls, pushes, creates, deletes, issue_comments, pull_reviews. Defaults to pulls,issues,creates,deletes", "[features] (optional)", `/[^,-\s]+(,[^,-\s]+)*/`)
+	bitbucket.AddCommand(subscribe1)
+
+	unsubscribe := model.NewAutocompleteData("unsubscribe", "[unsubscribe] [owner/repo]", "unsubscribe to org/[repo]")
+	bitbucket.AddCommand(unsubscribe)
+
+	return bitbucket
 }
 
 func (p *Plugin) postCommandResponse(args *model.CommandArgs, text string) {
