@@ -206,7 +206,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 	}
 
 	if repo == "" {
-		if err := p.SubscribeOrg(ctx, bitbucketClient, args.UserId, owner, args.ChannelId, features); err != nil {
+		if err = p.SubscribeOrg(ctx, bitbucketClient, args.UserId, owner, args.ChannelId, features); err != nil {
 			return err.Error()
 		}
 
@@ -230,7 +230,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 		return msg
 	}
 
-	if err := p.Subscribe(ctx, bitbucketClient, args.UserId, owner, repo, args.ChannelId, features); err != nil {
+	if err = p.Subscribe(ctx, bitbucketClient, args.UserId, owner, repo, args.ChannelId, features); err != nil {
 		return err.Error()
 	}
 
@@ -239,7 +239,6 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 	msg := fmt.Sprintf("Successfully subscribed to [%s/%s](%s) with events: %s", owner, repo, repoLink, formattedString(features))
 	if previousSubscribedEvents != "" {
 		msg += fmt.Sprintf("\nThe previous subscription with: %s was overwritten.\n", formattedString(previousSubscribedEvents))
-
 	}
 
 	post := &model.Post{
@@ -256,9 +255,9 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 	return msg
 }
 
-func (p *Plugin) findSubscriptionsEvents(ChannelId, owner, repo string) (string, error) {
+func (p *Plugin) findSubscriptionsEvents(channelId, owner, repo string) (string, error) {
 
-	previouslySubscribed, err := p.GetSubscriptionsByChannel(ChannelId)
+	previouslySubscribed, err := p.GetSubscriptionsByChannel(channelId)
 	if err != nil {
 		return "", err
 	}
