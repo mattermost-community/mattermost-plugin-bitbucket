@@ -13,8 +13,8 @@ const commandHelp = `* |/bitbucket connect| - Connect your Mattermost account to
 * |/bitbucket disconnect| - Disconnect your Mattermost account from your Bitbucket account
 * |/bitbucket todo| - Get a list of unread messages and pull requests awaiting your review
 * |/bitbucket subscribe list| - Will list the current channel subscriptions
-* |/bitbucket subscribe owner [features]| - Subscribe the current channel to all available repositories within an organization and receive notifications about opened pull requests and issues
-* |/bitbucket subscribe owner/repo [features]| - Subscribe the current channel to receive notifications about opened pull requests and issues for a repository
+* |/bitbucket subscribe add owner [features]| - Subscribe the current channel to all available repositories within an organization and receive notifications about opened pull requests and issues
+* |/bitbucket subscribe add owner/repo [features]| - Subscribe the current channel to receive notifications about opened pull requests and issues for a repository
   * |features| is a comma-delimited list of one or more the following:
     * issues - includes new and closed issues
 	* pulls - includes new and closed pull requests
@@ -94,11 +94,11 @@ func getCommand() *model.Command {
 func getAutocompleteData() *model.AutocompleteData {
 	bitbucket := model.NewAutocompleteData("bitbucket", "[command]", "Available commands: connect, disconnect, todo, me, settings, subscribe, unsubscribe, help")
 
-	connect := model.NewAutocompleteData("connect", "", "Connect your Mattermost account to your bitbucket account")
+	connect := model.NewAutocompleteData("connect", "", "Connect your Mattermost account to your Bitbucket account")
 
 	bitbucket.AddCommand(connect)
 
-	disconnect := model.NewAutocompleteData("disconnect", "", "Disconnect your Bitbucket account from your bitbucket account")
+	disconnect := model.NewAutocompleteData("disconnect", "", "Disconnect your Mattermost account from your Bitbucket account")
 	bitbucket.AddCommand(disconnect)
 
 	help := model.NewAutocompleteData("help", "", "Display Slash Command help text")
@@ -124,17 +124,17 @@ func getAutocompleteData() *model.AutocompleteData {
 	settings.AddCommand(settingNotifications)
 	bitbucket.AddCommand(settings)
 
-	subscribe := model.NewAutocompleteData("subscribe", "[subscribe] [list]/[/owner/repo] features", "subscribe to org/[repo]")
-	subscribeList := model.NewAutocompleteData("list", "", "List the Subscription")
+	subscribe := model.NewAutocompleteData("subscriptions", "[command]", "Available commands: list, add")
+	subscribeList := model.NewAutocompleteData("list", "", "List Subscription")
 	subscribe.AddCommand(subscribeList)
 	bitbucket.AddCommand(subscribe)
 
-	subscribe1 := model.NewAutocompleteData("subscribe", "[subscribe] [list]/[/owner/repo] features", "subscribe to org/[repo]")
-	subscribe1.AddTextArgument("Owner/repo to subscribe to", "[owner/repo]", "")
-	subscribe1.AddTextArgument("Comma-delimited list of one or more of: issues, pulls, pushes, creates, deletes, issue_comments, pull_reviews. Defaults to pulls,issues,creates,deletes", "[features] (optional)", `/[^,-\s]+(,[^,-\s]+)*/`)
-	bitbucket.AddCommand(subscribe1)
+	subscribeAdd := model.NewAutocompleteData("add", "owner[/repo] features", "subscribe to org/[repo]")
+	subscribeAdd.AddTextArgument("Owner/repo to subscribe to", "[owner/repo]", "")
+	subscribeAdd.AddTextArgument("Comma-delimited list of one or more of: issues, pulls, pushes, creates, deletes, issue_comments, pull_reviews. Defaults to pulls,issues,creates,deletes", "[features] (optional)", `/[^,-\s]+(,[^,-\s]+)*/`)
+	subscribe.AddCommand(subscribeAdd)
 
-	unsubscribe := model.NewAutocompleteData("unsubscribe", "[unsubscribe] [owner/repo]", "unsubscribe to org/[repo]")
+	unsubscribe := model.NewAutocompleteData("unsubscribe", "[unsubscribe] [owner/repo]", "Remove subscription for org/[repo]")
 	bitbucket.AddCommand(unsubscribe)
 
 	return bitbucket
@@ -172,7 +172,8 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 			txt += "\n"
 		}
 		return txt
-	case len(parameters) > 1:
+	case len(parameters) > 1 && parameters[0] == "add":
+		parameters = parameters[1:]
 		var optionList []string
 		optionList = append(optionList, parameters[1:]...)
 
@@ -194,21 +195,89 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 
 	ctx := context.Background()
 	bitbucketClient := p.bitbucketConnect(*userInfo.Token)
-
 	owner, repo := parseOwnerAndRepo(parameters[0], BitbucketBaseURL)
+	previousSubscribedEvents, err := p.findSubscriptionsEvents(args.ChannelId, owner, repo)
+	if err != nil {
+		return err.Error()
+	}
+
+	if previousSubscribedEvents == features {
+		previousSubscribedEvents = ""
+	}
+
 	if repo == "" {
 		if err := p.SubscribeOrg(ctx, bitbucketClient, args.UserId, owner, args.ChannelId, features); err != nil {
 			return err.Error()
 		}
 
-		return fmt.Sprintf("Successfully subscribed to organization %s.", owner)
+		orgLink := fmt.Sprintf("%s%s", p.getBaseURL(), owner)
+		msg := fmt.Sprintf("Successfully subscribed to organization [%s](%s) with events: %s", owner, orgLink, formattedString(features))
+		if previousSubscribedEvents != "" {
+			msg += fmt.Sprintf("\nThe previous subscription with: %s was overwritten.\n", formattedString(previousSubscribedEvents))
+		}
+
+		post := &model.Post{
+			ChannelId: args.ChannelId,
+			UserId:    p.BotUserID,
+			Message:   msg,
+		}
+
+		if _, appErr := p.API.CreatePost(post); err != nil {
+			p.API.LogWarn("error while creating post", "post", post, "error", appErr.Error())
+			return fmt.Sprintf("%s Though there was an error creating the public post: %s", msg, appErr.Error())
+		}
+
+		return msg
 	}
 
 	if err := p.Subscribe(ctx, bitbucketClient, args.UserId, owner, repo, args.ChannelId, features); err != nil {
 		return err.Error()
 	}
 
-	return fmt.Sprintf("Successfully subscribed to %s.", repo)
+	repoLink := fmt.Sprintf("%s%s/%s", p.getBaseURL(), owner, repo)
+
+	msg := fmt.Sprintf("Successfully subscribed to [%s/%s](%s) with events: %s", owner, repo, repoLink, formattedString(features))
+	if previousSubscribedEvents != "" {
+		msg += fmt.Sprintf("\nThe previous subscription with: %s was overwritten.\n", formattedString(previousSubscribedEvents))
+
+	}
+
+	post := &model.Post{
+		ChannelId: args.ChannelId,
+		UserId:    p.BotUserID,
+		Message:   msg,
+	}
+
+	if _, appErr := p.API.CreatePost(post); err != nil {
+		p.API.LogWarn("error while creating post", "post", post, "error", appErr.Error())
+		return fmt.Sprintf("%s Though there was an error creating the public post: %s", msg, appErr.Error())
+	}
+
+	return msg
+}
+
+func (p *Plugin) findSubscriptionsEvents(ChannelId, owner, repo string) (string, error) {
+
+	previouslySubscribed, err := p.GetSubscriptionsByChannel(ChannelId)
+	if err != nil {
+		return "", err
+	}
+
+	subscriptionName := owner
+	if repo != "" {
+		subscriptionName += "/" + repo
+	}
+
+	for _, subscribe := range previouslySubscribed {
+		if subscribe.Repository == subscriptionName {
+			return subscribe.Features, nil
+		}
+	}
+	return "", nil
+}
+
+func formattedString(s string) string {
+	return "`" + strings.Join(strings.Split(s, ","), "`, `") + "`"
 }
 
 func (p *Plugin) handleUnsubscribe(_ *plugin.Context, args *model.CommandArgs, parameters []string, _ *BitbucketUserInfo) string {
