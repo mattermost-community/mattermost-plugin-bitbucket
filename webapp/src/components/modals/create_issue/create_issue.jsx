@@ -2,6 +2,8 @@ import React, {PureComponent} from 'react';
 import PropTypes from 'prop-types';
 import {Modal} from 'react-bootstrap';
 
+import {getErrorMessage} from 'utils/utils';
+
 import FormButton from 'components/form_button';
 import BitbucketRepoSelector from 'components/bitbucket_repo_selector';
 import Validator from 'components/validator';
@@ -64,7 +66,7 @@ export default class CreateIssueModal extends PureComponent {
         this.props.create(issue).then((created) => {
             if (created.error) {
                 this.setState({
-                    error: created.error.message,
+                    error: getErrorMessage(created.error.message),
                     showErrors: true,
                     submitting: false});
                 return;
