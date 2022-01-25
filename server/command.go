@@ -222,7 +222,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 			Message:   msg,
 		}
 
-		if _, appErr := p.API.CreatePost(post); err != nil {
+		if _, appErr := p.API.CreatePost(post); appErr != nil {
 			p.API.LogWarn("error while creating post", "post", post, "error", appErr.Error())
 			return fmt.Sprintf("%s Though there was an error creating the public post: %s", msg, appErr.Error())
 		}
@@ -247,7 +247,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 		Message:   msg,
 	}
 
-	if _, appErr := p.API.CreatePost(post); err != nil {
+	if _, appErr := p.API.CreatePost(post); appErr != nil {
 		p.API.LogWarn("error while creating post", "post", post, "error", appErr.Error())
 		return fmt.Sprintf("%s Though there was an error creating the public post: %s", msg, appErr.Error())
 	}
@@ -255,9 +255,9 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 	return msg
 }
 
-func (p *Plugin) findSubscriptionsEvents(channelId, owner, repo string) (string, error) {
+func (p *Plugin) findSubscriptionsEvents(channelID, owner, repo string) (string, error) {
 
-	previouslySubscribed, err := p.GetSubscriptionsByChannel(channelId)
+	previouslySubscribed, err := p.GetSubscriptionsByChannel(channelID)
 	if err != nil {
 		return "", err
 	}
