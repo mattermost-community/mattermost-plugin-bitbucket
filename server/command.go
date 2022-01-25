@@ -256,7 +256,6 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 }
 
 func (p *Plugin) findSubscriptionsEvents(channelID, owner, repo string) (string, error) {
-
 	previouslySubscribed, err := p.GetSubscriptionsByChannel(channelID)
 	if err != nil {
 		return "", err
