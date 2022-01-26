@@ -12,9 +12,9 @@ import (
 const commandHelp = `* |/bitbucket connect| - Connect your Mattermost account to your Bitbucket account
 * |/bitbucket disconnect| - Disconnect your Mattermost account from your Bitbucket account
 * |/bitbucket todo| - Get a list of unread messages and pull requests awaiting your review
-* |/bitbucket subscribe list| - Will list the current channel subscriptions
-* |/bitbucket subscribe add owner [features]| - Subscribe the current channel to all available repositories within an organization and receive notifications about opened pull requests and issues
-* |/bitbucket subscribe add owner/repo [features]| - Subscribe the current channel to receive notifications about opened pull requests and issues for a repository
+* |/bitbucket subscriptions list| - Will list the current channel subscriptions
+* |/bitbucket subscriptions add owner [features]| - Subscribe the current channel to all available repositories within an organization and receive notifications about opened pull requests and issues
+* |/bitbucket subscriptions add owner/repo [features]| - Subscribe the current channel to receive notifications about opened pull requests and issues for a repository
   * |features| is a comma-delimited list of one or more the following:
     * issues - includes new and closed issues
 	* pulls - includes new and closed pull requests
@@ -24,7 +24,7 @@ const commandHelp = `* |/bitbucket connect| - Connect your Mattermost account to
     * issue_comments - includes new issue comments
     * pull_reviews - includes pull request reviews
   * Defaults to "pulls,issues,creates,deletes"
-* |/bitbucket unsubscribe owner/repo| - Unsubscribe the current channel from a repository
+* |/bitbucket subscriptions delete owner/repo| - Unsubscribe the current channel from a repository
 * |/bitbucket me| - Display the connected Bitbucket account
 * |/bitbucket settings [setting] [value]| - Update your user settings
   * |setting| can be "notifications" or "reminders"
@@ -127,15 +127,16 @@ func getAutocompleteData() *model.AutocompleteData {
 	subscribe := model.NewAutocompleteData("subscriptions", "[command]", "Available commands: list, add")
 	subscribeList := model.NewAutocompleteData("list", "", "List Subscription")
 	subscribe.AddCommand(subscribeList)
-	bitbucket.AddCommand(subscribe)
 
 	subscribeAdd := model.NewAutocompleteData("add", "owner[/repo] features", "subscribe to org/[repo]")
 	subscribeAdd.AddTextArgument("Owner/repo to subscribe to", "[owner/repo]", "")
 	subscribeAdd.AddTextArgument("Comma-delimited list of one or more of: issues, pulls, pushes, creates, deletes, issue_comments, pull_reviews. Defaults to pulls,issues,creates,deletes", "[features] (optional)", `/[^,-\s]+(,[^,-\s]+)*/`)
 	subscribe.AddCommand(subscribeAdd)
 
-	unsubscribe := model.NewAutocompleteData("unsubscribe", "[unsubscribe] [owner/repo]", "Remove subscription for org/[repo]")
-	bitbucket.AddCommand(unsubscribe)
+	subscribeDelete := model.NewAutocompleteData("delete", "[owner/repo]", "Remove subscription for org/[repo]")
+	subscribe.AddCommand(subscribeDelete)
+
+	bitbucket.AddCommand(subscribe)
 
 	return bitbucket
 }
@@ -172,6 +173,18 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 			txt += "\n"
 		}
 		return txt
+	case len(parameters) > 1 && parameters[0] == "delete":
+		if len(parameters) < 2 {
+			return "Please specify a repository."
+		}
+
+		repo := parameters[1]
+		if err := p.Unsubscribe(args.ChannelId, repo); err != nil {
+			p.API.LogError("Encountered an error trying to unsubscribe", "err", err.Error())
+			return "Encountered an error trying to unsubscribe. Please try again."
+		}
+
+		return fmt.Sprintf("Successfully unsubscribed from %s.", repo)
 	case len(parameters) > 1 && parameters[0] == "add":
 		parameters = parameters[1:]
 		var optionList []string
