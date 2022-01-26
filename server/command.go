@@ -291,21 +291,6 @@ func formattedString(s string) string {
 	return "`" + strings.Join(strings.Split(s, ","), "`, `") + "`"
 }
 
-func (p *Plugin) handleUnsubscribe(_ *plugin.Context, args *model.CommandArgs, parameters []string, _ *BitbucketUserInfo) string {
-	if len(parameters) == 0 {
-		return "Please specify a repository."
-	}
-
-	repo := parameters[0]
-
-	if err := p.Unsubscribe(args.ChannelId, repo); err != nil {
-		p.API.LogError("Encountered an error trying to unsubscribe", "err", err.Error())
-		return "Encountered an error trying to unsubscribe. Please try again."
-	}
-
-	return fmt.Sprintf("Successfully unsubscribed from %s.", repo)
-}
-
 func (p *Plugin) handleDisconnect(_ *plugin.Context, args *model.CommandArgs, _ []string, _ *BitbucketUserInfo) string {
 	p.disconnectBitbucketAccount(args.UserId)
 	return "Disconnected your Bitbucket account."
