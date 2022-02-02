@@ -124,19 +124,19 @@ func getAutocompleteData() *model.AutocompleteData {
 	settings.AddCommand(settingNotifications)
 	bitbucket.AddCommand(settings)
 
-	subscribe := model.NewAutocompleteData("subscriptions", "[command]", "Available commands: list, add")
-	subscribeList := model.NewAutocompleteData("list", "", "List Subscription")
-	subscribe.AddCommand(subscribeList)
+	subscriptions := model.NewAutocompleteData("subscriptions", "[command]", "Available commands: list, add")
+	subscriptionsList := model.NewAutocompleteData("list", "", "List Subscription")
+	subscriptions.AddCommand(subscriptionsList)
 
-	subscribeAdd := model.NewAutocompleteData("add", "owner[/repo] features", "subscribe to org/[repo]")
-	subscribeAdd.AddTextArgument("Owner/repo to subscribe to", "[owner/repo]", "")
-	subscribeAdd.AddTextArgument("Comma-delimited list of one or more of: issues, pulls, pushes, creates, deletes, issue_comments, pull_reviews. Defaults to pulls,issues,creates,deletes", "[features] (optional)", `/[^,-\s]+(,[^,-\s]+)*/`)
-	subscribe.AddCommand(subscribeAdd)
+	subscriptionsAdd := model.NewAutocompleteData("add", "owner[/repo] features", "subscribe to org/[repo]")
+	subscriptionsAdd.AddTextArgument("Owner/repo to subscribe to", "[owner/repo]", "")
+	subscriptionsAdd.AddTextArgument("Comma-delimited list of one or more of: issues, pulls, pushes, creates, deletes, issue_comments, pull_reviews. Defaults to pulls,issues,creates,deletes", "[features] (optional)", `/[^,-\s]+(,[^,-\s]+)*/`)
+	subscriptions.AddCommand(subscriptionsAdd)
 
-	subscribeDelete := model.NewAutocompleteData("delete", "[owner/repo]", "Remove subscription for org/[repo]")
-	subscribe.AddCommand(subscribeDelete)
+	subscriptionsDelete := model.NewAutocompleteData("delete", "[owner/repo]", "Remove subscription for org/[repo]")
+	subscriptions.AddCommand(subscriptionsDelete)
 
-	bitbucket.AddCommand(subscribe)
+	bitbucket.AddCommand(subscriptions)
 
 	return bitbucket
 }
