@@ -125,7 +125,7 @@ func getAutocompleteData() *model.AutocompleteData {
 	bitbucket.AddCommand(settings)
 
 	subscriptions := model.NewAutocompleteData("subscriptions", "[command]", "Available commands: list, add")
-	subscriptionsList := model.NewAutocompleteData("list", "", "List Subscription")
+	subscriptionsList := model.NewAutocompleteData("list", "", "List Subscription for this channel")
 	subscriptions.AddCommand(subscriptionsList)
 
 	subscriptionsAdd := model.NewAutocompleteData("add", "owner[/repo] features", "subscribe to org/[repo]")
