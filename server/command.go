@@ -40,6 +40,10 @@ const (
 	featurePullReviews   = "pull_reviews"
 )
 
+const (
+	requiredErrorMessage = "Please specify an ogranization/repository."
+)
+
 var validFeatures = map[string]bool{
 	featureIssues:        true,
 	featurePulls:         true,
@@ -153,11 +157,12 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 	features := "pulls,issues,creates,deletes"
 
 	txt := ""
-	requiredErrorMessage := "Please specify an ogranization/repository."
-	switch {
-	case len(parameters) == 0:
-		return "Please specify a repository or 'list' command."
-	case len(parameters) == 1 && parameters[0] == "list":
+	switch parameters[0] {
+	case "list":
+		if len(parameters) > 1 {
+			return "Invalid command."
+		}
+
 		subs, err := p.GetSubscriptionsByChannel(args.ChannelId)
 		if err != nil {
 			return err.Error()
@@ -173,8 +178,8 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 			txt += "\n"
 		}
 		return txt
-	case len(parameters) >= 1 && parameters[0] == "delete":
-		if len(parameters) < 2 {
+	case "delete":
+		if len(parameters) != 2 {
 			return requiredErrorMessage
 		}
 
@@ -185,7 +190,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 		}
 
 		return fmt.Sprintf("Successfully unsubscribed from %s.", repo)
-	case len(parameters) >= 1 && parameters[0] == "add":
+	case "add":
 		if len(parameters) < 2 {
 			return requiredErrorMessage
 		}
@@ -208,27 +213,51 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 				return msg
 			}
 		}
-	}
 
-	ctx := context.Background()
-	bitbucketClient := p.bitbucketConnect(*userInfo.Token)
-	owner, repo := parseOwnerAndRepo(parameters[0], BitbucketBaseURL)
-	previousSubscribedEvents, err := p.findSubscriptionsEvents(args.ChannelId, owner, repo)
-	if err != nil {
-		return err.Error()
-	}
-
-	if previousSubscribedEvents == features {
-		previousSubscribedEvents = ""
-	}
-
-	if repo == "" {
-		if err = p.SubscribeOrg(ctx, bitbucketClient, args.UserId, owner, args.ChannelId, features); err != nil {
+		ctx := context.Background()
+		bitbucketClient := p.bitbucketConnect(*userInfo.Token)
+		owner, repo := parseOwnerAndRepo(parameters[0], BitbucketBaseURL)
+		previousSubscribedEvents, err := p.findSubscriptionsEvents(args.ChannelId, owner, repo)
+		if err != nil {
 			return err.Error()
 		}
 
-		orgLink := fmt.Sprintf("%s%s", p.getBaseURL(), owner)
-		msg := fmt.Sprintf("Successfully subscribed to organization [%s](%s) with events: %s", owner, orgLink, formattedString(features))
+		if previousSubscribedEvents == features {
+			previousSubscribedEvents = ""
+		}
+
+		if repo == "" {
+			if err = p.SubscribeOrg(ctx, bitbucketClient, args.UserId, owner, args.ChannelId, features); err != nil {
+				return err.Error()
+			}
+
+			orgLink := fmt.Sprintf("%s%s", p.getBaseURL(), owner)
+			msg := fmt.Sprintf("Successfully subscribed to organization [%s](%s) with events: %s", owner, orgLink, formattedString(features))
+			if previousSubscribedEvents != "" {
+				msg += fmt.Sprintf("\nThe previous subscription with: %s was overwritten.\n", formattedString(previousSubscribedEvents))
+			}
+
+			post := &model.Post{
+				ChannelId: args.ChannelId,
+				UserId:    p.BotUserID,
+				Message:   msg,
+			}
+
+			if _, appErr := p.API.CreatePost(post); appErr != nil {
+				p.API.LogWarn("error while creating post", "post", post, "error", appErr.Error())
+				return fmt.Sprintf("%s Though there was an error creating the public post: %s", msg, appErr.Error())
+			}
+
+			return msg
+		}
+
+		if err = p.Subscribe(ctx, bitbucketClient, args.UserId, owner, repo, args.ChannelId, features); err != nil {
+			return err.Error()
+		}
+
+		repoLink := fmt.Sprintf("%s%s/%s", p.getBaseURL(), owner, repo)
+
+		msg := fmt.Sprintf("Successfully subscribed to [%s/%s](%s) with events: %s", owner, repo, repoLink, formattedString(features))
 		if previousSubscribedEvents != "" {
 			msg += fmt.Sprintf("\nThe previous subscription with: %s was overwritten.\n", formattedString(previousSubscribedEvents))
 		}
@@ -247,29 +276,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 		return msg
 	}
 
-	if err = p.Subscribe(ctx, bitbucketClient, args.UserId, owner, repo, args.ChannelId, features); err != nil {
-		return err.Error()
-	}
-
-	repoLink := fmt.Sprintf("%s%s/%s", p.getBaseURL(), owner, repo)
-
-	msg := fmt.Sprintf("Successfully subscribed to [%s/%s](%s) with events: %s", owner, repo, repoLink, formattedString(features))
-	if previousSubscribedEvents != "" {
-		msg += fmt.Sprintf("\nThe previous subscription with: %s was overwritten.\n", formattedString(previousSubscribedEvents))
-	}
-
-	post := &model.Post{
-		ChannelId: args.ChannelId,
-		UserId:    p.BotUserID,
-		Message:   msg,
-	}
-
-	if _, appErr := p.API.CreatePost(post); appErr != nil {
-		p.API.LogWarn("error while creating post", "post", post, "error", appErr.Error())
-		return fmt.Sprintf("%s Though there was an error creating the public post: %s", msg, appErr.Error())
-	}
-
-	return msg
+	return "Invalid Command. commands available `add`, `delete` and `list`"
 }
 
 func (p *Plugin) findSubscriptionsEvents(channelID, owner, repo string) (string, error) {
