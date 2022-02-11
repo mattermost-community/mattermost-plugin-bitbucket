@@ -110,20 +110,6 @@ func getAutocompleteData() *model.AutocompleteData {
 	me := model.NewAutocompleteData("me", "", "Display the connected Bitbucket account")
 	bitbucket.AddCommand(me)
 
-	settings := model.NewAutocompleteData("settings", "[setting] [value]", "Update your user settings")
-
-	settingNotifications := model.NewAutocompleteData("notifications", "", "Turn notifications on/off")
-	settingValue := []model.AutocompleteListItem{{
-		HelpText: "Turn notifications on",
-		Item:     "on",
-	}, {
-		HelpText: "Turn notifications off",
-		Item:     "off",
-	}}
-	settingNotifications.AddStaticListArgument("", true, settingValue)
-	settings.AddCommand(settingNotifications)
-	bitbucket.AddCommand(settings)
-
 	subscriptions := model.NewAutocompleteData("subscriptions", "[command]", "Available commands: list, add")
 	subscriptionsList := model.NewAutocompleteData("list", "", "List Subscription for this channel")
 	subscriptions.AddCommand(subscriptionsList)
@@ -137,6 +123,19 @@ func getAutocompleteData() *model.AutocompleteData {
 	subscriptions.AddCommand(subscriptionsDelete)
 
 	bitbucket.AddCommand(subscriptions)
+
+	settings := model.NewAutocompleteData("settings", "[setting] [value]", "Update your user settings")
+	settingNotifications := model.NewAutocompleteData("notifications", "", "Turn notifications on/off")
+	settingValue := []model.AutocompleteListItem{{
+		HelpText: "Turn notifications on",
+		Item:     "on",
+	}, {
+		HelpText: "Turn notifications off",
+		Item:     "off",
+	}}
+	settingNotifications.AddStaticListArgument("", true, settingValue)
+	settings.AddCommand(settingNotifications)
+	bitbucket.AddCommand(settings)
 
 	return bitbucket
 }
@@ -173,9 +172,9 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 			txt += "\n"
 		}
 		return txt
-	case len(parameters) > 1 && parameters[0] == "delete":
+	case len(parameters) >= 1 && parameters[0] == "delete":
 		if len(parameters) < 2 {
-			return "Please specify a repository."
+			return "Please specify an ogranization/repository."
 		}
 
 		repo := parameters[1]
@@ -185,7 +184,11 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 		}
 
 		return fmt.Sprintf("Successfully unsubscribed from %s.", repo)
-	case len(parameters) > 1 && parameters[0] == "add":
+	case len(parameters) >= 1 && parameters[0] == "add":
+		if len(parameters) < 2 {
+			return "Please specify an ogranization/repository."
+		}
+
 		parameters = parameters[1:]
 		var optionList []string
 		optionList = append(optionList, parameters[1:]...)
