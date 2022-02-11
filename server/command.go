@@ -153,6 +153,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 	features := "pulls,issues,creates,deletes"
 
 	txt := ""
+	requiredErrorMessage := "Please specify an ogranization/repository."
 	switch {
 	case len(parameters) == 0:
 		return "Please specify a repository or 'list' command."
@@ -174,7 +175,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 		return txt
 	case len(parameters) >= 1 && parameters[0] == "delete":
 		if len(parameters) < 2 {
-			return "Please specify an ogranization/repository."
+			return requiredErrorMessage
 		}
 
 		repo := parameters[1]
@@ -186,7 +187,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 		return fmt.Sprintf("Successfully unsubscribed from %s.", repo)
 	case len(parameters) >= 1 && parameters[0] == "add":
 		if len(parameters) < 2 {
-			return "Please specify an ogranization/repository."
+			return requiredErrorMessage
 		}
 
 		parameters = parameters[1:]
