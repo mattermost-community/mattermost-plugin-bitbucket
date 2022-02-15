@@ -77,6 +77,9 @@ func (tr *templateRenderer) init() {
 	var funcMap = sprig.TxtFuncMap()
 	// Quote the body
 	funcMap["quote"] = func(body string) string {
+		if body == "" {
+			return ""
+		}
 		return ">" + strings.ReplaceAll(body, "\n", "\n>")
 	}
 
