@@ -163,7 +163,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 			return "Invalid command."
 		}
 
-		subs, err := p.GetSubscriptionsByChannel(args.ChannelId)
+		subs, err := p.GetSubscriptionsByChannel(args.ChannelId, args.UserId)
 		if err != nil {
 			return err.Error()
 		}
@@ -184,12 +184,13 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 		}
 
 		repo := parameters[1]
-		if err := p.Unsubscribe(args.ChannelId, repo); err != nil {
+		message, err := p.Unsubscribe(args.ChannelId, args.UserId, repo)
+		if err != nil {
 			p.API.LogError("Encountered an error trying to unsubscribe", "err", err.Error())
 			return "Encountered an error trying to unsubscribe. Please try again."
 		}
 
-		return fmt.Sprintf("Successfully unsubscribed from %s.", repo)
+		return message
 	case "add":
 		if len(parameters) < 2 {
 			return requiredErrorMessage
@@ -217,7 +218,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 		ctx := context.Background()
 		bitbucketClient := p.bitbucketConnect(*userInfo.Token)
 		owner, repo := parseOwnerAndRepo(parameters[0], BitbucketBaseURL)
-		previousSubscribedEvents, err := p.findSubscriptionsEvents(args.ChannelId, owner, repo)
+		previousSubscribedEvents, err := p.findSubscriptionsEvents(args.ChannelId, args.UserId, owner, repo)
 		if err != nil {
 			return err.Error()
 		}
@@ -227,28 +228,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 		}
 
 		if repo == "" {
-			if err = p.SubscribeOrg(ctx, bitbucketClient, args.UserId, owner, args.ChannelId, features); err != nil {
-				return err.Error()
-			}
-
-			orgLink := fmt.Sprintf("%s%s", p.getBaseURL(), owner)
-			msg := fmt.Sprintf("Successfully subscribed to organization [%s](%s) with events: %s", owner, orgLink, formattedString(features))
-			if previousSubscribedEvents != "" {
-				msg += fmt.Sprintf("\nThe previous subscription with: %s was overwritten.\n", formattedString(previousSubscribedEvents))
-			}
-
-			post := &model.Post{
-				ChannelId: args.ChannelId,
-				UserId:    p.BotUserID,
-				Message:   msg,
-			}
-
-			if _, appErr := p.API.CreatePost(post); appErr != nil {
-				p.API.LogWarn("error while creating post", "post", post, "error", appErr.Error())
-				return fmt.Sprintf("%s Though there was an error creating the public post: %s", msg, appErr.Error())
-			}
-
-			return msg
+			return requiredErrorMessage
 		}
 
 		if err = p.Subscribe(ctx, bitbucketClient, args.UserId, owner, repo, args.ChannelId, features); err != nil {
@@ -273,14 +253,14 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 			return fmt.Sprintf("%s Though there was an error creating the public post: %s", msg, appErr.Error())
 		}
 
-		return msg
+		return ""
 	}
 
 	return "Invalid Command. commands available `add`, `delete` and `list`"
 }
 
-func (p *Plugin) findSubscriptionsEvents(channelID, owner, repo string) (string, error) {
-	previouslySubscribed, err := p.GetSubscriptionsByChannel(channelID)
+func (p *Plugin) findSubscriptionsEvents(channelID, userID, owner, repo string) (string, error) {
+	previouslySubscribed, err := p.GetSubscriptionsByChannel(channelID, userID)
 	if err != nil {
 		return "", err
 	}
@@ -332,29 +312,22 @@ func (p *Plugin) handleMe(_ *plugin.Context, _ *model.CommandArgs, _ []string, u
 }
 
 func (p *Plugin) handleHelp(_ *plugin.Context, _ *model.CommandArgs, _ []string, userInfo *BitbucketUserInfo) string {
-	bitbucketClient := p.bitbucketConnect(*userInfo.Token)
-	bitbucketUser, _, err := bitbucketClient.UsersApi.UserGet(context.Background())
-	if err != nil {
-		return "Encountered an error getting your Bitbucket profile info."
-	}
-
-	message := fmt.Sprintf("#### Welcome to the Mattermost Bitbucket Plugin!\n"+
-		"You've connected your Mattermost account to [%s](%s) on Bitbucket. Read about the features of this plugin below:\n\n"+
-		"##### Daily Reminders\n"+
-		"The first time you log in each day, you will get a post right here letting you know what messages you need to read and what pull requests are awaiting your review.\n"+
-		"Turn off reminders with `/bitbucket settings reminders off`.\n\n"+
-		"##### Notifications\n"+
-		"When someone mentions you, requests your review, comments on or modifies one of your pull requests/issues, or assigns you, you'll get a post here about it.\n"+
-		"Turn off notifications with `/bitbucket settings notifications off`.\n\n"+
-		"##### Sidebar Buttons\n"+
-		"Check out the buttons in the left-hand sidebar of Mattermost.\n"+
-		"* The first button tells you how many pull requests you have submitted.\n"+
-		"* The second shows the number of PR that are awaiting your review.\n"+
-		"* The third shows the number of PR and issues your are assiged to.\n"+
-		"* The fourth will refresh the numbers.\n\n"+
-		"Click on them!\n\n"+
-		"##### Slash Commands\n"+
-		strings.ReplaceAll(commandHelp, "|", "`"), bitbucketUser.Username, bitbucketUser.Links.Html.Href)
+	message := fmt.Sprintf("#### Welcome to the Mattermost Bitbucket Plugin!\n" +
+		"##### Daily Reminders\n" +
+		"The first time you log in each day, you will get a post right here letting you know what messages you need to read and what pull requests are awaiting your review.\n" +
+		"Turn off reminders with `/bitbucket settings reminders off`.\n\n" +
+		"##### Notifications\n" +
+		"When someone mentions you, requests your review, comments on or modifies one of your pull requests/issues, or assigns you, you'll get a post here about it.\n" +
+		"Turn off notifications with `/bitbucket settings notifications off`.\n\n" +
+		"##### Sidebar Buttons\n" +
+		"Check out the buttons in the left-hand sidebar of Mattermost.\n" +
+		"* The first button tells you how many pull requests you have submitted.\n" +
+		"* The second shows the number of PR that are awaiting your review.\n" +
+		"* The third shows the number of PR and issues your are assiged to.\n" +
+		"* The fourth will refresh the numbers.\n\n" +
+		"Click on them!\n\n" +
+		"##### Slash Commands\n" +
+		strings.ReplaceAll(commandHelp, "|", "`"))
 
 	return message
 }
@@ -435,6 +408,14 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		return &model.CommandResponse{}, nil
 	}
 
+	if action == "help" {
+		if f, ok := p.CommandHandlers[action]; ok {
+			message := f(c, args, parameters, nil)
+			p.postCommandResponse(args, message)
+			return &model.CommandResponse{}, nil
+		}
+	}
+
 	info, apiErr := p.getBitbucketUserInfo(args.UserId)
 	if apiErr != nil {
 		text := "Unknown error."
@@ -447,7 +428,9 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 
 	if f, ok := p.CommandHandlers[action]; ok {
 		message := f(c, args, parameters, info)
-		p.postCommandResponse(args, message)
+		if len(message) > 0 {
+			p.postCommandResponse(args, message)
+		}
 		return &model.CommandResponse{}, nil
 	}
 
