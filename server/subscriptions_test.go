@@ -32,12 +32,13 @@ func pluginWithMockedSubs(subscriptions []*subscription.Subscription) *Plugin {
 }
 
 // wantedSubscriptions returns what should be returned after sorting by repo names
-func wantedSubscriptions(repoNames []string, chanelID string) []*subscription.Subscription {
+func wantedSubscriptions(repoNames []string, chanelID, userID string) []*subscription.Subscription {
 	var subs []*subscription.Subscription
 	for _, st := range repoNames {
 		subs = append(subs, &subscription.Subscription{
 			ChannelID:  chanelID,
 			Repository: st,
+			CreatorID:  userID,
 		})
 	}
 	return subs
@@ -46,6 +47,7 @@ func wantedSubscriptions(repoNames []string, chanelID string) []*subscription.Su
 func TestPlugin_GetSubscriptionsByChannel(t *testing.T) {
 	type args struct {
 		channelID string
+		userID    string
 	}
 	tests := []struct {
 		name    string
@@ -56,59 +58,66 @@ func TestPlugin_GetSubscriptionsByChannel(t *testing.T) {
 	}{
 		{
 			name: "basic test",
-			args: args{channelID: "1"},
+			args: args{channelID: "1", userID: "1"},
 			plugin: pluginWithMockedSubs([]*subscription.Subscription{
 				{
 					ChannelID:  "1",
 					Repository: "asd",
+					CreatorID:  "1",
 				},
 				{
 					ChannelID:  "1",
 					Repository: "123",
+					CreatorID:  "1",
 				},
 				{
 					ChannelID:  "1",
 					Repository: "",
+					CreatorID:  "1",
 				},
 			}),
-			want:    wantedSubscriptions([]string{"", "123", "asd"}, "1"),
+			want:    wantedSubscriptions([]string{"", "123", "asd"}, "1", "1"),
 			wantErr: false,
 		},
 		{
 			name:    "test empty",
-			args:    args{channelID: "1"},
+			args:    args{channelID: "1", userID: "2"},
 			plugin:  pluginWithMockedSubs([]*subscription.Subscription{}),
-			want:    wantedSubscriptions([]string{}, "1"),
+			want:    wantedSubscriptions([]string{}, "1", "2"),
 			wantErr: false,
 		},
 		{
 			name: "test shuffled",
-			args: args{channelID: "1"},
+			args: args{channelID: "1", userID: "3"},
 			plugin: pluginWithMockedSubs([]*subscription.Subscription{
 				{
 					ChannelID:  "1",
 					Repository: "c",
+					CreatorID:  "3",
 				},
 				{
 					ChannelID:  "1",
 					Repository: "b",
+					CreatorID:  "3",
 				},
 				{
 					ChannelID:  "1",
 					Repository: "ab",
+					CreatorID:  "3",
 				},
 				{
 					ChannelID:  "1",
 					Repository: "a",
+					CreatorID:  "3",
 				},
 			}),
-			want:    wantedSubscriptions([]string{"a", "ab", "b", "c"}, "1"),
+			want:    wantedSubscriptions([]string{"a", "ab", "b", "c"}, "1", "3"),
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.plugin.GetSubscriptionsByChannel(tt.args.channelID)
+			got, err := tt.plugin.GetSubscriptionsByChannel(tt.args.channelID, tt.args.userID)
 
 			CheckError(t, tt.wantErr, err)
 
