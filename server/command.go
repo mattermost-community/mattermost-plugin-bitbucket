@@ -279,8 +279,8 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 	return "Invalid Command. commands available `add`, `delete` and `list`"
 }
 
-func (p *Plugin) findSubscriptionsEvents(channelID, userId, owner, repo string) (string, error) {
-	previouslySubscribed, err := p.GetSubscriptionsByChannel(channelID, userId)
+func (p *Plugin) findSubscriptionsEvents(channelID, userID, owner, repo string) (string, error) {
+	previouslySubscribed, err := p.GetSubscriptionsByChannel(channelID, userID)
 	if err != nil {
 		return "", err
 	}
