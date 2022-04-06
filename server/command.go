@@ -163,7 +163,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 			return "Invalid command."
 		}
 
-		subs, err := p.GetSubscriptionsByChannel(args.ChannelId, args.UserId)
+		subs, err := p.GetSubscriptionsByChannel(args.ChannelId)
 		if err != nil {
 			return err.Error()
 		}
@@ -184,7 +184,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 		}
 
 		repo := parameters[1]
-		message, err := p.Unsubscribe(args.ChannelId, args.UserId, repo)
+		message, err := p.Unsubscribe(args.ChannelId, repo)
 		if err != nil {
 			p.API.LogError("Encountered an error trying to unsubscribe", "err", err.Error())
 			return "Encountered an error trying to unsubscribe. Please try again."
@@ -218,7 +218,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 		ctx := context.Background()
 		bitbucketClient := p.bitbucketConnect(*userInfo.Token)
 		owner, repo := parseOwnerAndRepo(parameters[0], BitbucketBaseURL)
-		previousSubscribedEvents, err := p.findSubscriptionsEvents(args.ChannelId, args.UserId, owner, repo)
+		previousSubscribedEvents, err := p.findSubscriptionsEvents(args.ChannelId, owner, repo)
 		if err != nil {
 			return err.Error()
 		}
@@ -259,8 +259,8 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 	return "Invalid Command. commands available `add`, `delete` and `list`"
 }
 
-func (p *Plugin) findSubscriptionsEvents(channelID, userID, owner, repo string) (string, error) {
-	previouslySubscribed, err := p.GetSubscriptionsByChannel(channelID, userID)
+func (p *Plugin) findSubscriptionsEvents(channelID, owner, repo string) (string, error) {
+	previouslySubscribed, err := p.GetSubscriptionsByChannel(channelID)
 	if err != nil {
 		return "", err
 	}

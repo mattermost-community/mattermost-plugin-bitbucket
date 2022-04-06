@@ -51,7 +51,7 @@ func (p *Plugin) Subscribe(ctx context.Context, bitbucketClient *bitbucket.APICl
 		Repository: fullNameFromOwnerAndRepo(owner, repo),
 	}
 
-	if err := p.AddSubscription(fullNameFromOwnerAndRepo(owner, repo), userID, sub); err != nil {
+	if err := p.AddSubscription(fullNameFromOwnerAndRepo(owner, repo), sub); err != nil {
 		return errors.Wrap(err, "could not add subscription")
 	}
 
@@ -66,7 +66,7 @@ func (p *Plugin) SubscribeOrg(ctx context.Context, bitbucketClient *bitbucket.AP
 	return p.Subscribe(ctx, bitbucketClient, userID, org, "", channelID, features)
 }
 
-func (p *Plugin) GetSubscriptionsByChannel(channelID, userID string) ([]*subscription.Subscription, error) {
+func (p *Plugin) GetSubscriptionsByChannel(channelID string) ([]*subscription.Subscription, error) {
 	var filteredSubs []*subscription.Subscription
 	subs, err := p.GetSubscriptions()
 	if err != nil {
@@ -75,7 +75,7 @@ func (p *Plugin) GetSubscriptionsByChannel(channelID, userID string) ([]*subscri
 
 	for repo, v := range subs.Repositories {
 		for _, s := range v {
-			if s.ChannelID == channelID && s.CreatorID == userID {
+			if s.ChannelID == channelID {
 				// this is needed to be backwards compatible
 				if len(s.Repository) == 0 {
 					s.Repository = repo
@@ -92,7 +92,7 @@ func (p *Plugin) GetSubscriptionsByChannel(channelID, userID string) ([]*subscri
 	return filteredSubs, nil
 }
 
-func (p *Plugin) AddSubscription(repo, userID string, sub *subscription.Subscription) error {
+func (p *Plugin) AddSubscription(repo string, sub *subscription.Subscription) error {
 	subs, err := p.GetSubscriptions()
 	if err != nil {
 		return errors.Wrap(err, "could not get subscriptions")
@@ -104,7 +104,7 @@ func (p *Plugin) AddSubscription(repo, userID string, sub *subscription.Subscrip
 	} else {
 		exists := false
 		for index, s := range repoSubs {
-			if s.ChannelID == sub.ChannelID && s.CreatorID == userID {
+			if s.ChannelID == sub.ChannelID {
 				repoSubs[index] = sub
 				exists = true
 				break
@@ -195,7 +195,7 @@ func (p *Plugin) GetSubscribedChannelsForRepository(pl webhookpayload.Payload) [
 	return subsToReturn
 }
 
-func (p *Plugin) Unsubscribe(channelID, userID, repo string) (string, error) {
+func (p *Plugin) Unsubscribe(channelID, repo string) (string, error) {
 	owner, repo := parseOwnerAndRepo(repo, p.getBaseURL())
 	if owner == "" && repo == "" {
 		return "", errors.New("invalid repository")
@@ -214,7 +214,7 @@ func (p *Plugin) Unsubscribe(channelID, userID, repo string) (string, error) {
 
 	removed := false
 	for index, sub := range repoSubs {
-		if sub.ChannelID == channelID && sub.CreatorID == userID {
+		if sub.ChannelID == channelID {
 			repoSubs = append(repoSubs[:index], repoSubs[index+1:]...)
 			removed = true
 			break
