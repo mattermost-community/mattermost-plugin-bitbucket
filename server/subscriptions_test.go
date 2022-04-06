@@ -61,17 +61,14 @@ func TestPlugin_GetSubscriptionsByChannel(t *testing.T) {
 				{
 					ChannelID:  "1",
 					Repository: "asd",
-					CreatorID:  "1",
 				},
 				{
 					ChannelID:  "1",
 					Repository: "123",
-					CreatorID:  "1",
 				},
 				{
 					ChannelID:  "1",
 					Repository: "",
-					CreatorID:  "1",
 				},
 			}),
 			want:    wantedSubscriptions([]string{"", "123", "asd"}, "1"),
@@ -91,22 +88,18 @@ func TestPlugin_GetSubscriptionsByChannel(t *testing.T) {
 				{
 					ChannelID:  "1",
 					Repository: "c",
-					CreatorID:  "3",
 				},
 				{
 					ChannelID:  "1",
 					Repository: "b",
-					CreatorID:  "3",
 				},
 				{
 					ChannelID:  "1",
 					Repository: "ab",
-					CreatorID:  "3",
 				},
 				{
 					ChannelID:  "1",
 					Repository: "a",
-					CreatorID:  "3",
 				},
 			}),
 			want:    wantedSubscriptions([]string{"a", "ab", "b", "c"}, "1"),
