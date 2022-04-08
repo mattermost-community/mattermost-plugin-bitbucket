@@ -196,6 +196,10 @@ func (p *Plugin) GetSubscribedChannelsForRepository(pl webhookpayload.Payload) [
 }
 
 func (p *Plugin) Unsubscribe(channelID, repo string) (string, error) {
+	if len(strings.Split(repo, "/")) != 2 {
+		return requiredErrorMessage, nil
+	}
+
 	owner, repo := parseOwnerAndRepo(repo, p.getBaseURL())
 	if owner == "" && repo == "" {
 		return "", errors.New("invalid repository")
