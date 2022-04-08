@@ -209,7 +209,7 @@ func (p *Plugin) Unsubscribe(channelID, repo string) (string, error) {
 
 	repoSubs := subs.Repositories[repoWithOwner]
 	if repoSubs == nil {
-		return "", nil
+		return fmt.Sprintf("Unable to unsubscribed from %s as it is not subscribed.", repo), nil
 	}
 
 	removed := false
