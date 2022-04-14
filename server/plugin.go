@@ -117,8 +117,12 @@ func (p *Plugin) OnActivate() error {
 
 	p.initializeAPI()
 	p.initializeWebhookHandler()
+	commands, err := p.getCommand()
+	if err != nil {
+		return errors.Wrap(err, "failed to register command")
+	}
 
-	err := p.API.RegisterCommand(getCommand())
+	err = p.API.RegisterCommand(commands)
 	if err != nil {
 		return errors.Wrap(err, "failed to register command")
 	}
