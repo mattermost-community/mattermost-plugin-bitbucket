@@ -202,7 +202,7 @@ func (p *Plugin) Unsubscribe(channelID, repo string) (string, error) {
 
 	owner, repo := parseOwnerAndRepo(repo, p.getBaseURL())
 	if owner == "" && repo == "" {
-		return "", errors.New("invalid repository")
+		return requiredErrorMessage, nil
 	}
 	repoWithOwner := fmt.Sprintf("%s/%s", owner, repo)
 
@@ -213,7 +213,7 @@ func (p *Plugin) Unsubscribe(channelID, repo string) (string, error) {
 
 	repoSubs := subs.Repositories[repoWithOwner]
 	if repoSubs == nil {
-		return fmt.Sprintf("Unable to unsubscribed from %s as it is not subscribed.", repo), nil
+		return fmt.Sprintf("Unable to unsubscribe from %s as it is not currently part of a subscription in this channel.", repo), nil
 	}
 
 	removed := false
@@ -233,5 +233,5 @@ func (p *Plugin) Unsubscribe(channelID, repo string) (string, error) {
 		return fmt.Sprintf("Successfully unsubscribed from %s.", repo), nil
 	}
 
-	return fmt.Sprintf("Unable to unsubscribed from %s as it is not subscribed.", repo), nil
+	return fmt.Sprintf("Unable to unsubscribe from %s as it is not currently part of a subscription in this channel.", repo), nil
 }
