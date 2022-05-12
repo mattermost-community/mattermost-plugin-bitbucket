@@ -409,11 +409,9 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	}
 
 	if action == "help" {
-		if f, ok := p.CommandHandlers[action]; ok {
-			message := f(c, args, parameters, nil)
-			p.postCommandResponse(args, message)
-			return &model.CommandResponse{}, nil
-		}
+		message := p.handleHelp(c, args, parameters, nil)
+		p.postCommandResponse(args, message)
+		return &model.CommandResponse{}, nil
 	}
 
 	info, apiErr := p.getBitbucketUserInfo(args.UserId)

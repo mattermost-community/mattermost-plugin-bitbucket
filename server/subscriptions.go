@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	SubscriptionsKey = "subscriptions"
+	SubscriptionsKey         = "subscriptions"
+	UnsubscribedErrorMessage = "Unable to unsubscribe from %s as it is not currently part of a subscription in this channel."
 )
 
 func (p *Plugin) Subscribe(ctx context.Context, bitbucketClient *bitbucket.APIClient, userID, owner, repo, channelID, features string) error {
@@ -213,7 +214,7 @@ func (p *Plugin) Unsubscribe(channelID, repo string) (string, error) {
 
 	repoSubs := subs.Repositories[repoWithOwner]
 	if repoSubs == nil {
-		return fmt.Sprintf("Unable to unsubscribe from %s as it is not currently part of a subscription in this channel.", repo), nil
+		return fmt.Sprintf(UnsubscribedErrorMessage, repo), nil
 	}
 
 	removed := false
@@ -233,5 +234,5 @@ func (p *Plugin) Unsubscribe(channelID, repo string) (string, error) {
 		return fmt.Sprintf("Successfully unsubscribed from %s.", repo), nil
 	}
 
-	return fmt.Sprintf("Unable to unsubscribe from %s as it is not currently part of a subscription in this channel.", repo), nil
+	return fmt.Sprintf(UnsubscribedErrorMessage, repo), nil
 }
