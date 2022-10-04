@@ -328,7 +328,7 @@ func (p *Plugin) handleTodo(_ *plugin.Context, _ *model.CommandArgs, _ []string,
 
 func (p *Plugin) handleMe(_ *plugin.Context, _ *model.CommandArgs, _ []string, userInfo *BitbucketUserInfo) string {
 	bitbucketClient := p.bitbucketConnect(*userInfo.Token)
-	bitbucketUser, _, err := bitbucketClient.UsersApi.UserGet(context.Background())
+	bitbucketUser, _, err := bitbucketClient.UsersApi.UserGet(context.Background()) //nolint:bodyclose
 	if err != nil {
 		p.API.LogError("Encountered an error getting your Bitbucket profile", "err", err.Error())
 		return "Encountered an error getting your Bitbucket profile."
@@ -341,7 +341,7 @@ func (p *Plugin) handleMe(_ *plugin.Context, _ *model.CommandArgs, _ []string, u
 
 func (p *Plugin) handleHelp(_ *plugin.Context, _ *model.CommandArgs, _ []string, userInfo *BitbucketUserInfo) string {
 	bitbucketClient := p.bitbucketConnect(*userInfo.Token)
-	bitbucketUser, _, err := bitbucketClient.UsersApi.UserGet(context.Background())
+	bitbucketUser, _, err := bitbucketClient.UsersApi.UserGet(context.Background()) //nolint:bodyclose
 	if err != nil {
 		return "Encountered an error getting your Bitbucket profile info."
 	}
