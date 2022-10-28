@@ -66,7 +66,6 @@ module.exports = {
         'react-redux': 'ReactRedux',
         'prop-types': 'PropTypes',
         'react-bootstrap': 'ReactBootstrap',
-        'react-dom': 'ReactDOM',
     },
     output: {
         path: path.join(__dirname, '/dist'),
