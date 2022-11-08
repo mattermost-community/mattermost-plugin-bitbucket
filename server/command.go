@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mattermost/mattermost-plugin-api/experimental/command"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
+	"github.com/pkg/errors"
 )
 
 const commandHelp = `* |/bitbucket connect| - Connect your Mattermost account to your Bitbucket account
@@ -83,16 +85,22 @@ func validateFeatures(features []string) (bool, []string) {
 	return valid, invalidFeatures
 }
 
-func getCommand() *model.Command {
-	return &model.Command{
-		Trigger:          "bitbucket",
-		DisplayName:      "Bitbucket",
-		Description:      "Integration with Bitbucket.",
-		AutoComplete:     true,
-		AutocompleteData: getAutocompleteData(),
-		AutoCompleteDesc: "Available commands: connect, disconnect, todo, me, settings, subscribe, unsubscribe, help",
-		AutoCompleteHint: "[command]",
+func (p *Plugin) getCommand() (*model.Command, error) {
+	iconData, err := command.GetIconData(p.API, "assets/icon.svg")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get icon data")
 	}
+
+	return &model.Command{
+		Trigger:              "bitbucket",
+		DisplayName:          "Bitbucket",
+		Description:          "Integration with Bitbucket.",
+		AutoComplete:         true,
+		AutocompleteData:     getAutocompleteData(),
+		AutoCompleteDesc:     "Available commands: connect, disconnect, todo, me, settings, subscribe, unsubscribe, help",
+		AutoCompleteHint:     "[command]",
+		AutocompleteIconData: iconData,
+	}, nil
 }
 
 func getAutocompleteData() *model.AutocompleteData {
@@ -300,7 +308,7 @@ func (p *Plugin) handleTodo(_ *plugin.Context, _ *model.CommandArgs, _ []string,
 
 func (p *Plugin) handleMe(_ *plugin.Context, _ *model.CommandArgs, _ []string, userInfo *BitbucketUserInfo) string {
 	bitbucketClient := p.bitbucketConnect(*userInfo.Token)
-	bitbucketUser, _, err := bitbucketClient.UsersApi.UserGet(context.Background())
+	bitbucketUser, _, err := bitbucketClient.UsersApi.UserGet(context.Background()) //nolint:bodyclose
 	if err != nil {
 		p.API.LogError("Encountered an error getting your Bitbucket profile", "err", err.Error())
 		return "Encountered an error getting your Bitbucket profile."

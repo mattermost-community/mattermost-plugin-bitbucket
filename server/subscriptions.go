@@ -32,13 +32,13 @@ func (p *Plugin) Subscribe(ctx context.Context, bitbucketClient *bitbucket.APICl
 	var err error
 
 	if repo == "" {
-		_, _, err = bitbucketClient.UsersApi.UserGet(ctx)
+		_, _, err = bitbucketClient.UsersApi.UserGet(ctx) //nolint:bodyclose
 		if err != nil {
 			p.API.LogError("Cannot fetch user", "err", err.Error())
 			return errors.Errorf("Unknown organization %s", owner)
 		}
 	} else {
-		_, _, err = bitbucketClient.RepositoriesApi.RepositoriesUsernameRepoSlugGet(context.Background(), owner, repo)
+		_, _, err = bitbucketClient.RepositoriesApi.RepositoriesUsernameRepoSlugGet(context.Background(), owner, repo) //nolint:bodyclose
 		if err != nil {
 			p.API.LogError("Cannot fetch repository", "err", err.Error())
 			return errors.Errorf("unknown repository %s", fullNameFromOwnerAndRepo(owner, repo))

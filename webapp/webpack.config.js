@@ -61,11 +61,11 @@ module.exports = {
     },
     externals: {
         react: 'React',
+        'react-dom': 'ReactDOM',
         redux: 'Redux',
         'react-redux': 'ReactRedux',
         'prop-types': 'PropTypes',
         'react-bootstrap': 'ReactBootstrap',
-        'react-dom': 'ReactDOM',
     },
     output: {
         path: path.join(__dirname, '/dist'),
