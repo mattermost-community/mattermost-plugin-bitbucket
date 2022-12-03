@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	SubscriptionsKey = "subscriptions"
+	SubscriptionsKey         = "subscriptions"
+	UnsubscribedErrorMessage = "Unable to unsubscribe from %s as it is not currently part of a subscription in this channel."
 )
 
 func (p *Plugin) Subscribe(ctx context.Context, bitbucketClient *bitbucket.APIClient, userID, owner, repo, channelID, features string) error {
@@ -195,21 +196,25 @@ func (p *Plugin) GetSubscribedChannelsForRepository(pl webhookpayload.Payload) [
 	return subsToReturn
 }
 
-func (p *Plugin) Unsubscribe(channelID string, repo string) error {
+func (p *Plugin) Unsubscribe(channelID, repo string) (string, error) {
+	if len(strings.Split(repo, "/")) != 2 {
+		return requiredErrorMessage, nil
+	}
+
 	owner, repo := parseOwnerAndRepo(repo, p.getBaseURL())
 	if owner == "" && repo == "" {
-		return errors.New("invalid repository")
+		return requiredErrorMessage, nil
 	}
 	repoWithOwner := fmt.Sprintf("%s/%s", owner, repo)
 
 	subs, err := p.GetSubscriptions()
 	if err != nil {
-		return errors.Wrap(err, "could not get subscriptions")
+		return "", errors.Wrap(err, "could not get subscriptions")
 	}
 
 	repoSubs := subs.Repositories[repoWithOwner]
 	if repoSubs == nil {
-		return nil
+		return fmt.Sprintf(UnsubscribedErrorMessage, repo), nil
 	}
 
 	removed := false
@@ -224,9 +229,10 @@ func (p *Plugin) Unsubscribe(channelID string, repo string) error {
 	if removed {
 		subs.Repositories[repoWithOwner] = repoSubs
 		if err := p.StoreSubscriptions(subs); err != nil {
-			return errors.Wrap(err, "could not store subscriptions")
+			return "", errors.Wrap(err, "could not store subscriptions")
 		}
+		return fmt.Sprintf("Successfully unsubscribed from %s.", repo), nil
 	}
 
-	return nil
+	return fmt.Sprintf(UnsubscribedErrorMessage, repo), nil
 }
