@@ -39,7 +39,7 @@ func (w *webhook) createRepoPushEventNotificationForSubscribedChannels(pl webhoo
 	}
 
 	for _, sub := range subs {
-		if !sub.PullReviews() {
+		if !sub.Pushes() {
 			continue
 		}
 		handler.ToChannels = append(handler.ToChannels, sub.ChannelID)
