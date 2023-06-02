@@ -30,7 +30,7 @@ This guide assumes:
 
 #### Marketplace installation
 
-1. Go to **Main Menu &gt; Plugin Marketplace** in Mattermost.
+1. Go to **Main Menu > Plugin Marketplace** in Mattermost.
 2. Search for "Bitbucket" or find the plugin from the list.
 3. Select **Install**.
 4. When the plugin has downloaded and been installed, select **Configure**.
