@@ -1,4 +1,4 @@
-# Mattermost Bitbucket plugin
+# Mattermost Bitbucket Plugin
 
 A Bitbucket plugin for Mattermost. Based on the [mattermost-plugin-bitbucket](https://github.com/jfrerich/mattermost-plugin-bitbucket) developed by [jfrerich](https://github.com/jfrerich).
 
