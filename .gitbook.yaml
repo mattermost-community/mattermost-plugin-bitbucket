@@ -1,4 +1,1 @@
-root: ./
-
-redirects:
-  bitbucket-plugin: mattermost-integrations.md
+root: ./docs/
