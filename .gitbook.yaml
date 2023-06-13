@@ -1,4 +1,4 @@
 root: ./
 
 redirects:
-  bitbucket-plugin: mattermost-integrations.md
+    bitbucket-plugin: mattermost-integrations.md
