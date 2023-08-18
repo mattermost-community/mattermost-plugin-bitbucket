@@ -65,6 +65,14 @@ const manifest = JSON.parse(`
                 "help_text": "(Optional) Set to lock the plugin to a single Bitbucket organization.",
                 "placeholder": "",
                 "default": null
+            },
+            {
+                "key": "BitbucketSelfHostedUrl",
+                "display_name": "Bitbucket Self-hosted Url",
+                "type": "text",
+                "help_text": "(Optional) Set to change the default bitbucket URL to a self-hosted one.",
+                "placeholder": "",
+                "default": null
             }
         ]
     }
