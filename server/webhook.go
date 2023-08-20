@@ -136,7 +136,7 @@ func (p *Plugin) executeHandlers(webhookHandlers []*webhook.HandleWebhook, pl we
 }
 
 func (p *Plugin) permissionToRepo(userID string, ownerAndRepo string) bool {
-	_, owner, repo := parseOwnerAndRepoAndReturnFullAlso(ownerAndRepo, p.getBaseURL())
+	_, owner, repo := parseOwnerAndRepoAndReturnFullAlso(ownerAndRepo, p.getBitbucketBaseURL())
 
 	if owner == "" {
 		return false

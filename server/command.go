@@ -225,7 +225,8 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 
 		ctx := context.Background()
 		bitbucketClient := p.bitbucketConnect(*userInfo.Token)
-		owner, repo := parseOwnerAndRepo(parameters[0], BitbucketBaseURL)
+		bitbucketURL := p.getBitbucketBaseURL()
+		owner, repo := parseOwnerAndRepo(parameters[0], bitbucketURL)
 		previousSubscribedEvents, err := p.findSubscriptionsEvents(args.ChannelId, owner, repo)
 		if err != nil {
 			return err.Error()
@@ -243,7 +244,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 			return err.Error()
 		}
 
-		repoLink := fmt.Sprintf("%s%s/%s", p.getBaseURL(), owner, repo)
+		repoLink := fmt.Sprintf("%s%s/%s", bitbucketURL, owner, repo)
 
 		msg := fmt.Sprintf("Successfully subscribed to [%s/%s](%s) with events: %s", owner, repo, repoLink, formattedString(features))
 		if previousSubscribedEvents != "" {

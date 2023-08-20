@@ -160,8 +160,10 @@ func (p *Plugin) OnActivate() error {
 func (p *Plugin) getOAuthConfig() *oauth2.Config {
 	config := p.getConfiguration()
 
-	authURL, _ := url.Parse(BitbucketBaseURL)
-	tokenURL, _ := url.Parse(BitbucketBaseURL)
+	bitbucketURL := p.getBitbucketBaseURL()
+
+	authURL, _ := url.Parse(bitbucketURL)
+	tokenURL, _ := url.Parse(bitbucketURL)
 	authURL.Path = path.Join(authURL.Path, "site", "oauth2", "authorize")
 	tokenURL.Path = path.Join(tokenURL.Path, "site", "oauth2", "access_token")
 
@@ -303,6 +305,8 @@ func (p *Plugin) PostToDo(info *BitbucketUserInfo) {
 }
 
 func (p *Plugin) GetToDo(ctx context.Context, userInfo *BitbucketUserInfo, bitbucketClient *bitbucket.APIClient) (string, error) {
+	bitbucketURL := p.getBitbucketBaseURL()
+
 	userRepos, err := p.getUserRepositories(ctx, bitbucketClient)
 	if err != nil {
 		return "", errors.Wrap(err, "error occurred while searching for repositories")
@@ -331,7 +335,7 @@ func (p *Plugin) GetToDo(ctx context.Context, userInfo *BitbucketUserInfo, bitbu
 		text += fmt.Sprintf("You have %v assignments:\n", len(yourAssignments))
 
 		for _, assign := range yourAssignments {
-			text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
+			text += getToDoDisplayText(bitbucketURL, assign.Title, assign.Links.Html.Href, "")
 		}
 	}
 
@@ -343,7 +347,7 @@ func (p *Plugin) GetToDo(ctx context.Context, userInfo *BitbucketUserInfo, bitbu
 		text += fmt.Sprintf("You have %v pull requests awaiting your review:\n", len(assignedPRs))
 
 		for _, assign := range assignedPRs {
-			text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
+			text += getToDoDisplayText(bitbucketURL, assign.Title, assign.Links.Html.Href, "")
 		}
 	}
 
@@ -355,7 +359,7 @@ func (p *Plugin) GetToDo(ctx context.Context, userInfo *BitbucketUserInfo, bitbu
 		text += fmt.Sprintf("You have %v open pull requests:\n", len(yourOpenPrs))
 
 		for _, assign := range yourOpenPrs {
-			text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
+			text += getToDoDisplayText(bitbucketURL, assign.Title, assign.Links.Html.Href, "")
 		}
 	}
 
@@ -587,10 +591,6 @@ func (p *Plugin) sendRefreshEvent(userID string) {
 	)
 }
 
-func (p *Plugin) getBaseURL() string {
-	return "https://bitbucket.org/"
-}
-
 // getBitBucketAccountIDToMattermostUsernameMapping maps a BitBucket account ID to the corresponding Mattermost username, if any.
 func (p *Plugin) getBitBucketAccountIDToMattermostUsernameMapping(bitbucketAccountID string) string {
 	user, _ := p.API.GetUser(p.getBitbucketAccountIDToMattermostUserIDMapping(bitbucketAccountID))
@@ -660,4 +660,16 @@ func (p *Plugin) getUsername(mmUserID string) (string, error) {
 	}
 
 	return "@" + info.BitbucketUsername, nil
+}
+
+// getBitbucketBaseURl returns the base URL from the configuration
+// if there is a Self Hosted URL configured it returns it
+// if not it will return the bitbucket base URL
+func (p *Plugin) getBitbucketBaseURL() string {
+	config := p.getConfiguration()
+
+	if config.BitbucketSelfHostedUrl != "" {
+		return config.BitbucketSelfHostedUrl
+	}
+	return BitbucketBaseURL
 }
