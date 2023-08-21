@@ -662,14 +662,14 @@ func (p *Plugin) getUsername(mmUserID string) (string, error) {
 	return "@" + info.BitbucketUsername, nil
 }
 
-// getBitbucketBaseURl returns the base URL from the configuration
+// getBitbucketBaseURL returns the Bitbucket Server URL from the configuration
 // if there is a Self Hosted URL configured it returns it
-// if not it will return the bitbucket base URL
+// if not it will return the Bitbucket Cloud base URL
 func (p *Plugin) getBitbucketBaseURL() string {
 	config := p.getConfiguration()
 
-	if config.BitbucketSelfHostedUrl != "" {
-		return config.BitbucketSelfHostedUrl
+	if config.BitbucketSelfHostedURL != "" {
+		return config.BitbucketSelfHostedURL
 	}
 	return BitbucketBaseURL
 }

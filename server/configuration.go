@@ -21,7 +21,7 @@ type Configuration struct {
 	BitbucketOrg               string
 	BitbucketOAuthClientID     string
 	BitbucketOAuthClientSecret string
-	BitbucketSelfHostedUrl     string
+	BitbucketSelfHostedURL     string
 	WebhookSecret              string
 	EncryptionKey              string
 }
