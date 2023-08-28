@@ -69,9 +69,17 @@ const manifest = JSON.parse(`
             },
             {
                 "key": "BitbucketSelfHostedURL",
-                "display_name": "Bitbucket Self-hosted Url",
+                "display_name": "Bitbucket Self-hosted URL",
                 "type": "text",
                 "help_text": "If using Bitbucket Server instead of Bitbucket Cloud, please set this value to your BitBucket server's URL.",
+                "placeholder": "",
+                "default": null
+            },
+            {
+                "key": "BitbucketAPISelfHostedURL",
+                "display_name": "Bitbucket API Self-hosted URL",
+                "type": "text",
+                "help_text": "If using Bitbucket Server instead of Bitbucket Cloud, please set this value to your BitBucket API server's URL.",
                 "placeholder": "",
                 "default": null
             }
