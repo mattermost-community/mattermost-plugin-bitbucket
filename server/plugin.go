@@ -30,7 +30,8 @@ const (
 	BitbucketOauthKey     = "bitbucketoauthkey_"
 	BitbucketAccountIDKey = "_bitbucketaccountid"
 
-	BitbucketBaseURL = "https://bitbucket.org/"
+	BitbucketBaseURL    = "https://bitbucket.org/"
+	BitbucketAPIBaseURL = "https://api.bitbucket.org/2.0"
 
 	WsEventConnect    = "connect"
 	WsEventDisconnect = "disconnect"
@@ -372,10 +373,11 @@ func (p *Plugin) getUserRepositories(ctx context.Context, bitbucketClient *bitbu
 
 	var urlForRepos string
 	org := p.getConfiguration().BitbucketOrg
+	apiURL := p.getBitbucketAPIBaseURL()
 	if org != "" {
-		urlForRepos = getYourOrgReposSearchQuery(org)
+		urlForRepos = getYourOrgReposSearchQuery(apiURL, org)
 	} else {
-		urlForRepos = getYourAllReposSearchQuery()
+		urlForRepos = getYourAllReposSearchQuery(apiURL)
 	}
 
 	userRepos, err := p.fetchRepositoriesWithNextPagesIfAny(ctx, urlForRepos, bitbucketClient)
@@ -420,9 +422,11 @@ func (p *Plugin) getIssuesWithTerm(bitbucketClient *bitbucket.APIClient, searchT
 		return nil, errors.Wrap(err, "error occurred while fetching repositories")
 	}
 
+	apiURL := p.getBitbucketAPIBaseURL()
+
 	var foundIssues []bitbucket.Issue
 	for _, repo := range userRepos {
-		paginatedIssues, httpResponse, err := bitbucketClient.PagingApi.IssuesPageGet(context.Background(), getSearchIssuesQuery(repo.FullName, searchTerm))
+		paginatedIssues, httpResponse, err := bitbucketClient.PagingApi.IssuesPageGet(context.Background(), getSearchIssuesQuery(apiURL, repo.FullName, searchTerm))
 		if httpResponse != nil {
 			_ = httpResponse.Body.Close()
 		}
@@ -523,10 +527,11 @@ func (p *Plugin) fetchPRsWithNextPagesIfAny(ctx context.Context, urlToFetch stri
 }
 
 func (p *Plugin) getAssignedIssues(ctx context.Context, userInfo *BitbucketUserInfo, bitbucketClient *bitbucket.APIClient, userRepos []bitbucket.Repository) ([]bitbucket.Issue, error) {
+	apiURL := p.getBitbucketAPIBaseURL()
 	var issuesResult []bitbucket.Issue
 
 	for _, repo := range userRepos {
-		urlForIssues := getYourAssigneeIssuesSearchQuery(userInfo.BitbucketAccountID, repo.FullName)
+		urlForIssues := getYourAssigneeIssuesSearchQuery(apiURL, userInfo.BitbucketAccountID, repo.FullName)
 
 		paginatedIssuesInRepo, err := p.fetchIssuesWithNextPagesIfAny(ctx, urlForIssues, bitbucketClient)
 		if err != nil {
@@ -540,9 +545,10 @@ func (p *Plugin) getAssignedIssues(ctx context.Context, userInfo *BitbucketUserI
 }
 
 func (p *Plugin) getAssignedPRs(ctx context.Context, userInfo *BitbucketUserInfo, bitbucketClient *bitbucket.APIClient, userRepos []bitbucket.Repository) ([]bitbucket.Pullrequest, error) {
+	apiURL := p.getBitbucketAPIBaseURL()
 	var prsResult []bitbucket.Pullrequest
 	for _, repo := range userRepos {
-		urlForPRs := getYourAssigneePRsSearchQuery(userInfo.BitbucketAccountID, repo.FullName)
+		urlForPRs := getYourAssigneePRsSearchQuery(apiURL, userInfo.BitbucketAccountID, repo.FullName)
 
 		paginatedIssuesInRepo, err := p.fetchPRsWithNextPagesIfAny(ctx, urlForPRs, bitbucketClient)
 		if err != nil {
@@ -556,10 +562,11 @@ func (p *Plugin) getAssignedPRs(ctx context.Context, userInfo *BitbucketUserInfo
 }
 
 func (p *Plugin) getOpenPRs(ctx context.Context, userInfo *BitbucketUserInfo, bitbucketClient *bitbucket.APIClient, userRepos []bitbucket.Repository) ([]bitbucket.Pullrequest, error) {
+	apiURL := p.getBitbucketAPIBaseURL()
 	var prsResult []bitbucket.Pullrequest
 
 	for _, repo := range userRepos {
-		urlForPRs := getYourOpenPRsSearchQuery(userInfo.BitbucketAccountID, repo.FullName)
+		urlForPRs := getYourOpenPRsSearchQuery(apiURL, userInfo.BitbucketAccountID, repo.FullName)
 
 		paginatedIssuesInRepo, err := p.fetchPRsWithNextPagesIfAny(ctx, urlForPRs, bitbucketClient)
 		if err != nil {
@@ -672,4 +679,16 @@ func (p *Plugin) getBitbucketBaseURL() string {
 		return config.BitbucketSelfHostedURL
 	}
 	return BitbucketBaseURL
+}
+
+// getBitbucketAPIBaseURL returns the Bitbucket Server API URL from the configuration
+// if there is a API Self Hosted URL configured it returns it
+// if not it will return the Bitbucket Cloud API base URL
+func (p *Plugin) getBitbucketAPIBaseURL() string {
+	config := p.getConfiguration()
+
+	if config.BitbucketAPISelfHostedURL != "" {
+		return config.BitbucketAPISelfHostedURL
+	}
+	return BitbucketAPIBaseURL
 }

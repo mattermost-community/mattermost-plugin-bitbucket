@@ -14,35 +14,31 @@ import (
 	"github.com/mattermost/mattermost-server/v6/utils"
 )
 
-func getBaseURL() string {
-	return "https://api.bitbucket.org/2.0"
+func getYourOrgReposSearchQuery(baseURL string, organizationName string) string {
+	return baseURL + "/repositories/" + organizationName + "?role=member"
 }
 
-func getYourOrgReposSearchQuery(organizationName string) string {
-	return getBaseURL() + "/repositories/" + organizationName + "?role=member"
+func getYourAllReposSearchQuery(baseURL string) string {
+	return baseURL + "/repositories?role=member"
 }
 
-func getYourAllReposSearchQuery() string {
-	return getBaseURL() + "/repositories?role=member"
-}
-
-func getYourAssigneeIssuesSearchQuery(userAccountID, repoFullName string) string {
-	return getBaseURL() + "/repositories/" + repoFullName + "/issues?q=" +
+func getYourAssigneeIssuesSearchQuery(baseURL string, userAccountID string, repoFullName string) string {
+	return baseURL + "/repositories/" + repoFullName + "/issues?q=" +
 		utils.URLEncode("assignee.account_id=\""+userAccountID+"\" AND state!=\"closed\"")
 }
 
-func getYourAssigneePRsSearchQuery(userAccountID, repoFullName string) string {
-	return getBaseURL() + "/repositories/" + repoFullName + "/pullrequests?q=" +
+func getYourAssigneePRsSearchQuery(baseURL string, userAccountID string, repoFullName string) string {
+	return baseURL + "/repositories/" + repoFullName + "/pullrequests?q=" +
 		utils.URLEncode("reviewers.account_id=\""+userAccountID+"\" AND state=\"open\"")
 }
 
-func getYourOpenPRsSearchQuery(userAccountID, repoFullName string) string {
-	return getBaseURL() + "/repositories/" + repoFullName + "/pullrequests?q=" +
+func getYourOpenPRsSearchQuery(baseURL string, userAccountID string, repoFullName string) string {
+	return baseURL + "/repositories/" + repoFullName + "/pullrequests?q=" +
 		utils.URLEncode("author.account_id=\""+userAccountID+"\" AND state=\"open\"")
 }
 
-func getSearchIssuesQuery(repoFullName, searchTerm string) string {
-	return getBaseURL() + "/repositories/" + repoFullName + "/issues?q=" +
+func getSearchIssuesQuery(baseURL string, repoFullName string, searchTerm string) string {
+	return baseURL + "/repositories/" + repoFullName + "/issues?q=" +
 		utils.URLEncode("title ~ \""+searchTerm+"\"") + "&sort=-updated_on"
 }
 
