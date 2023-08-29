@@ -14,7 +14,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/utils"
 )
 
-func getYourOrgReposSearchQuery(baseURL string, organizationName string) string {
+func getYourOrgReposSearchQuery(baseURL, organizationName string) string {
 	return baseURL + "/repositories/" + organizationName + "?role=member"
 }
 
@@ -22,22 +22,22 @@ func getYourAllReposSearchQuery(baseURL string) string {
 	return baseURL + "/repositories?role=member"
 }
 
-func getYourAssigneeIssuesSearchQuery(baseURL string, userAccountID string, repoFullName string) string {
+func getYourAssigneeIssuesSearchQuery(baseURL, userAccountID, repoFullName string) string {
 	return baseURL + "/repositories/" + repoFullName + "/issues?q=" +
 		utils.URLEncode("assignee.account_id=\""+userAccountID+"\" AND state!=\"closed\"")
 }
 
-func getYourAssigneePRsSearchQuery(baseURL string, userAccountID string, repoFullName string) string {
+func getYourAssigneePRsSearchQuery(baseURL, userAccountID, repoFullName string) string {
 	return baseURL + "/repositories/" + repoFullName + "/pullrequests?q=" +
 		utils.URLEncode("reviewers.account_id=\""+userAccountID+"\" AND state=\"open\"")
 }
 
-func getYourOpenPRsSearchQuery(baseURL string, userAccountID string, repoFullName string) string {
+func getYourOpenPRsSearchQuery(baseURL, userAccountID, repoFullName string) string {
 	return baseURL + "/repositories/" + repoFullName + "/pullrequests?q=" +
 		utils.URLEncode("author.account_id=\""+userAccountID+"\" AND state=\"open\"")
 }
 
-func getSearchIssuesQuery(baseURL string, repoFullName string, searchTerm string) string {
+func getSearchIssuesQuery(baseURL, repoFullName, searchTerm string) string {
 	return baseURL + "/repositories/" + repoFullName + "/issues?q=" +
 		utils.URLEncode("title ~ \""+searchTerm+"\"") + "&sort=-updated_on"
 }
