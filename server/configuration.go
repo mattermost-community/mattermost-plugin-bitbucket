@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/url"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -51,7 +52,30 @@ func (c *Configuration) IsValid() error {
 	if c.WebhookSecret == "" {
 		return errors.New("must have a webhook secret")
 	}
+
+	if c.BitbucketSelfHostedURL != "" && !c.IsValidURL(c.BitbucketSelfHostedURL) {
+		return errors.New("must be a valid URL")
+	}
+
+	if c.BitbucketAPISelfHostedURL != "" && !c.IsValidURL(c.BitbucketAPISelfHostedURL) {
+		return errors.New("must be a valid URL")
+	}
 	return nil
+}
+
+// IsValidURL checks if an URL passed is valid
+func (c *Configuration) IsValidURL(toTest string) bool {
+	_, err := url.ParseRequestURI(toTest)
+	if err != nil {
+		return false
+	}
+
+	u, err := url.Parse(toTest)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return false
+	}
+
+	return true
 }
 
 // getConfiguration retrieves the active Configuration under lock, making it safe to use
