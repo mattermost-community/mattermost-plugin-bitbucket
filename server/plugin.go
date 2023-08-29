@@ -669,16 +669,19 @@ func (p *Plugin) getUsername(mmUserID string) (string, error) {
 	return "@" + info.BitbucketUsername, nil
 }
 
+func (p *Plugin) getURL(selfHostedURL, defaultURL string) string {
+	if selfHostedURL != "" {
+		return selfHostedURL
+	}
+	return defaultURL
+}
+
 // getBitbucketBaseURL returns the Bitbucket Server URL from the configuration
 // if there is a Self Hosted URL configured it returns it
 // if not it will return the Bitbucket Cloud base URL
 func (p *Plugin) getBitbucketBaseURL() string {
 	config := p.getConfiguration()
-
-	if config.BitbucketSelfHostedURL != "" {
-		return config.BitbucketSelfHostedURL
-	}
-	return BitbucketBaseURL
+	return p.getURL(config.BitbucketSelfHostedURL, BitbucketBaseURL)
 }
 
 // getBitbucketAPIBaseURL returns the Bitbucket Server API URL from the configuration
@@ -686,9 +689,5 @@ func (p *Plugin) getBitbucketBaseURL() string {
 // if not it will return the Bitbucket Cloud API base URL
 func (p *Plugin) getBitbucketAPIBaseURL() string {
 	config := p.getConfiguration()
-
-	if config.BitbucketAPISelfHostedURL != "" {
-		return config.BitbucketAPISelfHostedURL
-	}
-	return BitbucketAPIBaseURL
+	return p.getURL(config.BitbucketAPISelfHostedURL, BitbucketAPIBaseURL)
 }
