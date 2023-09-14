@@ -78,6 +78,11 @@ func (c *Configuration) IsValidURL(toTest string) bool {
 	return true
 }
 
+// IsBitbucketSelfHosted checks if we are dealing with self-hosted bitbucket
+func (c *Configuration) IsBitbucketSelfHosted() bool {
+	return c.BitbucketSelfHostedURL != "" && c.BitbucketAPISelfHostedURL != ""
+}
+
 // getConfiguration retrieves the active Configuration under lock, making it safe to use
 // concurrently. The active Configuration may change underneath the client of this method, but
 // the struct returned by this API call is considered immutable.

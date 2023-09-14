@@ -165,13 +165,22 @@ func (p *Plugin) getOAuthConfig() *oauth2.Config {
 
 	authURL, _ := url.Parse(bitbucketURL)
 	tokenURL, _ := url.Parse(bitbucketURL)
-	authURL.Path = path.Join(authURL.Path, "site", "oauth2", "authorize")
-	tokenURL.Path = path.Join(tokenURL.Path, "site", "oauth2", "access_token")
+	scopes := []string{}
+
+	if config.IsBitbucketSelfHosted() {
+		authURL.Path = path.Join(authURL.Path, "rest", "oauth2", "latest", "authorize")
+		tokenURL.Path = path.Join(tokenURL.Path, "rest", "oauth2", "latest", "token")
+		scopes = append(scopes, "PUBLIC_REPOS", "REPO_READ", "ACCOUNT_WRITE")
+	} else {
+		authURL.Path = path.Join(authURL.Path, "site", "oauth2", "authorize")
+		tokenURL.Path = path.Join(tokenURL.Path, "site", "oauth2", "access_token")
+		scopes = append(scopes, "repository")
+	}
 
 	return &oauth2.Config{
 		ClientID:     config.BitbucketOAuthClientID,
 		ClientSecret: config.BitbucketOAuthClientSecret,
-		Scopes:       []string{"repository"},
+		Scopes:       scopes,
 		RedirectURL:  fmt.Sprintf("%s/plugins/%s/oauth/complete", *p.API.GetConfig().ServiceSettings.SiteURL, manifest.Id),
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  authURL.String(),
