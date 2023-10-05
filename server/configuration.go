@@ -54,11 +54,11 @@ func (c *Configuration) IsValid() error {
 	}
 
 	if c.BitbucketSelfHostedURL != "" && !c.IsValidURL(c.BitbucketSelfHostedURL) {
-		return errors.New("must be a valid URL")
+		return errors.New("BitbucketSelfHostedURL must be a valid URL")
 	}
 
 	if c.BitbucketAPISelfHostedURL != "" && !c.IsValidURL(c.BitbucketAPISelfHostedURL) {
-		return errors.New("must be a valid URL")
+		return errors.New("BitbucketAPISelfHostedURL must be a valid URL")
 	}
 	return nil
 }

@@ -15,7 +15,6 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/plugin"
 )
 
 const (
@@ -155,7 +154,7 @@ func checkPluginRequest(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	config := p.getConfiguration()
 
 	if err := config.IsValid(); err != nil {
