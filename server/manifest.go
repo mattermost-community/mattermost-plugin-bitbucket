@@ -25,6 +25,7 @@ const manifestStr = `
   "server": {
     "executables": {
       "darwin-amd64": "server/dist/plugin-darwin-amd64",
+      "darwin-arm64": "server/dist/plugin-darwin-arm64",
       "linux-amd64": "server/dist/plugin-linux-amd64",
       "windows-amd64": "server/dist/plugin-windows-amd64.exe"
     },
@@ -74,6 +75,22 @@ const manifestStr = `
         "display_name": "Bitbucket Organization",
         "type": "text",
         "help_text": "(Optional) Set to lock the plugin to a single Bitbucket organization.",
+        "placeholder": "",
+        "default": null
+      },
+      {
+        "key": "BitbucketSelfHostedURL",
+        "display_name": "Bitbucket Self-hosted URL",
+        "type": "text",
+        "help_text": "If using Bitbucket Server instead of Bitbucket Cloud, please set this value to your BitBucket server's URL.",
+        "placeholder": "",
+        "default": null
+      },
+      {
+        "key": "BitbucketAPISelfHostedURL",
+        "display_name": "Bitbucket API Self-hosted URL",
+        "type": "text",
+        "help_text": "If using Bitbucket Server instead of Bitbucket Cloud, please set this value to your BitBucket API server's URL.",
         "placeholder": "",
         "default": null
       }

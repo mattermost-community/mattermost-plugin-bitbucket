@@ -225,7 +225,8 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 
 		ctx := context.Background()
 		bitbucketClient := p.bitbucketConnect(*userInfo.Token)
-		owner, repo := parseOwnerAndRepo(parameters[0], BitbucketBaseURL)
+		bitbucketURL := p.getBitbucketBaseURL()
+		owner, repo := parseOwnerAndRepo(parameters[0], bitbucketURL)
 		previousSubscribedEvents, err := p.findSubscriptionsEvents(args.ChannelId, owner, repo)
 		if err != nil {
 			return err.Error()
@@ -243,7 +244,7 @@ func (p *Plugin) handleSubscribe(_ *plugin.Context, args *model.CommandArgs, par
 			return err.Error()
 		}
 
-		repoLink := fmt.Sprintf("%s%s/%s", p.getBaseURL(), owner, repo)
+		repoLink := fmt.Sprintf("%s%s/%s", bitbucketURL, owner, repo)
 
 		msg := fmt.Sprintf("Successfully subscribed to [%s/%s](%s) with events: %s", owner, repo, repoLink, formattedString(features))
 		if previousSubscribedEvents != "" {
@@ -319,7 +320,7 @@ func (p *Plugin) handleMe(_ *plugin.Context, _ *model.CommandArgs, _ []string, u
 	return text
 }
 
-func (p *Plugin) handleHelp(_ *plugin.Context, _ *model.CommandArgs, _ []string, userInfo *BitbucketUserInfo) string {
+func (p *Plugin) handleHelp(_ *plugin.Context, _ *model.CommandArgs, _ []string, _ *BitbucketUserInfo) string {
 	message := fmt.Sprintf("#### Welcome to the Mattermost Bitbucket Plugin!\n" +
 		"##### Daily Reminders\n" +
 		"The first time you log in each day, you will get a post right here letting you know what messages you need to read and what pull requests are awaiting your review.\n" +

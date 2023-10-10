@@ -28,6 +28,12 @@ ifneq ($(wildcard build/custom.mk),)
 	include build/custom.mk
 endif
 
+ifneq ($(MM_DEBUG),)
+	GO_BUILD_GCFLAGS = -gcflags "all=-N -l"
+else
+	GO_BUILD_GCFLAGS =
+endif
+
 ## Checks the code style, tests, builds and bundles the plugin.
 .PHONY: all
 all: check-style test dist
@@ -69,9 +75,10 @@ ifeq ($(MM_DEBUG),)
 else
 	$(info DEBUG mode is on; to disable, unset MM_DEBUG)
 
-	cd server && env GOOS=darwin GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -gcflags "all=-N -l" -o dist/plugin-darwin-amd64;
-	cd server && env GOOS=linux GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -gcflags "all=-N -l" -o dist/plugin-linux-amd64;
-	cd server && env GOOS=windows GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -gcflags "all=-N -l" -o dist/plugin-windows-amd64.exe;
+	cd server && env GOOS=darwin GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) $(GO_BUILD_GCFLAGS) -o dist/plugin-darwin-amd64;
+	cd server && env GOOS=linux GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) $(GO_BUILD_GCFLAGS) -o dist/plugin-linux-amd64;
+	cd server && env GOOS=darwin GOARCH=arm64 $(GO) build $(GO_BUILD_FLAGS) $(GO_BUILD_GCFLAGS) -o dist/plugin-darwin-arm64;
+	cd server && env GOOS=windows GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) $(GO_BUILD_GCFLAGS) -o dist/plugin-windows-amd64.exe;
 endif
 endif
 

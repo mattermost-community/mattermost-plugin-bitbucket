@@ -201,7 +201,7 @@ func (p *Plugin) Unsubscribe(channelID, repo string) (string, error) {
 		return requiredErrorMessage, nil
 	}
 
-	owner, repo := parseOwnerAndRepo(repo, p.getBaseURL())
+	owner, repo := parseOwnerAndRepo(repo, p.getBitbucketBaseURL())
 	if owner == "" && repo == "" {
 		return requiredErrorMessage, nil
 	}

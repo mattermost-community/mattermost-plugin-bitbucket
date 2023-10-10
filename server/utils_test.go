@@ -35,7 +35,7 @@ func TestParseOwnerAndRepo(t *testing.T) {
 }
 
 func TestGetYourAssigneeSearchQuery(t *testing.T) {
-	result := getYourAssigneeIssuesSearchQuery("123", "testworkspace/testrepo")
+	result := getYourAssigneeIssuesSearchQuery("https://api.bitbucket.org/2.0", "123", "testworkspace/testrepo")
 	assert.Equal(t, "https://api.bitbucket.org/2.0/repositories/testworkspace/testrepo/issues?q=assignee.account_id%3D%22123%22%20AND%20state%21%3D%22closed%22",
 		result)
 }

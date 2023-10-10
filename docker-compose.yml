@@ -1,0 +1,14 @@
+version: '3.7'
+
+services:
+  bitbucket:
+    container_name: mattermost-bitbucket
+    image: atlassian/bitbucket:latest # It is recommended to use the bitbucket image instead of bitbucket-server since it's deprecated
+    ports:
+      - "7990:7990"
+      - "7999:7999"
+    volumes:
+      - bitbucket-data:/var/atlassian/application-data/bitbucket
+
+volumes:
+  bitbucket-data:

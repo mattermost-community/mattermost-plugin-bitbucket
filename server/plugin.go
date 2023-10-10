@@ -30,7 +30,8 @@ const (
 	BitbucketOauthKey     = "bitbucketoauthkey_"
 	BitbucketAccountIDKey = "_bitbucketaccountid"
 
-	BitbucketBaseURL = "https://bitbucket.org/"
+	BitbucketBaseURL    = "https://bitbucket.org/"
+	BitbucketAPIBaseURL = "https://api.bitbucket.org/2.0"
 
 	WsEventConnect    = "connect"
 	WsEventDisconnect = "disconnect"
@@ -160,15 +161,26 @@ func (p *Plugin) OnActivate() error {
 func (p *Plugin) getOAuthConfig() *oauth2.Config {
 	config := p.getConfiguration()
 
-	authURL, _ := url.Parse(BitbucketBaseURL)
-	tokenURL, _ := url.Parse(BitbucketBaseURL)
-	authURL.Path = path.Join(authURL.Path, "site", "oauth2", "authorize")
-	tokenURL.Path = path.Join(tokenURL.Path, "site", "oauth2", "access_token")
+	bitbucketURL := p.getBitbucketBaseURL()
+
+	authURL, _ := url.Parse(bitbucketURL)
+	tokenURL, _ := url.Parse(bitbucketURL)
+	scopes := []string{}
+
+	if config.IsBitbucketSelfHosted() {
+		authURL.Path = path.Join(authURL.Path, "rest", "oauth2", "latest", "authorize")
+		tokenURL.Path = path.Join(tokenURL.Path, "rest", "oauth2", "latest", "token")
+		scopes = append(scopes, "PUBLIC_REPOS", "REPO_READ", "ACCOUNT_WRITE")
+	} else {
+		authURL.Path = path.Join(authURL.Path, "site", "oauth2", "authorize")
+		tokenURL.Path = path.Join(tokenURL.Path, "site", "oauth2", "access_token")
+		scopes = append(scopes, "repository")
+	}
 
 	return &oauth2.Config{
 		ClientID:     config.BitbucketOAuthClientID,
 		ClientSecret: config.BitbucketOAuthClientSecret,
-		Scopes:       []string{"repository"},
+		Scopes:       scopes,
 		RedirectURL:  fmt.Sprintf("%s/plugins/%s/oauth/complete", *p.API.GetConfig().ServiceSettings.SiteURL, manifest.Id),
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  authURL.String(),
@@ -303,6 +315,8 @@ func (p *Plugin) PostToDo(info *BitbucketUserInfo) {
 }
 
 func (p *Plugin) GetToDo(ctx context.Context, userInfo *BitbucketUserInfo, bitbucketClient *bitbucket.APIClient) (string, error) {
+	bitbucketURL := p.getBitbucketBaseURL()
+
 	userRepos, err := p.getUserRepositories(ctx, bitbucketClient)
 	if err != nil {
 		return "", errors.Wrap(err, "error occurred while searching for repositories")
@@ -331,7 +345,7 @@ func (p *Plugin) GetToDo(ctx context.Context, userInfo *BitbucketUserInfo, bitbu
 		text += fmt.Sprintf("You have %v assignments:\n", len(yourAssignments))
 
 		for _, assign := range yourAssignments {
-			text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
+			text += getToDoDisplayText(bitbucketURL, assign.Title, assign.Links.Html.Href, "")
 		}
 	}
 
@@ -343,7 +357,7 @@ func (p *Plugin) GetToDo(ctx context.Context, userInfo *BitbucketUserInfo, bitbu
 		text += fmt.Sprintf("You have %v pull requests awaiting your review:\n", len(assignedPRs))
 
 		for _, assign := range assignedPRs {
-			text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
+			text += getToDoDisplayText(bitbucketURL, assign.Title, assign.Links.Html.Href, "")
 		}
 	}
 
@@ -355,7 +369,7 @@ func (p *Plugin) GetToDo(ctx context.Context, userInfo *BitbucketUserInfo, bitbu
 		text += fmt.Sprintf("You have %v open pull requests:\n", len(yourOpenPrs))
 
 		for _, assign := range yourOpenPrs {
-			text += getToDoDisplayText(BitbucketBaseURL, assign.Title, assign.Links.Html.Href, "")
+			text += getToDoDisplayText(bitbucketURL, assign.Title, assign.Links.Html.Href, "")
 		}
 	}
 
@@ -368,10 +382,11 @@ func (p *Plugin) getUserRepositories(ctx context.Context, bitbucketClient *bitbu
 
 	var urlForRepos string
 	org := p.getConfiguration().BitbucketOrg
+	apiURL := p.getBitbucketAPIBaseURL()
 	if org != "" {
-		urlForRepos = getYourOrgReposSearchQuery(org)
+		urlForRepos = getYourOrgReposSearchQuery(apiURL, org)
 	} else {
-		urlForRepos = getYourAllReposSearchQuery()
+		urlForRepos = getYourAllReposSearchQuery(apiURL)
 	}
 
 	userRepos, err := p.fetchRepositoriesWithNextPagesIfAny(ctx, urlForRepos, bitbucketClient)
@@ -416,9 +431,11 @@ func (p *Plugin) getIssuesWithTerm(bitbucketClient *bitbucket.APIClient, searchT
 		return nil, errors.Wrap(err, "error occurred while fetching repositories")
 	}
 
+	apiURL := p.getBitbucketAPIBaseURL()
+
 	var foundIssues []bitbucket.Issue
 	for _, repo := range userRepos {
-		paginatedIssues, httpResponse, err := bitbucketClient.PagingApi.IssuesPageGet(context.Background(), getSearchIssuesQuery(repo.FullName, searchTerm))
+		paginatedIssues, httpResponse, err := bitbucketClient.PagingApi.IssuesPageGet(context.Background(), getSearchIssuesQuery(apiURL, repo.FullName, searchTerm))
 		if httpResponse != nil {
 			_ = httpResponse.Body.Close()
 		}
@@ -519,10 +536,11 @@ func (p *Plugin) fetchPRsWithNextPagesIfAny(ctx context.Context, urlToFetch stri
 }
 
 func (p *Plugin) getAssignedIssues(ctx context.Context, userInfo *BitbucketUserInfo, bitbucketClient *bitbucket.APIClient, userRepos []bitbucket.Repository) ([]bitbucket.Issue, error) {
+	apiURL := p.getBitbucketAPIBaseURL()
 	var issuesResult []bitbucket.Issue
 
 	for _, repo := range userRepos {
-		urlForIssues := getYourAssigneeIssuesSearchQuery(userInfo.BitbucketAccountID, repo.FullName)
+		urlForIssues := getYourAssigneeIssuesSearchQuery(apiURL, userInfo.BitbucketAccountID, repo.FullName)
 
 		paginatedIssuesInRepo, err := p.fetchIssuesWithNextPagesIfAny(ctx, urlForIssues, bitbucketClient)
 		if err != nil {
@@ -536,9 +554,10 @@ func (p *Plugin) getAssignedIssues(ctx context.Context, userInfo *BitbucketUserI
 }
 
 func (p *Plugin) getAssignedPRs(ctx context.Context, userInfo *BitbucketUserInfo, bitbucketClient *bitbucket.APIClient, userRepos []bitbucket.Repository) ([]bitbucket.Pullrequest, error) {
+	apiURL := p.getBitbucketAPIBaseURL()
 	var prsResult []bitbucket.Pullrequest
 	for _, repo := range userRepos {
-		urlForPRs := getYourAssigneePRsSearchQuery(userInfo.BitbucketAccountID, repo.FullName)
+		urlForPRs := getYourAssigneePRsSearchQuery(apiURL, userInfo.BitbucketAccountID, repo.FullName)
 
 		paginatedIssuesInRepo, err := p.fetchPRsWithNextPagesIfAny(ctx, urlForPRs, bitbucketClient)
 		if err != nil {
@@ -552,10 +571,11 @@ func (p *Plugin) getAssignedPRs(ctx context.Context, userInfo *BitbucketUserInfo
 }
 
 func (p *Plugin) getOpenPRs(ctx context.Context, userInfo *BitbucketUserInfo, bitbucketClient *bitbucket.APIClient, userRepos []bitbucket.Repository) ([]bitbucket.Pullrequest, error) {
+	apiURL := p.getBitbucketAPIBaseURL()
 	var prsResult []bitbucket.Pullrequest
 
 	for _, repo := range userRepos {
-		urlForPRs := getYourOpenPRsSearchQuery(userInfo.BitbucketAccountID, repo.FullName)
+		urlForPRs := getYourOpenPRsSearchQuery(apiURL, userInfo.BitbucketAccountID, repo.FullName)
 
 		paginatedIssuesInRepo, err := p.fetchPRsWithNextPagesIfAny(ctx, urlForPRs, bitbucketClient)
 		if err != nil {
@@ -585,10 +605,6 @@ func (p *Plugin) sendRefreshEvent(userID string) {
 		nil,
 		&model.WebsocketBroadcast{UserId: userID},
 	)
-}
-
-func (p *Plugin) getBaseURL() string {
-	return "https://bitbucket.org/"
 }
 
 // getBitBucketAccountIDToMattermostUsernameMapping maps a BitBucket account ID to the corresponding Mattermost username, if any.
@@ -660,4 +676,28 @@ func (p *Plugin) getUsername(mmUserID string) (string, error) {
 	}
 
 	return "@" + info.BitbucketUsername, nil
+}
+
+// getBitbucketBaseURL returns the Bitbucket Server URL from the configuration
+// if there is a Self Hosted URL configured it returns it
+// if not it will return the Bitbucket Cloud base URL
+func (p *Plugin) getBitbucketBaseURL() string {
+	config := p.getConfiguration()
+	if config.BitbucketSelfHostedURL != "" {
+		return config.BitbucketSelfHostedURL
+	}
+
+	return BitbucketBaseURL
+}
+
+// getBitbucketAPIBaseURL returns the Bitbucket Server API URL from the configuration
+// if there is a API Self Hosted URL configured it returns it
+// if not it will return the Bitbucket Cloud API base URL
+func (p *Plugin) getBitbucketAPIBaseURL() string {
+	config := p.getConfiguration()
+	if config.BitbucketAPISelfHostedURL != "" {
+		return config.BitbucketAPISelfHostedURL
+	}
+
+	return BitbucketAPIBaseURL
 }

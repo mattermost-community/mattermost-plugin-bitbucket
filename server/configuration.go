@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/url"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -21,6 +22,8 @@ type Configuration struct {
 	BitbucketOrg               string
 	BitbucketOAuthClientID     string
 	BitbucketOAuthClientSecret string
+	BitbucketSelfHostedURL     string
+	BitbucketAPISelfHostedURL  string
 	WebhookSecret              string
 	EncryptionKey              string
 }
@@ -49,7 +52,35 @@ func (c *Configuration) IsValid() error {
 	if c.WebhookSecret == "" {
 		return errors.New("must have a webhook secret")
 	}
+
+	if c.BitbucketSelfHostedURL != "" && !c.IsValidURL(c.BitbucketSelfHostedURL) {
+		return errors.New("BitbucketSelfHostedURL must be a valid URL")
+	}
+
+	if c.BitbucketAPISelfHostedURL != "" && !c.IsValidURL(c.BitbucketAPISelfHostedURL) {
+		return errors.New("BitbucketAPISelfHostedURL must be a valid URL")
+	}
 	return nil
+}
+
+// IsValidURL checks if an URL passed is valid
+func (c *Configuration) IsValidURL(toTest string) bool {
+	_, err := url.ParseRequestURI(toTest)
+	if err != nil {
+		return false
+	}
+
+	u, err := url.Parse(toTest)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return false
+	}
+
+	return true
+}
+
+// IsBitbucketSelfHosted checks if we are dealing with self-hosted bitbucket
+func (c *Configuration) IsBitbucketSelfHosted() bool {
+	return c.BitbucketSelfHostedURL != "" && c.BitbucketAPISelfHostedURL != ""
 }
 
 // getConfiguration retrieves the active Configuration under lock, making it safe to use
