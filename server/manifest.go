@@ -19,7 +19,7 @@ const manifestStr = `
   "homepage_url": "https://github.com/mattermost/mattermost-plugin-bitbucket",
   "support_url": "https://github.com/mattermost/mattermost-plugin-bitbucket/issues",
   "release_notes_url": "https://github.com/mattermost/mattermost-plugin-bitbucket/releases/tag/v1.1.1",
-  "icon_path": "assets/icon.svg",
+  "icon_path": "docs/images/icon.svg",
   "version": "1.1.1",
   "min_server_version": "5.37.0",
   "server": {

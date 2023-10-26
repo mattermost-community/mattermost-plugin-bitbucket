@@ -86,7 +86,7 @@ func validateFeatures(features []string) (bool, []string) {
 }
 
 func (p *Plugin) getCommand() (*model.Command, error) {
-	iconData, err := command.GetIconData(p.API, "assets/icon.svg")
+	iconData, err := command.GetIconData(p.API, "docs/images/icon.svg")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get icon data")
 	}
