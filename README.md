@@ -13,16 +13,11 @@
 - [Features](#features)
 - [Admin Guide\*](docs\admin-guide.md)
 - [End User Guide](#end-user-guide)
-  - [Get Started](#get-started)
-  - [Use the Plugin](#use-the-plugin)
   - [Slash Commands](#slash-commands)
   - [FAQ](#faq)
 - [Contribute](#contribute)
   - [Development](#development)
-  - [Test Your Changes](#test-your-changes)
 - [Licence](#license)
-- [Security Vulnerability Disclosure](#security-vulnerability-disclosure)
-- [Get Help](#get-help)
 
 ## Overview
 
@@ -41,10 +36,6 @@ The Bitbucket plugin features include:
 ![Bitbucket plugin screenshot](https://user-images.githubusercontent.com/45372453/97643091-114a1500-1a47-11eb-9863-2e0e308706ea.png)
 
 ## End User Guide
-
-### Get Started
-
-### Use the Plugin
 
 ### Slash commands
 
@@ -71,12 +62,6 @@ Bitbucket user tokens are AES-encrypted with an At Rest Encryption Key configure
 
 This plugin contains both a server and web app portion. Read our documentation about the [Developer Workflow](https://developers.mattermost.com/extend/plugins/developer-workflow/) and [Developer Setup](https://developers.mattermost.com/extend/plugins/developer-setup/) for more information about developing and extending plugins.
 
-### Test Your Changes
-
 ## License
 
 This repository is licensed under the [Apache 2.0 License](https://github.com/mattermost/mattermost-plugin-bitbucket/blob/master/LICENSE).
-
-## Security Vulnerability Disclosure
-
-## Get Help

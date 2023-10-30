@@ -4,16 +4,9 @@ This guide is intended for Mattermost System Admins setting up the Bitbucket plu
 
 - [Prerequsites](#prerequisites)
 - [Installation](#installation)
-  - [Marketplace](#marketplace)
   - [Manual](#manual)
-  - [Cloud](#cloud)
-  - [Upgrade](#upgrade)
 - [Configuration](#configuration)
-- [Webhooks](#webhooks)
-- [Slash Commands](#slash-commands)
 - [Onboard Users](#onboard-users)
-- [FAQ](#faq)
-- [Get Help](#get-help)
 
 ## Prerequisites
 
@@ -28,10 +21,6 @@ This guide assumes:
 ### Manual
 
 If your server doesn't have access to the internet, you can download the latest [plugin binary release](https://github.com/mattermost/mattermost-plugin-bitbucket/releases) and upload it to your server via **System Console > Plugin Management**. The releases on this page are the same used by the Marketplace. To learn more about how to upload a plugin, see [the documentation](https://developers.mattermost.com/integrate/plugins/using-and-managing-plugins/).
-
-### Cloud
-
-### Upgrade
 
 ## Configuration
 
@@ -101,16 +90,8 @@ Open **System Console > Plugins > Bitbucket** and do the following:
 
 You're all set!
 
-## Webhooks
-
-## Slash Commands
-
 ## Onboard users
 
 When you’ve tested the plugin and confirmed it’s working, notify your team so they can connect their Bitbucket account to Mattermost and get started. Copy and paste the text below, edit it to suit your requirements, and send it out.
 
 > Hi team, We've set up the Mattermost Bitbucket plugin, so you can get notifications in Mattermost. To get started, run the `/bitbucket connect` slash command from any channel within Mattermost to connect your Mattermost and Bitbucket accounts. Then, take a look at the slash commands section for details about how to use the plugin.
-
-## FAQ
-
-## Get Help
