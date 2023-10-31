@@ -144,7 +144,7 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "couldn't get bundle path")
 	}
 
-	profileImage, err := os.ReadFile(filepath.Join(bundlePath, "docs/images", "profile.png"))
+	profileImage, err := os.ReadFile(filepath.Join(bundlePath, "assets", "profile.png"))
 	if err != nil {
 		return errors.Wrap(err, "couldn't read profile image")
 	}
