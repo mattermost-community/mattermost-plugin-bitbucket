@@ -1,7 +1,6 @@
 # Mattermost Bitbucket Plugin
 
 [![Build Status](https://github.com/mattermost/mattermost-plugin-bitbucket/actions/workflows/ci.yml/badge.svg)](https://github.com/mattermost/mattermost-plugin-bitbucket/actions/workflows/ci.yml)
-[![Code Coverage](https://img.shields.io/badge/Code%20Coverage-%-brightgreen?style=flat-square)](https://github.com/mattermost/mattermost-plugin-bitbucket)
 [![Latest Release](https://img.shields.io/github/v/release/mattermost/mattermost-plugin-bitbucket?style=flat-square)](https://github.com/mattermost/mattermost-plugin-bitbucket/releases)
 [![Help Wanted](https://img.shields.io/github/issues/mattermost/mattermost-plugin-bitbucket?style=flat-square&color=brightgreen&label=Help%20Wanted)](https://github.com/mattermost/mattermost-plugin-bitbucket/issues?q=is%3Aissue+is%3Aopen+label%3A%22Help+Wanted%22)
 
