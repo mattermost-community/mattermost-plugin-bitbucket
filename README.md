@@ -4,7 +4,7 @@
 [![Latest Release](https://img.shields.io/github/v/release/mattermost/mattermost-plugin-bitbucket?style=flat-square)](https://github.com/mattermost/mattermost-plugin-bitbucket/releases)
 [![Help Wanted](https://img.shields.io/github/issues/mattermost/mattermost-plugin-bitbucket?style=flat-square&color=brightgreen&label=Help%20Wanted)](https://github.com/mattermost/mattermost-plugin-bitbucket/issues?q=is%3Aissue+is%3Aopen+label%3A%22Help+Wanted%22)
 
-## Help wanted tickets [[here]](https://github.com/mattermost/mattermost-plugin-bitbucket/issues?q=is%3Aissue+is%3Aopen+label%3A%22Help+Wanted%22)
+## [Open Help wanted tickets](https://github.com/mattermost/mattermost-plugin-bitbucket/issues?q=is%3Aissue+is%3Aopen+label%3A%22Help+Wanted%22)
 
 ## Contents
 
