@@ -1,3 +1,7 @@
+# :warning: Disclaimer
+
+**This repository is community supported and not maintained by Mattermost. Mattermost disclaims any and all liability for integrations, including Third Party Integrations and Mattermost Integrations. All integrations are provided "AS IS", and may be used at your own risk. Integrations may be modified or discontinued at any time.**
+
 # Mattermost Bitbucket Plugin
 
 A Bitbucket plugin for Mattermost. Based on the [mattermost-plugin-bitbucket](https://github.com/jfrerich/mattermost-plugin-bitbucket) developed by [jfrerich](https://github.com/jfrerich).
