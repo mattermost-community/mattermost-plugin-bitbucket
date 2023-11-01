@@ -10,7 +10,7 @@
 
 - [Overview](#overview)
 - [Features](#features)
-- [Admin Guide\*](docs\admin-guide.md)
+- [Admin Guide](#admin-guide)
 - [End User Guide](#end-user-guide)
   - [Slash Commands](#slash-commands)
   - [FAQ](#faq)
@@ -33,6 +33,10 @@ The Bitbucket plugin features include:
 - **Slash commands:** Interact with the Bitbucket plugin using the `/bitbucket` slash command.
 
 ![Bitbucket plugin screenshot](https://user-images.githubusercontent.com/45372453/97643091-114a1500-1a47-11eb-9863-2e0e308706ea.png)
+
+## Admin Guide
+
+Admin Guide docs is available in Mattermost Bitbucket Plugin docs [here](docs/admin-guide.md)
 
 ## End User Guide
 
