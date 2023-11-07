@@ -155,7 +155,7 @@ func checkPluginRequest(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Request) {
 	config := p.getConfiguration()
 
 	if err := config.IsValid(); err != nil {
