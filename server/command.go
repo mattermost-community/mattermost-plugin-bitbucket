@@ -319,7 +319,7 @@ func (p *Plugin) handleMe(_ *plugin.Context, _ *model.CommandArgs, _ []string, u
 	return text
 }
 
-func (p *Plugin) handleHelp(_ *plugin.Context, _ *model.CommandArgs, _ []string, userInfo *BitbucketUserInfo) string {
+func (p *Plugin) handleHelp(_ *plugin.Context, _ *model.CommandArgs, _ []string, _ *BitbucketUserInfo) string {
 	message := fmt.Sprintf("#### Welcome to the Mattermost Bitbucket Plugin!\n" +
 		"##### Daily Reminders\n" +
 		"The first time you log in each day, you will get a post right here letting you know what messages you need to read and what pull requests are awaiting your review.\n" +
