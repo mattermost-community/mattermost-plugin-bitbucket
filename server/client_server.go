@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,19 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 )
+
+// TODO: This will be changed to create the main structs when modularized
+type Link struct {
+	Href string `json:"href"`
+}
+
+type BitbucketUser struct {
+	AccountId int    `json:"id"`
+	Username  string `json:"name"`
+	Links     struct {
+		Self []Link `json:"self"`
+	} `json:"links"`
+}
 
 type BitbucketServerClient struct {
 	apiClient *bitbucketv1.APIClient
@@ -73,6 +87,27 @@ func (c *BitbucketServerClient) getWhoAmI() (string, error) {
 	return string(user), nil
 }
 
-func (c *BitbucketServerClient) GetMe() (string, error) {
-	return c.getWhoAmI()
+func (c *BitbucketServerClient) GetMe() (*BitbucketUser, error) {
+	username, err := c.getWhoAmI()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.apiClient.DefaultApi.GetUser(username)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonData, err := json.Marshal(resp.Values)
+	if err != nil {
+		return nil, err
+	}
+
+	var user BitbucketUser
+	err = json.Unmarshal(jsonData, &user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }
