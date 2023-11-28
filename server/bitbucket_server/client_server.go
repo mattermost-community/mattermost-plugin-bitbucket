@@ -1,4 +1,4 @@
-package main
+package bitbucket_server
 
 import (
 	"context"
@@ -39,19 +39,19 @@ func NewClientServer() *BitbucketServerClient {
 }
 
 // TODO: This method needs to be changed when Modularization is built
-func (c *BitbucketServerClient) Connect(config Configuration, token oauth2.Token, ts oauth2.TokenSource) *BitbucketServerClient {
+func (c *BitbucketServerClient) Connect(selfHostedURL string, apiSelfHostedURL string, token oauth2.Token, ts oauth2.TokenSource) *BitbucketServerClient {
 	// setup Oauth context
 	auth := context.WithValue(context.Background(), bitbucketv1.ContextOAuth2, ts)
 
 	tc := oauth2.NewClient(auth, ts)
 
 	// create config for bitbucket API
-	configBb := bitbucketv1.NewConfiguration(config.BitbucketAPISelfHostedURL)
+	configBb := bitbucketv1.NewConfiguration(apiSelfHostedURL)
 	configBb.HTTPClient = tc
 
 	c.apiClient = bitbucketv1.NewAPIClient(context.Background(), configBb)
-	c.selfHostedURL = config.BitbucketSelfHostedURL
-	c.selfHostedAPIURL = config.BitbucketAPISelfHostedURL
+	c.selfHostedURL = selfHostedURL
+	c.selfHostedAPIURL = apiSelfHostedURL
 	c.token = token
 
 	return c

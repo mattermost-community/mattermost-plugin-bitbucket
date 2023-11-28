@@ -21,6 +21,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/bitbucket_server"
 	"github.com/mattermost/mattermost-plugin-bitbucket/server/templaterenderer"
 	"github.com/mattermost/mattermost-plugin-bitbucket/server/webhook"
 )
@@ -64,7 +65,7 @@ type Plugin struct {
 	router *mux.Router
 
 	// TODO: This can be converted into a generic client
-	bitbucketClient *BitbucketServerClient
+	bitbucketClient *bitbucket_server.BitbucketServerClient
 }
 
 // NewPlugin returns an instance of a Plugin.
@@ -82,7 +83,7 @@ func NewPlugin() *Plugin {
 	}
 
 	// TODO: This can be converted into a generic client
-	p.bitbucketClient = NewClientServer()
+	p.bitbucketClient = bitbucket_server.NewClientServer()
 
 	return p
 }
