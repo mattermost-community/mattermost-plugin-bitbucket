@@ -18,7 +18,7 @@ type Link struct {
 }
 
 type BitbucketUser struct {
-	AccountId int    `json:"id"`
+	AccountID int    `json:"id"`
 	Username  string `json:"name"`
 	Links     struct {
 		Self []Link `json:"self"`
@@ -58,9 +58,9 @@ func (c *BitbucketServerClient) Connect(selfHostedURL string, apiSelfHostedURL s
 }
 
 func (c *BitbucketServerClient) getWhoAmI() (string, error) {
-	baseUrl := fmt.Sprintf("%s/plugins/servlet/applinks/whoami", c.selfHostedURL)
+	requestURL := fmt.Sprintf("%s/plugins/servlet/applinks/whoami", c.selfHostedURL)
 
-	req, err := http.NewRequest("GET", baseUrl, nil)
+	req, err := http.NewRequest("GET", requestURL, nil)
 	if err != nil {
 		return "", err
 	}
