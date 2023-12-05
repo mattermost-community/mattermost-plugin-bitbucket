@@ -27,15 +27,17 @@ type BitbucketServerClient struct {
 	BitbucketClient
 }
 
-func newServerClient(apiClient *bitbucketv1.APIClient) Client {
+func newServerClient(selfHostedURL string, selfHostedAPIURL string, apiClient *bitbucketv1.APIClient) Client {
 	return &BitbucketServerClient{
 		BitbucketClient: BitbucketClient{
-			apiClient: apiClient,
+			apiClient:        apiClient,
+			selfHostedURL:    selfHostedURL,
+			selfHostedAPIURL: selfHostedAPIURL,
 		},
 	}
 }
 
-func (c *BitbucketServerClient) getWhoAmI() (string, error) {
+func (c *BitbucketServerClient) getWhoAmI(accessToken string) (string, error) {
 	requestURL := fmt.Sprintf("%s/plugins/servlet/applinks/whoami", c.selfHostedURL)
 
 	req, err := http.NewRequest("GET", requestURL, nil)
@@ -45,7 +47,7 @@ func (c *BitbucketServerClient) getWhoAmI() (string, error) {
 
 	client := &http.Client{}
 
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.token.AccessToken))
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -65,8 +67,8 @@ func (c *BitbucketServerClient) getWhoAmI() (string, error) {
 	return string(user), nil
 }
 
-func (c *BitbucketServerClient) GetMe() (*BitbucketUser, error) {
-	username, err := c.getWhoAmI()
+func (c *BitbucketServerClient) GetMe(accessToken string) (*BitbucketUser, error) {
+	username, err := c.getWhoAmI(accessToken)
 	if err != nil {
 		return nil, err
 	}

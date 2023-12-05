@@ -1,12 +1,9 @@
 package bitbucket_server
 
-import (
-	bitbucketv1 "github.com/gfleury/go-bitbucket-v1"
-	"golang.org/x/oauth2"
-)
+import bitbucketv1 "github.com/gfleury/go-bitbucket-v1"
 
 type Client interface {
-	GetMe() (*BitbucketUser, error)
+	GetMe(accessToken string) (*BitbucketUser, error)
 }
 
 type BitbucketClient struct {
@@ -14,6 +11,4 @@ type BitbucketClient struct {
 
 	selfHostedURL    string
 	selfHostedAPIURL string
-
-	token oauth2.Token
 }
