@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	bitbucketv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/wbrefvem/go-bitbucket"
@@ -63,9 +64,6 @@ type Plugin struct {
 	webhookHandler webhook.Webhook
 
 	router *mux.Router
-
-	// TODO: This can be converted into a generic client
-	bitbucketClient *bitbucket_server.BitbucketServerClient
 }
 
 // NewPlugin returns an instance of a Plugin.
@@ -81,9 +79,6 @@ func NewPlugin() *Plugin {
 		"":              p.handleHelp,
 		"settings":      p.handleSettings,
 	}
-
-	// TODO: This can be converted into a generic client
-	p.bitbucketClient = bitbucket_server.NewClientServer()
 
 	return p
 }
@@ -110,6 +105,32 @@ func (p *Plugin) bitbucketConnect(token oauth2.Token) *bitbucket.APIClient {
 
 	// create new bitbucket client API
 	return bitbucket.NewAPIClient(configBb)
+}
+
+func (p *Plugin) bitbucketConnectServer(token oauth2.Token) bitbucket_server.Client {
+	// get Oauth token source and client
+	ts := p.getOAuthConfig().TokenSource(context.Background(), &token)
+
+	// setup Oauth context
+	auth := context.WithValue(context.Background(), bitbucket.ContextOAuth2, ts)
+
+	tc := oauth2.NewClient(auth, ts)
+
+	apiSelfHostedURL := p.configuration.BitbucketAPISelfHostedURL
+
+	// create config for bitbucket API
+	configBb := bitbucketv1.NewConfiguration(apiSelfHostedURL)
+	configBb.HTTPClient = tc
+
+	apiClient := bitbucketv1.NewAPIClient(context.Background(), configBb)
+
+	bitbucketServer, err := bitbucket_server.GetBitbucketClient("server", apiClient)
+	if err != nil {
+		p.API.LogError("Error while connecting to bitbucket server", "err", err.Error())
+		return nil
+	}
+
+	return bitbucketServer
 }
 
 func (p *Plugin) OnActivate() error {

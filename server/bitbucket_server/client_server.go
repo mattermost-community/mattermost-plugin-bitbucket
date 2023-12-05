@@ -1,7 +1,6 @@
 package bitbucket_server
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,7 +8,6 @@ import (
 
 	bitbucketv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/pkg/errors"
-	"golang.org/x/oauth2"
 )
 
 // TODO: This will be changed to create the main structs when modularized
@@ -26,35 +24,15 @@ type BitbucketUser struct {
 }
 
 type BitbucketServerClient struct {
-	apiClient *bitbucketv1.APIClient
-
-	selfHostedURL    string
-	selfHostedAPIURL string
-
-	token oauth2.Token
+	BitbucketClient
 }
 
-func NewClientServer() *BitbucketServerClient {
-	return &BitbucketServerClient{}
-}
-
-// TODO: This method needs to be changed when Modularization is built
-func (c *BitbucketServerClient) Connect(selfHostedURL string, apiSelfHostedURL string, token oauth2.Token, ts oauth2.TokenSource) *BitbucketServerClient {
-	// setup Oauth context
-	auth := context.WithValue(context.Background(), bitbucketv1.ContextOAuth2, ts)
-
-	tc := oauth2.NewClient(auth, ts)
-
-	// create config for bitbucket API
-	configBb := bitbucketv1.NewConfiguration(apiSelfHostedURL)
-	configBb.HTTPClient = tc
-
-	c.apiClient = bitbucketv1.NewAPIClient(context.Background(), configBb)
-	c.selfHostedURL = selfHostedURL
-	c.selfHostedAPIURL = apiSelfHostedURL
-	c.token = token
-
-	return c
+func newServerClient(apiClient *bitbucketv1.APIClient) Client {
+	return &BitbucketServerClient{
+		BitbucketClient: BitbucketClient{
+			apiClient: apiClient,
+		},
+	}
 }
 
 func (c *BitbucketServerClient) getWhoAmI() (string, error) {
