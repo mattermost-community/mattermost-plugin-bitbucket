@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 
-	bitbucketv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/pkg/errors"
 )
 
@@ -27,21 +26,25 @@ type BitbucketServerClient struct {
 	BitbucketClient
 }
 
-func newServerClient(selfHostedURL string, selfHostedAPIURL string, apiClient *bitbucketv1.APIClient) Client {
+func newServerClient(config ClientConfiguration) Client {
 	return &BitbucketServerClient{
 		BitbucketClient: BitbucketClient{
-			apiClient:        apiClient,
-			selfHostedURL:    selfHostedURL,
-			selfHostedAPIURL: selfHostedAPIURL,
+			ClientConfiguration: ClientConfiguration{
+				SelfHostedURL:    config.SelfHostedURL,
+				SelfHostedAPIURL: config.SelfHostedAPIURL,
+				APIClient:        config.APIClient,
+				LogError:         config.LogError,
+			},
 		},
 	}
 }
 
 func (c *BitbucketServerClient) getWhoAmI(accessToken string) (string, error) {
-	requestURL := fmt.Sprintf("%s/plugins/servlet/applinks/whoami", c.selfHostedURL)
+	requestURL := fmt.Sprintf("%s/plugins/servlet/applinks/whoami", c.SelfHostedURL)
 
 	req, err := http.NewRequest("GET", requestURL, nil)
 	if err != nil {
+		c.LogError("unable to create request for getting whoami identity", "error", err.Error())
 		return "", err
 	}
 
@@ -51,17 +54,22 @@ func (c *BitbucketServerClient) getWhoAmI(accessToken string) (string, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
+		c.LogError("failed to make the request for getting whoami identity", "error", err.Error())
 		return "", err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return "", errors.Errorf("who am i returned non-200 status code: %d", resp.StatusCode)
+		errMessage := fmt.Sprintf("who am i returned non-200 status code: %d", resp.StatusCode)
+		err := errors.Errorf(errMessage)
+		c.LogError(errMessage, "error", err.Error())
+		return "", err
 	}
 
 	user, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to read response")
+		c.LogError("failed to make the request for getting whoami identity", "error", err.Error())
+		return "", err
 	}
 
 	return string(user), nil
@@ -70,22 +78,26 @@ func (c *BitbucketServerClient) getWhoAmI(accessToken string) (string, error) {
 func (c *BitbucketServerClient) GetMe(accessToken string) (*BitbucketUser, error) {
 	username, err := c.getWhoAmI(accessToken)
 	if err != nil {
+		c.LogError("failed to get whoami identity", "error", err.Error())
 		return nil, err
 	}
 
-	resp, err := c.apiClient.DefaultApi.GetUser(username)
+	resp, err := c.APIClient.DefaultApi.GetUser(username)
 	if err != nil {
+		c.LogError("failed to get user from bitbucket server", "error", err.Error())
 		return nil, err
 	}
 
 	jsonData, err := json.Marshal(resp.Values)
 	if err != nil {
+		c.LogError("failed to marshaling user from bitbucket server", "error", err.Error())
 		return nil, err
 	}
 
 	var user BitbucketUser
 	err = json.Unmarshal(jsonData, &user)
 	if err != nil {
+		c.LogError("failed to parse user from bitbucket server", "error", err.Error())
 		return nil, err
 	}
 

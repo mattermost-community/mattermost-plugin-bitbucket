@@ -125,7 +125,14 @@ func (p *Plugin) bitbucketConnectServer(token oauth2.Token) bitbucket_server.Cli
 
 	apiClient := bitbucketv1.NewAPIClient(context.Background(), configBb)
 
-	bitbucketServer, err := bitbucket_server.GetBitbucketClient("server", selfHostedURL, apiSelfHostedURL, apiClient)
+	configClient := bitbucket_server.ClientConfiguration{
+		SelfHostedURL:    selfHostedURL,
+		SelfHostedAPIURL: apiSelfHostedURL,
+		APIClient:        apiClient,
+		LogError:         p.API.LogError,
+	}
+
+	bitbucketServer, err := bitbucket_server.GetBitbucketClient("server", configClient)
 	if err != nil {
 		p.API.LogError("Error while connecting to bitbucket server", "err", err.Error())
 		return nil
