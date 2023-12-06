@@ -44,8 +44,7 @@ func (c *BitbucketServerClient) getWhoAmI(accessToken string) (string, error) {
 
 	req, err := http.NewRequest("GET", requestURL, nil)
 	if err != nil {
-		c.LogError("unable to create request for getting whoami identity", "error", err.Error())
-		return "", err
+		return "", errors.Wrap(err, "unable to create request for getting whoami identity")
 	}
 
 	client := &http.Client{}
@@ -54,22 +53,18 @@ func (c *BitbucketServerClient) getWhoAmI(accessToken string) (string, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		c.LogError("failed to make the request for getting whoami identity", "error", err.Error())
-		return "", err
+		return "", errors.Wrap(err, "failed to make the request for getting whoami identity")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		errMessage := fmt.Sprintf("who am i returned non-200 status code: %d", resp.StatusCode)
-		err := errors.Errorf(errMessage)
-		c.LogError(errMessage, "error", err.Error())
+		err := errors.Errorf("who am i returned non-200 status code: %d", resp.StatusCode)
 		return "", err
 	}
 
 	user, err := io.ReadAll(resp.Body)
 	if err != nil {
-		c.LogError("failed to make the request for getting whoami identity", "error", err.Error())
-		return "", err
+		return "", errors.Wrap(err, "failed to make the request for getting whoami identity")
 	}
 
 	return string(user), nil
