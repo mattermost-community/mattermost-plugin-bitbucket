@@ -2,6 +2,7 @@ package bitbucket_server
 
 import (
 	"fmt"
+	"net/http"
 
 	bitbucketv1 "github.com/gfleury/go-bitbucket-v1"
 )
@@ -10,6 +11,7 @@ type ClientConfiguration struct {
 	SelfHostedURL    string
 	SelfHostedAPIURL string
 	APIClient        *bitbucketv1.APIClient
+	OAuthClient      *http.Client
 
 	LogError func(msg string, keyValuePairs ...interface{})
 }

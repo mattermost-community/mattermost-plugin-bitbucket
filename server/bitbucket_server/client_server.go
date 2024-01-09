@@ -33,13 +33,14 @@ func newServerClient(config ClientConfiguration) Client {
 				SelfHostedURL:    config.SelfHostedURL,
 				SelfHostedAPIURL: config.SelfHostedAPIURL,
 				APIClient:        config.APIClient,
+				OAuthClient:      config.OAuthClient,
 				LogError:         config.LogError,
 			},
 		},
 	}
 }
 
-func (c *BitbucketServerClient) getWhoAmI(accessToken string) (string, error) {
+func (c *BitbucketServerClient) getWhoAmI() (string, error) {
 	requestURL := fmt.Sprintf("%s/plugins/servlet/applinks/whoami", c.SelfHostedURL)
 
 	req, err := http.NewRequest("GET", requestURL, nil)
@@ -47,11 +48,7 @@ func (c *BitbucketServerClient) getWhoAmI(accessToken string) (string, error) {
 		return "", errors.Wrap(err, "unable to create request for getting whoami identity")
 	}
 
-	client := &http.Client{}
-
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-
-	resp, err := client.Do(req)
+	resp, err := c.OAuthClient.Do(req)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to make the request for getting whoami identity")
 	}
@@ -70,8 +67,8 @@ func (c *BitbucketServerClient) getWhoAmI(accessToken string) (string, error) {
 	return string(user), nil
 }
 
-func (c *BitbucketServerClient) GetMe(accessToken string) (*BitbucketUser, error) {
-	username, err := c.getWhoAmI(accessToken)
+func (c *BitbucketServerClient) GetMe() (*BitbucketUser, error) {
+	username, err := c.getWhoAmI()
 	if err != nil {
 		c.LogError("failed to get whoami identity", "error", err.Error())
 		return nil, err

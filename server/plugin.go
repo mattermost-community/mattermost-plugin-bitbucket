@@ -129,6 +129,7 @@ func (p *Plugin) bitbucketConnectServer(token oauth2.Token) bitbucket_server.Cli
 		SelfHostedURL:    selfHostedURL,
 		SelfHostedAPIURL: apiSelfHostedURL,
 		APIClient:        apiClient,
+		OAuthClient:      tc,
 		LogError:         p.API.LogError,
 	}
 
