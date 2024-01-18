@@ -55,8 +55,7 @@ func (c *BitbucketServerClient) getWhoAmI() (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		err := errors.Errorf("who am i returned non-200 status code: %d", resp.StatusCode)
-		return "", err
+		return "", errors.Errorf("who am i returned non-200 status code: %d", resp.StatusCode)
 	}
 
 	user, err := io.ReadAll(resp.Body)
