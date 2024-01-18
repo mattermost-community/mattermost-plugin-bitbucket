@@ -1,4 +1,4 @@
-package bitbucket_server
+package bitbucketclient
 
 import (
 	"encoding/json"

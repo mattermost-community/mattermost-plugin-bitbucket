@@ -1,15 +1,26 @@
-package bitbucket_server
+package bitbucketclient
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	bitbucketv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
+type MockAPIClient struct {
+	mock.Mock
+}
+
+func (m *MockAPIClient) GetUser(_ string) (*bitbucketv1.APIResponse, error) {
+	args := m.Called()
+	return args.Get(0).(*bitbucketv1.APIResponse), args.Error(1)
+}
+
 func TestGetWhoAmI(t *testing.T) {
-	t.Run("successfuly get who am i from oauth", func(t *testing.T) {
+	t.Run("successfully get who am i from oauth", func(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("testuser"))

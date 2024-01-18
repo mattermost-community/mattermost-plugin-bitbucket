@@ -1,4 +1,4 @@
-package bitbucket_server
+package bitbucketclient
 
 type Client interface {
 	GetMe() (*BitbucketUser, error)

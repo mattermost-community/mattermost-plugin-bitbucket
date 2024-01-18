@@ -22,7 +22,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
-	"github.com/mattermost/mattermost-plugin-bitbucket/server/bitbucket_server"
+	"github.com/mattermost/mattermost-plugin-bitbucket/server/bitbucketclient"
 	"github.com/mattermost/mattermost-plugin-bitbucket/server/templaterenderer"
 	"github.com/mattermost/mattermost-plugin-bitbucket/server/webhook"
 )
@@ -107,7 +107,7 @@ func (p *Plugin) bitbucketConnect(token oauth2.Token) *bitbucket.APIClient {
 	return bitbucket.NewAPIClient(configBb)
 }
 
-func (p *Plugin) bitbucketConnectServer(token oauth2.Token) bitbucket_server.Client {
+func (p *Plugin) bitbucketConnectServer(token oauth2.Token) bitbucketclient.Client {
 	// get Oauth token source and client
 	ts := p.getOAuthConfig().TokenSource(context.Background(), &token)
 
@@ -125,7 +125,7 @@ func (p *Plugin) bitbucketConnectServer(token oauth2.Token) bitbucket_server.Cli
 
 	apiClient := bitbucketv1.NewAPIClient(context.Background(), configBb)
 
-	configClient := bitbucket_server.ClientConfiguration{
+	configClient := bitbucketclient.ClientConfiguration{
 		SelfHostedURL:    selfHostedURL,
 		SelfHostedAPIURL: apiSelfHostedURL,
 		APIClient:        apiClient,
@@ -133,7 +133,7 @@ func (p *Plugin) bitbucketConnectServer(token oauth2.Token) bitbucket_server.Cli
 		LogError:         p.API.LogError,
 	}
 
-	bitbucketServer, err := bitbucket_server.GetBitbucketClient("server", configClient)
+	bitbucketServer, err := bitbucketclient.GetBitbucketClient("server", configClient)
 	if err != nil {
 		p.API.LogError("Error while connecting to bitbucket server", "err", err.Error())
 		return nil
