@@ -72,7 +72,7 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 			req := test.httpTest.CreateHTTPRequest(test.request)
 			req.Header.Add("Mattermost-User-ID", test.userID)
 			rr := httptest.NewRecorder()
-			p.ServeHTTP(rr, req)
+			p.ServeHTTP(&plugin.Context{}, rr, req)
 			test.httpTest.CompareHTTPResponse(rr, test.expectedResponse)
 		})
 	}
@@ -122,7 +122,7 @@ func TestGetToken(t *testing.T) {
 			req := test.httpTest.CreateHTTPRequest(test.request)
 			rr := httptest.NewRecorder()
 
-			p.ServeHTTP(rr, req)
+			p.ServeHTTP(test.context, rr, req)
 
 			test.httpTest.CompareHTTPResponse(rr, test.expectedResponse)
 		})
