@@ -9,9 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"strings"
-
-	"github.com/mattermost/mattermost-server/v6/utils"
 )
 
 func getBaseURL() string {
@@ -28,22 +27,22 @@ func getYourAllReposSearchQuery() string {
 
 func getYourAssigneeIssuesSearchQuery(userAccountID, repoFullName string) string {
 	return getBaseURL() + "/repositories/" + repoFullName + "/issues?q=" +
-		utils.URLEncode("assignee.account_id=\""+userAccountID+"\" AND state!=\"closed\"")
+		urlEncode("assignee.account_id=\""+userAccountID+"\" AND state!=\"closed\"")
 }
 
 func getYourAssigneePRsSearchQuery(userAccountID, repoFullName string) string {
 	return getBaseURL() + "/repositories/" + repoFullName + "/pullrequests?q=" +
-		utils.URLEncode("reviewers.account_id=\""+userAccountID+"\" AND state=\"open\"")
+		urlEncode("reviewers.account_id=\""+userAccountID+"\" AND state=\"open\"")
 }
 
 func getYourOpenPRsSearchQuery(userAccountID, repoFullName string) string {
 	return getBaseURL() + "/repositories/" + repoFullName + "/pullrequests?q=" +
-		utils.URLEncode("author.account_id=\""+userAccountID+"\" AND state=\"open\"")
+		urlEncode("author.account_id=\""+userAccountID+"\" AND state=\"open\"")
 }
 
 func getSearchIssuesQuery(repoFullName, searchTerm string) string {
 	return getBaseURL() + "/repositories/" + repoFullName + "/issues?q=" +
-		utils.URLEncode("title ~ \""+searchTerm+"\"") + "&sort=-updated_on"
+		urlEncode("title ~ \""+searchTerm+"\"") + "&sort=-updated_on"
 }
 
 func pad(src []byte) []byte {
@@ -173,4 +172,14 @@ func getToDoDisplayText(baseURL, title, url, notifType string) string {
 
 func fullNameFromOwnerAndRepo(owner, repo string) string {
 	return fmt.Sprintf("%s/%s", owner, repo)
+}
+
+func urlEncode(str string) string {
+	strs := strings.Split(str, " ")
+
+	for i, s := range strs {
+		strs[i] = url.QueryEscape(s)
+	}
+
+	return strings.Join(strs, "%20")
 }

@@ -2,7 +2,7 @@ import ActionTypes from '../action_types';
 import Constants from '../constants';
 import {getConnected, getReviews, getYourAssignments, getYourPrs} from '../actions';
 
-import {id as pluginId} from '../manifest';
+import manifest from '../manifest';
 
 export function handleConnect(store) {
     return (msg) => {
@@ -44,7 +44,7 @@ export function handleReconnect(store, reminder = false) {
 
 export function handleRefresh(store) {
     return () => {
-        if (store.getState()[`plugins-${pluginId}`].connected) {
+        if (store.getState()[`plugins-${manifest.id}`].connected) {
             getReviews()(store.dispatch, store.getState);
             getYourPrs()(store.dispatch, store.getState);
             getYourAssignments()(store.dispatch, store.getState);

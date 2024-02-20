@@ -2,7 +2,7 @@ import {connect} from 'react-redux';
 import {bindActionCreators} from 'redux';
 
 import {getReviewsDetails, getYourPrsDetails} from '../../actions';
-import {id as pluginId} from '../../manifest';
+import manifest from '../../manifest';
 
 import SidebarRight from './sidebar_right.jsx';
 
@@ -32,6 +32,7 @@ function mapPrsToDetails(prs, details) {
 }
 
 function mapStateToProps(state) {
+    const {id: pluginId} = manifest;
     return {
         reviews: mapPrsToDetails(state[`plugins-${pluginId}`].reviews, state[`plugins-${pluginId}`].reviewsDetails),
         yourPrs: mapPrsToDetails(state[`plugins-${pluginId}`].yourPrs, state[`plugins-${pluginId}`].yourPrsDetails),

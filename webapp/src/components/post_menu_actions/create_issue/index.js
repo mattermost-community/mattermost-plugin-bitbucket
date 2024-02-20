@@ -3,7 +3,7 @@ import {bindActionCreators} from 'redux';
 import {getPost} from 'mattermost-redux/selectors/entities/posts';
 import {isSystemMessage} from 'mattermost-redux/utils/post_utils';
 
-import {id as pluginId} from '../../../manifest';
+import manifest from '../../../manifest';
 import {openCreateIssueModal} from '../../../actions';
 
 import CreateIssuePostMenuAction from './create_issue';
@@ -13,7 +13,7 @@ const mapStateToProps = (state, ownProps) => {
     const systemMessage = post ? isSystemMessage(post) : true;
 
     return {
-        show: state[`plugins-${pluginId}`].connected && !systemMessage,
+        show: state[`plugins-${manifest.id}`].connected && !systemMessage,
     };
 };
 

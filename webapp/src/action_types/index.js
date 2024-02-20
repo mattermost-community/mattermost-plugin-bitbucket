@@ -1,5 +1,6 @@
-import {id as pluginId} from '../manifest';
+import manifest from '../manifest';
 
+const {id: pluginId} = manifest;
 export default {
     RECEIVED_REPOSITORIES: pluginId + '_received_repositories',
     RECEIVED_REVIEWS: pluginId + '_received_reviews',
