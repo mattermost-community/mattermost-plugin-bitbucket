@@ -1,14 +1,15 @@
 import {connect} from 'react-redux';
 import {bindActionCreators} from 'redux';
 
-import {id as pluginId} from 'manifest';
+import manifest from 'manifest';
+
 import {getRepos} from '../../actions';
 
 import BitbucketRepoSelector from './bitbucket_repo_selector.jsx';
 
 function mapStateToProps(state) {
     return {
-        yourRepos: state[`plugins-${pluginId}`].yourRepos,
+        yourRepos: state[`plugins-${manifest.id}`].yourRepos,
     };
 }
 

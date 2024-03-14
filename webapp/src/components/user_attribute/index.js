@@ -3,12 +3,13 @@ import {bindActionCreators} from 'redux';
 
 import {getBitbucketUser} from '../../actions';
 
-import {id as pluginId} from '../../manifest';
+import manifest from '../../manifest';
 
 import UserAttribute from './user_attribute.jsx';
 
 function mapStateToProps(state, ownProps) {
     const id = ownProps.user ? ownProps.user.id : '';
+    const {id: pluginId} = manifest;
     const user = state[`plugins-${pluginId}`].bitbucketUsers[id] || {};
 
     return {

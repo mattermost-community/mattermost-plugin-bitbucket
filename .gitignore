@@ -1,2 +1,4 @@
 dist
 .idea
+webapp/src/manifest.ts
+server/manifest.go

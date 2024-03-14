@@ -3,10 +3,12 @@ import {Tooltip, OverlayTrigger} from 'react-bootstrap';
 import PropTypes from 'prop-types';
 import {makeStyleFromTheme, changeOpacity} from 'mattermost-redux/utils/theme_utils';
 
-import {id as pluginId} from '../../manifest';
+import manifest from '../../manifest';
 
 import {RHSStates} from '../../constants';
 import BitbucketIcon from '../icon';
+
+const {id: pluginId} = manifest;
 
 export default class SidebarButtons extends React.PureComponent {
     static propTypes = {
@@ -66,17 +68,17 @@ export default class SidebarButtons extends React.PureComponent {
             this.props.actions.getYourAssignments(),
         ]);
         this.setState({refreshing: false});
-    }
+    };
 
     openConnectWindow = (e) => {
         e.preventDefault();
         window.open('/plugins/' + pluginId + '/oauth/connect', 'Connect Mattermost to Bitbucket', 'height=570,width=520');
-    }
+    };
 
     openRHS = (rhsState) => {
         this.props.actions.updateRhsState(rhsState);
         this.props.showRHSPlugin();
-    }
+    };
 
     render() {
         const style = getStyle(this.props.theme);

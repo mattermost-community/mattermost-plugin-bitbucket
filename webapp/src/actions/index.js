@@ -1,7 +1,7 @@
 import Client from '../client';
 import ActionTypes from '../action_types';
 
-import {id as pluginId} from '../manifest';
+import manifest from '../manifest';
 
 export function getConnected(reminder = false) {
     return async (dispatch) => {
@@ -185,7 +185,7 @@ export function getBitbucketUser(userID) {
             return {};
         }
 
-        const user = getState()[`plugins-${pluginId}`].bitbucketUsers[userID];
+        const user = getState()[`plugins-${manifest.id}`].bitbucketUsers[userID];
         if (user && user.last_try && Date.now() - user.last_try < BITBUCKET_USER_GET_TIMEOUT_MILLISECONDS) {
             return {};
         }
