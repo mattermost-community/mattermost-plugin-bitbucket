@@ -113,7 +113,23 @@ func (tr *templateRenderer) init() {
 			selection.SetText(bitbucketNickname)
 		})
 
+		// Convert img tags to markdown image syntax to preserve images in the output
+		// This fixes the issue where images in descriptions cause '>' to appear in posts
+		doc.Find("img").Each(func(i int, selection *goquery.Selection) {
+			src := selection.AttrOr("src", "")
+			alt := selection.AttrOr("alt", "image")
+			if src != "" {
+				// Replace the img tag with markdown image syntax as plain text
+				markdownImg := "![" + alt + "](" + src + ")"
+				selection.ReplaceWithHtml(markdownImg)
+			} else {
+				// Remove img tags without src to prevent empty lines
+				selection.Remove()
+			}
+		})
+
 		// Text() returns only text, without HTML attributes or tags
+		// The markdown image syntax we inserted will be preserved since it's plain text
 		return doc.Text()
 	}
 

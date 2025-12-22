@@ -100,4 +100,18 @@ func TestIssueTemplates(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, expected, actual)
 	})
+
+	t.Run("RenderIssueCreatedEventNotificationForSubscribedChannels_WithImage", func(t *testing.T) {
+		// Test that images in issue descriptions are properly converted to markdown
+		// and don't leave orphan '>' blockquote characters
+		expected := "\n#### Bug with image attachment" +
+			"\n##### [\\[mattermost-plugin-bitbucket#2\\]](https://bitbucket.org/mattermost/mattermost-plugin-bitbucket/issues/2/bug-with-image)" +
+			"\n#new-issue by @testMmUser:" +
+			"\n>Here is a screenshot:![screenshot](https://bitbucket.org/repo/attachments/image.png)\n"
+
+		actual, err := tr.RenderIssueCreatedEventNotificationForSubscribedChannels(getTestIssueCreatedPayloadWithImage())
+
+		require.NoError(t, err)
+		require.Equal(t, expected, actual)
+	})
 }

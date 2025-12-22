@@ -56,11 +56,29 @@ func getTestIssue() webhookpayload.Issue {
 	return issue
 }
 
+func getTestIssueWithImage() webhookpayload.Issue {
+	issue := webhookpayload.Issue{}
+	issue.ID = 2
+	issue.Title = "Bug with image attachment"
+	issue.Content.HTML = "<p>Here is a screenshot:</p><p><img src=\"https://bitbucket.org/repo/attachments/image.png\" alt=\"screenshot\"></p>"
+	issue.Links.HTML.Href = "https://bitbucket.org/mattermost/mattermost-plugin-bitbucket/issues/2/bug-with-image"
+
+	return issue
+}
+
 func getTestIssueCreatedPayload() webhookpayload.IssueCreatedPayload {
 	return webhookpayload.IssueCreatedPayload{
 		Repository: getTestRepository(),
 		Actor:      getTestOwnerThatHasMmAccount(),
 		Issue:      getTestIssue(),
+	}
+}
+
+func getTestIssueCreatedPayloadWithImage() webhookpayload.IssueCreatedPayload {
+	return webhookpayload.IssueCreatedPayload{
+		Repository: getTestRepository(),
+		Actor:      getTestOwnerThatHasMmAccount(),
+		Issue:      getTestIssueWithImage(),
 	}
 }
 
