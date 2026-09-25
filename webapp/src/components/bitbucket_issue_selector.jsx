@@ -129,7 +129,6 @@ export default class BitbucketIssueSelector extends PureComponent {
                     name={'issue'}
                     placeholder={'Search for issues containing text...'}
                     onChange={this.onChange}
-                    required={true}
                     disabled={false}
                     isMulti={false}
                     isClearable={true}

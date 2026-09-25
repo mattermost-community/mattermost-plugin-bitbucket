@@ -42,11 +42,17 @@ module.exports = {
     externals: {
         react: 'React',
         'react-dom': 'ReactDOM',
+        'react-dom/client': 'ReactDOM',
+        'react/jsx-runtime': 'ReactJSXRuntime',
+        'react/jsx-dev-runtime': 'ReactJSXDevRuntime',
         redux: 'Redux',
         'react-redux': 'ReactRedux',
         'prop-types': 'PropTypes',
         'react-bootstrap': 'ReactBootstrap',
     },
+
+    // Mattermost's Content-Security-Policy blocks the eval-based source maps used by default in development mode.
+    devtool: false,
     output: {
         path: path.join(__dirname, '/dist'),
         publicPath: '/',

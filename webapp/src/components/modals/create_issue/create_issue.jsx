@@ -176,10 +176,7 @@ export default class CreateIssueModal extends PureComponent {
                     role='form'
                     onSubmit={this.handleCreate}
                 >
-                    <Modal.Body
-                        style={style.modal}
-                        ref='modalBody'
-                    >
+                    <Modal.Body style={style.modal}>
                         {component}
                     </Modal.Body>
                     <Modal.Footer>

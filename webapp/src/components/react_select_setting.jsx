@@ -100,6 +100,9 @@ export default class ReactSelectSetting extends React.PureComponent {
             );
         }
 
+        // Validation is handled by isValid. react-select's native required input would block form submission.
+        const selectProps = {...this.props, required: false};
+
         let selectComponent;
         if (this.props.limitOptions && this.props.options.size > MAX_NUM_OPTIONS) {
             // The parent component has let us know that we may have a large number of options, and that
@@ -107,7 +110,7 @@ export default class ReactSelectSetting extends React.PureComponent {
             // this.filterOptions() to limit the number of options being rendered at a given time.
             selectComponent = (
                 <AsyncSelect
-                    {...this.props}
+                    {...selectProps}
                     loadOptions={this.filterOptions}
                     defaultOptions={true}
                     menuPortalTarget={document.body}
@@ -119,7 +122,7 @@ export default class ReactSelectSetting extends React.PureComponent {
         } else if (this.props.allowUserDefinedValue) {
             selectComponent = (
                 <CreatableSelect
-                    {...this.props}
+                    {...selectProps}
                     noOptionsMessage={() => 'Start typing...'}
                     formatCreateLabel={(value) => `Add "${value}"`}
                     placeholder=''
@@ -132,7 +135,7 @@ export default class ReactSelectSetting extends React.PureComponent {
         } else {
             selectComponent = (
                 <ReactSelect
-                    {...this.props}
+                    {...selectProps}
                     menuPortalTarget={document.body}
                     menuPlacement='auto'
                     onChange={this.handleChange}
